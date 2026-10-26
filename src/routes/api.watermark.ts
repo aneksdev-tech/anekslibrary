@@ -20,6 +20,11 @@ type WatermarkAssets = {
   watermarkPng: Buffer;
 };
 
+type WatermarkRequestBody = {
+  filePath?: unknown;
+  type?: unknown;
+};
+
 let assetsPromise: Promise<WatermarkAssets> | undefined;
 
 async function loadAssets(
@@ -112,6 +117,7 @@ async function watermarkImage(
 
   const width = metadata.width ?? 0;
   const height = metadata.height ?? 0;
+
   const contentType = getImageContentType(
     metadata.format ?? "",
   );
@@ -120,13 +126,13 @@ async function watermarkImage(
     throw new Error("Unsupported or invalid image.");
   }
 
-  // Match the watermark sizing used by watermarkPdf().
+  // Calculate watermark width relative to the original image.
   const watermarkWidth = Math.max(
     1,
     Math.round(Math.min(width, height) * 1.5),
   );
 
-  // Resize the watermark to the calculated width, allowing enlargement.
+  // Intentionally allow the watermark to enlarge.
   const rotatedWatermark = await sharp(
     assets.watermarkPng,
   )
@@ -277,6 +283,7 @@ async function watermarkPdf(
       Math.min(width, height) * 1.5,
     );
 
+    // Intentionally prevent the watermark from enlarging.
     const rotatedWatermark = await sharp(watermarkPng)
       .resize({
         width: watermarkWidth,
@@ -321,6 +328,7 @@ async function handleWatermark(
 ): Promise<Response> {
   const expectedSecret =
     process.env.WATERMARK_SERVER_SECRET;
+
   const suppliedSecret =
     request.headers.get("X-Watermark-Secret");
 
@@ -336,6 +344,7 @@ async function handleWatermark(
   }
 
   const supabaseUrl = process.env.SUPABASE_URL;
+
   const serviceRoleKey =
     process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -373,22 +382,13 @@ async function handleWatermark(
     );
   }
 
-  let body: {
-    filePath?: unknown;
-    type?: unknown;
-  };
+  let body: WatermarkRequestBody;
 
   try {
     const contentType =
       request.headers.get("content-type");
-    const rawBody = await request.text();
 
-    console.log("Watermark request diagnostics:", {
-      method: request.method,
-      contentType,
-      bodyLength: rawBody.length,
-      bodyStart: rawBody.slice(0, 120),
-    });
+    const rawBody = await request.text();
 
     if (!rawBody.trim()) {
       return jsonResponse(
@@ -411,7 +411,20 @@ async function handleWatermark(
       );
     }
 
-    body = JSON.parse(rawBody);
+    const parsedBody: unknown = JSON.parse(rawBody);
+
+    if (
+      typeof parsedBody !== "object" ||
+      parsedBody === null ||
+      Array.isArray(parsedBody)
+    ) {
+      return jsonResponse(
+        { error: "Request body must be a JSON object." },
+        400,
+      );
+    }
+
+    body = parsedBody as WatermarkRequestBody;
   } catch (error) {
     console.error(
       "Watermark JSON parsing failed:",
@@ -442,6 +455,8 @@ async function handleWatermark(
     );
   }
 
+  const watermarkType: WatermarkType = type;
+
   const extension = path.extname(filePath).toLowerCase();
 
   const supportedImage = [
@@ -452,8 +467,8 @@ async function handleWatermark(
   ].includes(extension);
 
   if (
-    (type === "image" && !supportedImage) ||
-    (type === "pdf" && extension !== ".pdf")
+    (watermarkType === "image" && !supportedImage) ||
+    (watermarkType === "pdf" && extension !== ".pdf")
   ) {
     return jsonResponse(
       {
@@ -476,13 +491,6 @@ async function handleWatermark(
   );
 
   try {
-    console.log("Watermark processing started:", {
-      projectHost,
-      sourceBucket: BUCKET,
-      outputBucket: OUTPUT_BUCKET,
-      resourceType: type,
-    });
-
     const {
       data: originalBlob,
       error: downloadError,
@@ -513,32 +521,26 @@ async function handleWatermark(
       await originalBlob.arrayBuffer(),
     );
 
-    console.log("Watermark original downloaded:", {
-      projectHost,
-      sourceBucket: BUCKET,
-      originalSize: originalBytes.length,
-    });
-
     const assets = await loadAssets(request);
 
     let outputBytes: Buffer;
-    let contentType: string;
+    let outputContentType: string;
 
-    if (type === "image") {
+    if (watermarkType === "image") {
       const result = await watermarkImage(
         originalBytes,
         assets,
       );
 
       outputBytes = result.bytes;
-      contentType = result.contentType;
+      outputContentType = result.contentType;
     } else {
       outputBytes = await watermarkPdf(
         originalBytes,
         assets.watermarkPng,
       );
 
-      contentType = "application/pdf";
+      outputContentType = "application/pdf";
     }
 
     const requestId = crypto.randomUUID();
@@ -551,21 +553,10 @@ async function handleWatermark(
     const outputName = `${timestamp}-${originalName}`;
     const outputPath = `${requestId}/${outputName}`;
 
-    console.log("Watermark upload starting:", {
-      projectHost,
-      bucket: OUTPUT_BUCKET,
-      outputPath,
-      contentType,
-      outputSize: outputBytes.length,
-    });
-
-    const {
-      data: uploadData,
-      error: uploadError,
-    } = await supabase.storage
+    const { error: uploadError } = await supabase.storage
       .from(OUTPUT_BUCKET)
       .upload(outputPath, outputBytes, {
-        contentType,
+        contentType: outputContentType,
         upsert: false,
         cacheControl: "0",
       });
@@ -584,39 +575,12 @@ async function handleWatermark(
         500,
       );
     }
-    
-    // Diagnostic: verify the uploaded object is readable through Storage.
-const {
-  data: verificationBlob,
-  error: verificationError,
-} = await supabase.storage
-  .from(OUTPUT_BUCKET)
-  .download(outputPath);
-
-console.log("Watermark upload verification:", {
-  projectHost,
-  bucket: OUTPUT_BUCKET,
-  outputPath,
-  readable: Boolean(verificationBlob),
-  verificationSize: verificationBlob?.size ?? null,
-  errorMessage: verificationError?.message ?? null,
-  errorName: verificationError?.name ?? null,
-});
-
-console.log("Watermark upload succeeded:", {
-      projectHost,
-      bucket: OUTPUT_BUCKET,
-      requestedPath: outputPath,
-      returnedPath: uploadData.path,
-      returnedId: uploadData.id,
-      outputSize: outputBytes.length,
-    });
 
     return jsonResponse({
       success: true,
       bucket: OUTPUT_BUCKET,
       path: outputPath,
-      contentType,
+      contentType: outputContentType,
       filename: outputName,
       size: outputBytes.length,
     });
