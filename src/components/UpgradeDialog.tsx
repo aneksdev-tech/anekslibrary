@@ -25,24 +25,34 @@ export function UpgradeDialog({
 }: UpgradeDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-sm">
-        <DialogHeader>
-          <div className="mb-1.5 flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 sm:mb-2 sm:h-13 sm:w-13">
-            <Crown className="h-6 w-6 text-yellow-500 sm:h-8 sm:w-8" />
-          </div>
-
-          <DialogTitle className="text-left text-lg sm:text-2xl">
+      <DialogContent
+        className="
+          w-[calc(100%-24px)]
+          max-w-[360px]
+          max-h-[85dvh]
+          overflow-y-auto
+          rounded-lg
+          p-4
+          sm:max-w-sm
+          sm:rounded-xl
+          sm:p-6
+        "
+      >
+        <DialogHeader className="space-y-2 text-left sm:space-y-3">
+          <Crown className="h-5 w-5 text-yellow-500 sm:h-7 sm:w-7" />
+        
+          <DialogTitle className="text-left text-base font-semibold leading-snug sm:text-2xl">
             Unlock Unlimited Academic Resources
           </DialogTitle>
 
-          <DialogDescription className="mx-auto max-w-sm text-left text-xs leading-5 sm:text-sm sm:leading-6">
-            Continue to securely upgrade your account and enjoy unlimited
-            downloads, premium academic resources, an ad-free experience,
+          <DialogDescription className="text-left text-[11px] leading-[1.45rem] sm:text-sm sm:leading-6">
+            Upgrade your account to enjoy unlimited downloads,
+            premium academic resources, an ad-free experience,
             priority support, and early access to new features.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-1.5 py-1.5 sm:space-y-2 sm:py-2">
+        <div className="space-y-2 py-1 sm:space-y-2.5 sm:py-2">
           <Feature text="Unlimited downloads" />
           <Feature text="Premium academic resources" />
           <Feature text="No advertisements" />
@@ -51,16 +61,16 @@ export function UpgradeDialog({
           <Feature text="Premium member badge" />
         </div>
 
-        <div className="rounded-lg border bg-primary/5 p-3 text-left sm:rounded-xl sm:p-4">
-          <p className="text-2xl font-bold sm:text-3xl">
+        <div className="rounded-md border bg-primary/5 p-2.5 text-left sm:rounded-xl sm:p-4">
+          <p className="text-xl font-bold sm:text-3xl">
             ₦3,000
-            <span className="text-base font-normal sm:text-lg">
+            <span className="text-sm font-normal sm:text-lg">
               /month
             </span>
           </p>
         </div>
 
-        <DialogFooter className="flex-col gap-2 sm:flex-row sm:gap-3">
+        <DialogFooter className="flex-col gap-2 pt-1 sm:flex-row sm:gap-3">
           <Button
             variant="outline"
             className="h-9 w-full text-xs sm:h-10 sm:text-sm"
@@ -89,9 +99,10 @@ function Feature({
   text: string;
 }) {
   return (
-    <div className="flex items-center gap-2.5 sm:gap-3">
-      <CheckCircle2 className="h-4 w-4 shrink-0 text-green-600 sm:h-5 sm:w-5" />
-      <span className="text-xs sm:text-sm">
+    <div className="flex items-center gap-2">
+      <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-green-600 sm:h-5 sm:w-5" />
+
+      <span className="text-[11px] leading-4 sm:text-sm sm:leading-normal">
         {text}
       </span>
     </div>

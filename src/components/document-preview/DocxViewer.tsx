@@ -3,6 +3,8 @@ import { renderAsync } from "docx-preview";
 
 interface DocxViewerProps {
   blob: Blob;
+  restrictPreview?: boolean;
+  onUpgradeClick?: () => void;
 }
 
 const WATERMARK_ASSET =
@@ -14,6 +16,8 @@ const WATERMARK_SCALE = 1.5;
 
 export function DocxViewer({
   blob,
+  restrictPreview = false,
+  onUpgradeClick,
 }: DocxViewerProps) {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const documentRef = useRef<HTMLDivElement>(null);
@@ -21,8 +25,14 @@ export function DocxViewer({
   const resizeObserver =
     useRef<ResizeObserver | null>(null);
 
+  const upgradeClickRef = useRef(onUpgradeClick);
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    upgradeClickRef.current = onUpgradeClick;
+  }, [onUpgradeClick]);
 
   const updateWatermarkSizes = () => {
     if (!documentRef.current) return;
@@ -116,9 +126,16 @@ export function DocxViewer({
       setLoading(true);
       setError("");
 
-      try {
-        documentRef.current.innerHTML = "";
+      resizeObserver.current?.disconnect();
 
+      documentRef.current.innerHTML = "";
+      documentRef.current.style.transform = "";
+      documentRef.current.style.transformOrigin = "";
+      documentRef.current.style.width = "";
+      documentRef.current.style.height = "";
+      documentRef.current.style.margin = "";
+
+      try {
         await renderAsync(
           blob,
           documentRef.current,
@@ -130,7 +147,9 @@ export function DocxViewer({
           },
         );
 
-        if (cancelled) return;
+        if (cancelled || !documentRef.current) {
+          return;
+        }
 
         const pages =
           documentRef.current.querySelectorAll(
@@ -146,6 +165,11 @@ export function DocxViewer({
             .querySelector(".aneks-watermark")
             ?.remove();
 
+          pageElement
+            .querySelector(".aneks-preview-restriction")
+            ?.remove();
+
+          // Watermark
           const watermark =
             document.createElement("div");
 
@@ -181,6 +205,188 @@ export function DocxViewer({
 
           watermark.appendChild(image);
           pageElement.appendChild(watermark);
+
+          if (!restrictPreview) return;
+
+          // Restriction overlay: ordinary DOM, no nested React root.
+          const overlay =
+            document.createElement("div");
+
+          overlay.className =
+            "aneks-preview-restriction";
+
+          Object.assign(overlay.style, {
+            position: "absolute",
+            inset: "0",
+            zIndex: "1000",
+            overflow: "hidden",
+            pointerEvents: "none",
+          });
+
+          // Frosted-glass cover.
+          const glass =
+            document.createElement("div");
+
+          Object.assign(glass.style, {
+            position: "absolute",
+            top: "0",
+            right: "0",
+            bottom: "0",
+            width: "50%",
+            boxSizing: "border-box",
+            borderLeft:
+              "1px solid color-mix(in srgb, var(--border) 40%, transparent)",
+            background:
+              "color-mix(in srgb, var(--background) 75%, transparent)",
+            boxShadow:
+              "-8px 0 24px rgba(0, 0, 0, 0.04)",
+            backdropFilter: "blur(24px)",
+            WebkitBackdropFilter: "blur(24px)",
+            pointerEvents: "none",
+          });
+
+          overlay.appendChild(glass);
+
+          // Centered Premium prompt.
+          const prompt =
+            document.createElement("div");
+
+          Object.assign(prompt.style, {
+            position: "absolute",
+            top: "50%",
+            right: "8px",
+            width: "46%",
+            transform: "translateY(-50%)",
+            boxSizing: "border-box",
+            padding: "8px",
+            textAlign: "center",
+            color: "var(--foreground)",
+            fontFamily: "inherit",
+            pointerEvents: "auto",
+          });
+
+        const lock =
+            document.createElement("div");
+
+          lock.setAttribute("aria-hidden", "true");
+
+          Object.assign(lock.style, {
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            width: "24px",
+            height: "24px",
+            margin: "0 auto",
+            color: "var(--gold)",
+          });
+
+          lock.innerHTML = `
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="100%"
+              height="100%"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <rect
+                width="18"
+                height="11"
+                x="3"
+                y="11"
+                rx="2"
+              />
+              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+              <circle cx="12" cy="16" r="1" />
+            </svg>
+          `;
+
+          prompt.appendChild(lock);
+
+          const heading =
+            document.createElement("p");
+
+          heading.textContent = "Premium Preview";
+
+          Object.assign(heading.style, {
+            margin: "6px 0 0",
+            fontSize: "10px",
+            fontWeight: "600",
+            lineHeight: "1.3",
+            textAlign: "center",
+            color: "var(--foreground)",
+          });
+
+          prompt.appendChild(heading);
+
+          const description =
+            document.createElement("p");
+
+          description.textContent =
+            "Upgrade to read the full document.";
+
+          Object.assign(description.style, {
+            margin: "6px 0 0",
+            fontSize: "10px",
+            lineHeight: "1.5",
+            textAlign: "center",
+            color: "var(--muted-foreground)",
+          });
+
+          prompt.appendChild(description);
+
+          if (upgradeClickRef.current) {
+            const button =
+              document.createElement("button");
+
+            button.type = "button";
+            button.textContent = "Upgrade";
+
+            Object.assign(button.style, {
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              minHeight: "28px",
+              marginTop: "8px",
+              padding: "4px 8px",
+              border: "0",
+              borderRadius: "3px",
+              background: "var(--primary)",
+              color: "var(--primary-foreground)",
+              fontFamily: "inherit",
+              fontSize: "10px",
+              fontWeight: "500",
+              cursor: "pointer",
+            });
+
+            const handleUpgrade = () => {
+              upgradeClickRef.current?.();
+            };
+
+            button.addEventListener(
+              "click",
+              handleUpgrade,
+            );
+
+            overlay.addEventListener(
+              "DOMNodeRemoved",
+              () => {
+                button.removeEventListener(
+                  "click",
+                  handleUpgrade,
+                );
+              },
+              { once: true },
+            );
+
+            prompt.appendChild(button);
+          }
+
+          overlay.appendChild(prompt);
+          pageElement.appendChild(overlay);
         });
 
         applyScale();
@@ -230,7 +436,7 @@ export function DocxViewer({
         applyScale,
       );
     };
-  }, [blob]);
+  }, [blob, restrictPreview]);
 
   return (
     <div className="relative w-full">

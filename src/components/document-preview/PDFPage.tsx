@@ -1,14 +1,19 @@
 import { Page } from "react-pdf";
 import { WatermarkOverlay } from "./WatermarkOverlay";
+import { PreviewRestrictionOverlay } from "./PreviewRestrictionOverlay";
 
 interface PDFPageProps {
   pageNumber: number;
   width: number;
+  restrictPreview?: boolean;
+  onUpgradeClick?: () => void;
 }
 
 export function PDFPage({
   pageNumber,
   width,
+  restrictPreview = false,
+  onUpgradeClick,
 }: PDFPageProps) {
   return (
     <div className="relative mb-4 overflow-hidden rounded-2xl border bg-background shadow-soft">
@@ -25,6 +30,12 @@ export function PDFPage({
       />
 
       <WatermarkOverlay />
+
+      {restrictPreview && (
+        <PreviewRestrictionOverlay
+          onUpgradeClick={onUpgradeClick}
+        />
+      )}
     </div>
   );
 }

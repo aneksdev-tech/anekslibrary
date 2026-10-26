@@ -177,6 +177,20 @@ const semesterLabel = getResourceScopeLabel(
     resource.category?.name?.trim()
       ? resource.category.name.trim()
       : "Uncategorized";
+  
+  // These categories are exempt from the free-user preview restriction.
+  const normalizedCategoryName = categoryName
+  .trim()
+  .toLowerCase();
+
+const isPreviewExempt = [
+  "lecture timetables",
+  "publications",
+].includes(normalizedCategoryName);
+
+  // Administrators and Premium users always get the full preview.
+  const restrictPreview =
+    !canViewFullDocument && !isPreviewExempt;
 
   const download = async () => {
     if (downloading) return;
@@ -418,6 +432,8 @@ const semesterLabel = getResourceScopeLabel(
               token={previewUrl.accessToken}
               filePath={resource.file_path}
               title={resource.title}
+              restrictPreview={restrictPreview}
+              onUpgradeClick={() => setUpgradeOpen(true)}
             />
           ) : isPreviewUrlLoading ? (
             <div className="flex h-[60vh] items-center justify-center text-sm sm:h-[70vh]">

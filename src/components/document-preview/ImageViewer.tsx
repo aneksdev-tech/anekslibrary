@@ -1,13 +1,18 @@
 import { WatermarkOverlay } from "./WatermarkOverlay";
+import { PreviewRestrictionOverlay } from "./PreviewRestrictionOverlay";
 
 interface ImageViewerProps {
   url: string;
   alt?: string;
+  restrictPreview?: boolean;
+  onUpgradeClick?: () => void;
 }
 
 export function ImageViewer({
   url,
   alt,
+  restrictPreview = false,
+  onUpgradeClick,
 }: ImageViewerProps) {
   return (
     <div
@@ -37,10 +42,15 @@ export function ImageViewer({
       {/* Invisible interaction shield */}
       <div
         aria-hidden="true"
-        className="absolute inset-0 z-30"
-        onContextMenu={(e) => e.preventDefault()}
-        onDragStart={(e) => e.preventDefault()}
+        className="pointer-events-none absolute inset-0 z-20"
       />
+
+      {/* Keep the upgrade button above the shield */}
+      {restrictPreview && (
+        <PreviewRestrictionOverlay
+          onUpgradeClick={onUpgradeClick}
+        />
+      )}
     </div>
   );
 }

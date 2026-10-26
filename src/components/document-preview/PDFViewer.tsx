@@ -7,6 +7,7 @@ import {
 } from "react";
 import { Document, pdfjs } from "react-pdf";
 import { PDFPage } from "./PDFPage";
+import { PreviewRestrictionOverlay } from "./PreviewRestrictionOverlay";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
 
@@ -15,11 +16,15 @@ pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
 interface PDFViewerProps {
   url: string;
   scrollRoot?: HTMLDivElement | null;
+  restrictPreview?: boolean;
+  onUpgradeClick?: () => void;
 }
 
 export function PDFViewer({
   url,
   scrollRoot = null,
+  restrictPreview = false,
+  onUpgradeClick,
 }: PDFViewerProps) {
   const [numPages, setNumPages] = useState(0);
   const [pageWidth, setPageWidth] = useState(900);
@@ -153,10 +158,12 @@ export function PDFViewer({
             ),
           },
           (_, i) => (
-            <PDFPage
+              <PDFPage
               key={i}
               pageNumber={i + 1}
               width={pageWidth}
+              restrictPreview={restrictPreview}
+              onUpgradeClick={onUpgradeClick}
             />
           ),
         )}

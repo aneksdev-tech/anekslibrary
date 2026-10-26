@@ -10,6 +10,8 @@ interface DocumentPreviewProps {
   filePath: string;
   title?: string;
   scrollRoot?: HTMLDivElement | null;
+  restrictPreview?: boolean;
+  onUpgradeClick?: () => void;
 }
 
 /*
@@ -119,6 +121,8 @@ export function DocumentPreview({
   filePath,
   title,
   scrollRoot = null,
+  restrictPreview = false,
+  onUpgradeClick,
 }: DocumentPreviewProps) {
   const [blob, setBlob] =
     useState<Blob>();
@@ -228,19 +232,27 @@ export function DocumentPreview({
       onContextMenu={disableContextMenu}
       className="relative select-none"
     >
-      {ext === "pdf" ? (
+            {ext === "pdf" ? (
         <PDFViewer
           url={blobUrl}
           scrollRoot={scrollRoot}
+          restrictPreview={restrictPreview}
+          onUpgradeClick={onUpgradeClick}
         />
       ) : ext === "docx" ? (
-        <DocxViewer blob={blob} />
+        <DocxViewer
+          blob={blob}
+          restrictPreview={restrictPreview}
+          onUpgradeClick={onUpgradeClick}
+        />
       ) : ["jpg", "jpeg", "png", "gif", "webp"].includes(
           ext ?? "",
         ) ? (
         <ImageViewer
           url={blobUrl}
           alt={title}
+          restrictPreview={restrictPreview}
+          onUpgradeClick={onUpgradeClick}
         />
       ) : (
         <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed bg-muted/20 p-12 text-center">
