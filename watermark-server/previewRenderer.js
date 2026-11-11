@@ -26,7 +26,7 @@ const PAGE_BATCH_SIZE = 3;
 const PREVIEW_WAIT_TIMEOUT_MS = 25000;
 const PREVIEW_POLL_INTERVAL_MS = 500;
 
-const MANIFEST_VERSION = 2;
+const MANIFEST_VERSION = 3;
 
 const activeJobs = new Map();
 
@@ -387,7 +387,7 @@ async function createWatermarkOverlay(
 ) {
   const targetWidth = Math.max(
     1,
-    Math.round(width * 0.65),
+    Math.round(width * 0.85),
   );
 
   let watermark = await sharp(WATERMARK_PATH)

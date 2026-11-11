@@ -11,6 +11,8 @@ RUN apt-get update && \
       fonts-liberation \
       fonts-dejavu-core \
       fonts-noto-core \
+      fonts-crosextra-carlito \
+      fonts-crosextra-caladea \
       ca-certificates && \
     rm -rf /var/lib/apt/lists/*
 
