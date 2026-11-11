@@ -10,6 +10,9 @@ import {
   WATERMARK,
   createWatermarkSvg,
 } from "./watermarkTemplate.js";
+import {
+  createPreviewRenderer,
+} from "./previewRenderer.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -52,6 +55,12 @@ if (!WATERMARK_SERVER_SECRET) {
     "WATERMARK_SERVER_SECRET is missing",
   );
 }
+
+createPreviewRenderer({
+  app,
+  supabase,
+  watermarkSecret: WATERMARK_SERVER_SECRET,
+});
 
 function requireWatermarkSecret(req, res, next) {
   const suppliedSecret =
@@ -317,7 +326,7 @@ app.post(
       );
 
       return res.send(output);
-    } catch (err) {
+        } catch (err) {
       console.error("PDF watermarking failed:", err);
 
       return res.status(500).json({

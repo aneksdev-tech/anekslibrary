@@ -1,15 +1,24 @@
 FROM node:22-bookworm
 
-# Install LibreOffice
+ENV NODE_ENV=production
+ENV PORT=8080
+
+# Install document conversion, PDF rasterization and fonts.
 RUN apt-get update && \
-    apt-get install -y libreoffice && \
+    apt-get install -y --no-install-recommends \
+      libreoffice-writer \
+      poppler-utils \
+      fonts-liberation \
+      fonts-dejavu-core \
+      fonts-noto-core \
+      ca-certificates && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
 COPY package*.json ./
 
-RUN npm install
+RUN npm ci --omit=dev
 
 COPY . .
 
