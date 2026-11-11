@@ -306,7 +306,7 @@ useEffect(() => {
   return (
     <div className="flex min-h-dvh w-full bg-background text-foreground">
       {/* Desktop sidebar */}
-      <aside className="fixed inset-y-0 left-0 z-40 hidden w-50 flex-col border-r border-border bg-sidebar text-sidebar-foreground md:flex lg:w-64">
+      <aside className="fixed inset-y-0 left-0 z-40 hidden w-50 flex-col border-r border-border bg-sidebar text-sidebar-foreground md:flex md:w-60 lg:w-64">
         <Link
           to="/"
           className="flex items-center gap-0.5 px-4 py-6"
@@ -379,7 +379,7 @@ useEffect(() => {
         </div>
       )}
 
-      <div className="flex min-w-0 flex-1 flex-col md:ml-50 lg:ml-64">
+      <div className="flex min-w-0 flex-1 flex-col md:ml-60 lg:ml-64">
         <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-border bg-background/80 px-4 backdrop-blur">
           {/* Mobile menu button */}
           <button
@@ -494,7 +494,7 @@ function SidebarNav({
   announcementCount: number;
 }) {
   return (
-    <nav className="flex-1 space-y-1 overflow-y-auto p-2 md:p-3">
+    <nav className="flex-1 overflow-y-auto p-2 md:space-y-0 md:p-3">
       {items.map((item) => {
         const active =
           pathname === item.to ||
@@ -522,16 +522,16 @@ function SidebarNav({
             key={item.to}
             to={item.to}
             onClick={onNavigate}
-            className={`relative flex items-center justify-start gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${
+            className={`relative flex items-center justify-start gap-3 rounded-lg px-3 py-2 text-sm transition-colors md:gap-3.5 md:px-3.5 md:py-3 lg:px-4 ${
               active
                 ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
                 : "text-muted-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground"
             }`}
             aria-label={item.label}
           >
-            <item.icon className="h-4 w-4 shrink-0" />
+            <item.icon className="h-4 w-4 shrink-0 md:h-5 md:w-5" />
 
-            <span className="min-w-0 flex-1 text-xs">
+            <span className="min-w-0 flex-1 text-xs md:text-sm">
               {item.label}
             </span>
 
