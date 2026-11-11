@@ -195,7 +195,7 @@ function getContextAuthorization(
       allowed: true,
       restricted:
         !(
-          role === "co-admin" ||
+          isAdminOrCoAdmin ||
           subscriptionPlan === "premium" ||
           isExemptCategory
         ),
