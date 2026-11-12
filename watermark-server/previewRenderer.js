@@ -428,7 +428,7 @@ async function createWatermarkOverlay(
 
   const targetWidth = Math.max(
     1,
-    Math.round(width * 0.55),
+    Math.round(width * 0.40),
   );
 
   // Extract only the visible watermark before resizing.
