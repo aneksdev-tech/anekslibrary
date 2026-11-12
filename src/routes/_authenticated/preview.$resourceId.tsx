@@ -39,15 +39,7 @@ function PreviewPage() {
   const { resourceId } = Route.useParams();
 
   const { user } = useAuth();
-  const {
-  canDownload,
-  isAdmin,
-  isPremium,
-  loading: accessLoading,
-} = useAccess();
-
-const canViewFullDocument = isAdmin || isPremium;
-
+  const { canDownload } = useAccess();
 
   const queryClient = useQueryClient();
 
@@ -124,9 +116,7 @@ const canViewFullDocument = isAdmin || isPremium;
       return {
         url:
           `${import.meta.env.VITE_SUPABASE_URL}` +
-          `/functions/v1/preview-resource?resourceId=${encodeURIComponent(
-            resource!.id,
-          )}`,
+          `/functions/v1/preview-resource`,
         accessToken: session.access_token,
       };
     },
@@ -178,21 +168,7 @@ const semesterLabel = getResourceScopeLabel(
       ? resource.category.name.trim()
       : "Uncategorized";
   
-  // These categories are exempt from the free-user preview restriction.
-  const normalizedCategoryName = categoryName
-  .trim()
-  .toLowerCase();
-
-const isPreviewExempt = [
-  "lecture timetables",
-  "publications",
-].includes(normalizedCategoryName);
-
-  // Administrators and Premium users always get the full preview.
-  const restrictPreview =
-    !canViewFullDocument && !isPreviewExempt;
-
-  const download = async () => {
+    const download = async () => {
     if (downloading) return;
 
     if (!user) {
@@ -244,7 +220,7 @@ const isPreviewExempt = [
 
   return (
     <>
-      <div className="mx-auto max-w-6xl space-y-4 sm:space-y-4">
+      <div className="mx-3 max-w-6xl space-y-4 sm:space-y-4">
         <div>
   <Button
   type="button"
@@ -430,9 +406,10 @@ const isPreviewExempt = [
             <DocumentPreview
               url={previewUrl.url}
               token={previewUrl.accessToken}
+              resourceId={resource.id}
+              context="public"
               filePath={resource.file_path}
               title={resource.title}
-              restrictPreview={restrictPreview}
               onUpgradeClick={() => setUpgradeOpen(true)}
             />
           ) : isPreviewUrlLoading ? (
