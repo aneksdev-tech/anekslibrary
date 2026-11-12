@@ -26,7 +26,7 @@ const PAGE_BATCH_SIZE = 3;
 const PREVIEW_WAIT_TIMEOUT_MS = 25000;
 const PREVIEW_POLL_INTERVAL_MS = 500;
 
-const MANIFEST_VERSION = 3;
+const MANIFEST_VERSION = 4;
 
 const activeJobs = new Map();
 
@@ -428,7 +428,7 @@ async function createWatermarkOverlay(
 
   const targetWidth = Math.max(
     1,
-    Math.round(width * 0.85),
+    Math.round(width * 0.80),
   );
 
   // Extract only the visible watermark before resizing.
@@ -1226,20 +1226,31 @@ async function runRenderJob({
       pageCount = await getPdfPageCount(pdfPath);
     }
 
-    const cachedPageNames = await listCachedPages(
-      supabase,
-      folder,
-    );
+const previousManifest = await readPreviewManifest(
+  supabase,
+  folder,
+);
 
-    const completedPages = new Set(
-      getCompletedPageNumbers(
-        cachedPageNames,
-        pageCount,
-        pageExtension,
-      ),
-    );
+const canResumeCachedPages =
+  previousManifest &&
+  previousManifest.version === MANIFEST_VERSION &&
+  previousManifest.sourceVersion === sourceVersion &&
+  previousManifest.variant === variant &&
+  previousManifest.pageCount === pageCount &&
+  previousManifest.pageExtension === pageExtension;
 
-    manifest = {
+const cachedPageNames = canResumeCachedPages
+  ? await listCachedPages(supabase, folder)
+  : [];
+
+const completedPages = new Set(
+  getCompletedPageNumbers(
+    cachedPageNames,
+    pageCount,
+    pageExtension,
+  ),
+);
+      manifest = {
       version: MANIFEST_VERSION,
       resourceId: resource.id,
       sourceVersion,
