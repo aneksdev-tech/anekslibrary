@@ -1514,23 +1514,30 @@ async function waitForRequestedPages({
       folder,
     );
 
-    if (manifest) {
-      if (
-        manifest.version !== MANIFEST_VERSION ||
-        manifest.sourceVersion !== sourceVersion ||
-        manifest.variant !== variant ||
-        !Number.isInteger(manifest.pageCount) ||
-        manifest.pageCount < 1 ||
-        !["png", "gif"].includes(manifest.pageExtension) ||
-        !["rendering", "completed", "failed"].includes(
-          manifest.status,
-        )
-      ) {
-        throw createHttpError(
-          "The preview cache is invalid.",
-          500,
-        );
-      }
+if (manifest) {
+  const isStaleManifest =
+  manifest.version !== MANIFEST_VERSION ||
+  manifest.sourceVersion !== sourceVersion ||
+  manifest.variant !== variant;
+
+if (isStaleManifest) {
+  await sleep(PREVIEW_POLL_INTERVAL_MS);
+  continue;
+}
+
+if (
+  !Number.isInteger(manifest.pageCount) ||
+  manifest.pageCount < 1 ||
+  !["png", "gif"].includes(manifest.pageExtension) ||
+  !["rendering", "completed", "failed"].includes(
+    manifest.status,
+  )
+) {
+  throw createHttpError(
+    "The preview cache is invalid.",
+    500,
+  );
+}
 
       if (pageFrom >= manifest.pageCount) {
         throw createHttpError(
