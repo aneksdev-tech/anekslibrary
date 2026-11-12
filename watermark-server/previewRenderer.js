@@ -385,12 +385,60 @@ async function createWatermarkOverlay(
   width,
   height,
 ) {
+  // Read the watermark's alpha channel.
+  const {
+    data,
+    info,
+  } = await sharp(WATERMARK_PATH)
+    .ensureAlpha()
+    .raw()
+    .toBuffer({
+      resolveWithObject: true,
+    });
+
+  // Find the actual visible watermark boundaries.
+  let minX = info.width;
+  let minY = info.height;
+  let maxX = -1;
+  let maxY = -1;
+
+  for (let y = 0; y < info.height; y++) {
+    for (let x = 0; x < info.width; x++) {
+      const alpha = data[
+        (y * info.width + x) * 4 + 3
+      ];
+
+      if (alpha > 10) {
+        minX = Math.min(minX, x);
+        minY = Math.min(minY, y);
+        maxX = Math.max(maxX, x);
+        maxY = Math.max(maxY, y);
+      }
+    }
+  }
+
+  if (maxX < minX || maxY < minY) {
+    throw new Error(
+      "Watermark image contains no visible pixels.",
+    );
+  }
+
+  const visibleWidth = maxX - minX + 1;
+  const visibleHeight = maxY - minY + 1;
+
   const targetWidth = Math.max(
     1,
     Math.round(width * 0.85),
   );
 
+  // Extract only the visible watermark before resizing.
   let watermark = await sharp(WATERMARK_PATH)
+    .extract({
+      left: minX,
+      top: minY,
+      width: visibleWidth,
+      height: visibleHeight,
+    })
     .resize({
       width: targetWidth,
       fit: "inside",
