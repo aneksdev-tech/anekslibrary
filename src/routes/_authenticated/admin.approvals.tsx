@@ -2065,21 +2065,25 @@ function PreviewModal({
       resource.id,
     ],
 
-    queryFn: async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
+queryFn: async () => {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
 
-      return {
-        url:
-          `${import.meta.env.VITE_SUPABASE_URL}` +
-          `/functions/v1/preview-resource?resourceId=${resource.id}`,
+  if (!session?.access_token) {
+    throw new Error(
+      "Your session has expired. Please sign in again.",
+    );
+  }
 
-        accessToken:
-          session?.access_token ?? "",
-      };
-    },
-  });
+  return {
+    url:
+      `${import.meta.env.VITE_SUPABASE_URL}` +
+      `/functions/v1/preview-resource`,
+    accessToken: session.access_token,
+  };
+},
+});
 
   return (
     <div
@@ -2133,6 +2137,8 @@ function PreviewModal({
             <DocumentPreview
               url={previewUrl.url}
               token={previewUrl.accessToken}
+              resourceId={resource.id}
+              context="approvals"
               filePath={resource.file_path}
               title={resource.title}
               scrollRoot={scrollRoot}

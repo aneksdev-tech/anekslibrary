@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import {  useEffect,  useMemo,  useRef,  useState  } from "react";
+import { useEffect,  useMemo,  useRef,  useState  } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CheckCircle2, Clock3, Download, X, Edit3, Eye, Filter, FileText, History, Loader2, Search, Trash2, XCircle, ChevronLeft, ChevronRight, } from "lucide-react";
 import { toast } from "sonner";
@@ -3022,10 +3022,8 @@ function PreviewModal({
   };
   onClose: () => void;
 }) {
-  const scrollRootRef =
-    useRef<HTMLDivElement>(
-      null,
-    );
+  const [scrollRoot, setScrollRoot] =
+  useState<HTMLDivElement | null>(null);
 
   const {
     data: previewUrl,
@@ -3054,12 +3052,10 @@ function PreviewModal({
 
       return {
         url:
-          `${import.meta.env.VITE_SUPABASE_URL}` +
-          `/functions/v1/preview-resource?resourceId=${encodeURIComponent(
-            resource.id,
-          )}`,
+         `${import.meta.env.VITE_SUPABASE_URL}` +
+         `/functions/v1/preview-resource`,
         accessToken:
-          session.access_token,
+        session.access_token,
       };
     },
   });
@@ -3100,7 +3096,7 @@ function PreviewModal({
         </div>
 
         <div
-          ref={scrollRootRef}
+          ref={setScrollRoot}
           className="min-h-0 flex-1 overflow-auto p-2.5 sm:p-4"
         >
           {isLoading ? (
@@ -3116,18 +3112,12 @@ function PreviewModal({
           ) : previewUrl ? (
             <DocumentPreview
               url={previewUrl.url}
-              token={
-                previewUrl.accessToken
-              }
-              filePath={
-                resource.file_path
-              }
-              title={
-                resource.title
-              }
-              scrollRoot={
-                scrollRootRef.current
-              }
+              token={previewUrl.accessToken}
+              resourceId={resource.id}
+              context="resources"
+              filePath={resource.file_path}
+              title={resource.title}
+              scrollRoot={scrollRoot}
             />
           ) : (
             <div className="flex min-h-[60vh] items-center justify-center text-xs text-muted-foreground sm:text-sm">
