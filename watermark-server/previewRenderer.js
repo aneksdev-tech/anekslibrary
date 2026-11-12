@@ -26,7 +26,7 @@ const PAGE_BATCH_SIZE = 3;
 const PREVIEW_WAIT_TIMEOUT_MS = 25000;
 const PREVIEW_POLL_INTERVAL_MS = 500;
 
-const MANIFEST_VERSION = 4;
+const MANIFEST_VERSION = 5;
 
 const activeJobs = new Map();
 
@@ -428,7 +428,7 @@ async function createWatermarkOverlay(
 
   const targetWidth = Math.max(
     1,
-    Math.round(width * 0.80),
+    Math.round(width * 0.60),
   );
 
   // Extract only the visible watermark before resizing.
@@ -676,47 +676,6 @@ async function convertDocxToPdf(
     tempDirectory,
     `${path.basename(docxPath, path.extname(docxPath))}.pdf`,
   );
-
-  // TEMPORARY FONT DIAGNOSTICS
-  try {
-    const { stdout: fontMatch } =
-      await execFileAsync(
-        "fc-match",
-        [
-          "-f",
-          "%{family}|%{style}|%{file}\\n",
-          "Times New Roman",
-        ],
-        {
-          timeout: 30000,
-          maxBuffer: 1024 * 1024,
-        },
-      );
-
-    const { stdout: pdfFonts } =
-      await execFileAsync(
-        "pdffonts",
-        [pdfPath],
-        {
-          timeout: 30000,
-          maxBuffer: 2 * 1024 * 1024,
-        },
-      );
-
-    console.log(
-      "[DOCX FONT DIAGNOSTIC]",
-      JSON.stringify({
-        document: path.basename(docxPath),
-        timesNewRomanMatch: fontMatch.trim(),
-        pdfFonts: pdfFonts.trim(),
-      }),
-    );
-  } catch (diagnosticError) {
-    console.error(
-      "[DOCX FONT DIAGNOSTIC FAILED]",
-      diagnosticError.message,
-    );
-  }
 
   return pdfPath;
 }

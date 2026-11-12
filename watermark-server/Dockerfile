@@ -14,6 +14,21 @@ RUN apt-get update && \
       fonts-crosextra-carlito \
       fonts-crosextra-caladea \
       ca-certificates && \
+    printf '%s\n' \
+      '<?xml version="1.0"?>' \
+      '<!DOCTYPE fontconfig SYSTEM "fonts.dtd">' \
+      '<fontconfig>' \
+      '  <alias binding="strong">' \
+      '    <family>Times New Roman</family>' \
+      '    <prefer><family>Liberation Serif</family></prefer>' \
+      '  </alias>' \
+      '  <alias binding="strong">' \
+      '    <family>Times-Roman</family>' \
+      '    <prefer><family>Liberation Serif</family></prefer>' \
+      '  </alias>' \
+      '</fontconfig>' \
+      > /etc/fonts/conf.d/99-aneks-font-aliases.conf && \
+    fc-cache -f && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
