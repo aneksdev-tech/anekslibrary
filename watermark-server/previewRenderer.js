@@ -26,7 +26,7 @@ const PAGE_BATCH_SIZE = 3;
 const PREVIEW_WAIT_TIMEOUT_MS = 25000;
 const PREVIEW_POLL_INTERVAL_MS = 500;
 
-const MANIFEST_VERSION = 6;
+const MANIFEST_VERSION = 7;
 
 const activeJobs = new Map();
 
