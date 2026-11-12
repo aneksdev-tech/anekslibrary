@@ -677,6 +677,47 @@ async function convertDocxToPdf(
     `${path.basename(docxPath, path.extname(docxPath))}.pdf`,
   );
 
+  // TEMPORARY FONT DIAGNOSTICS
+  try {
+    const { stdout: fontMatch } =
+      await execFileAsync(
+        "fc-match",
+        [
+          "-f",
+          "%{family}|%{style}|%{file}\\n",
+          "Times New Roman",
+        ],
+        {
+          timeout: 30000,
+          maxBuffer: 1024 * 1024,
+        },
+      );
+
+    const { stdout: pdfFonts } =
+      await execFileAsync(
+        "pdffonts",
+        [pdfPath],
+        {
+          timeout: 30000,
+          maxBuffer: 2 * 1024 * 1024,
+        },
+      );
+
+    console.log(
+      "[DOCX FONT DIAGNOSTIC]",
+      JSON.stringify({
+        document: path.basename(docxPath),
+        timesNewRomanMatch: fontMatch.trim(),
+        pdfFonts: pdfFonts.trim(),
+      }),
+    );
+  } catch (diagnosticError) {
+    console.error(
+      "[DOCX FONT DIAGNOSTIC FAILED]",
+      diagnosticError.message,
+    );
+  }
+
   return pdfPath;
 }
 
