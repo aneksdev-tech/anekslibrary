@@ -26,7 +26,7 @@ const PAGE_BATCH_SIZE = 3;
 const PREVIEW_WAIT_TIMEOUT_MS = 25000;
 const PREVIEW_POLL_INTERVAL_MS = 500;
 
-const MANIFEST_VERSION = 8;
+const MANIFEST_VERSION = 9;
 
 const activeJobs = new Map();
 
@@ -451,6 +451,19 @@ async function createWatermarkOverlay(
         alpha: 0,
       },
     })
+    .png()
+    .toBuffer();
+
+  // Reduce the existing watermark alpha to 25%.
+  const reducedAlpha = await sharp(watermark)
+    .extractChannel("alpha")
+    .linear(0.25, 0)
+    .png()
+    .toBuffer();
+
+  watermark = await sharp(watermark)
+    .removeAlpha()
+    .joinChannel(reducedAlpha)
     .png()
     .toBuffer();
 
