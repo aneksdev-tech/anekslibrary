@@ -389,6 +389,9 @@ export function DocumentPreview({
 }: DocumentPreviewProps) {
   const [pages, setPages] = useState<PreviewPage[]>([]);
 
+  const [loadedPages, setLoadedPages] =
+  useState<Set<number>>(new Set());
+
   const [pageCount, setPageCount] = useState(0);
 
    const [variant, setVariant] =
@@ -490,6 +493,7 @@ export function DocumentPreview({
       imageRefreshAttemptsRef.current.clear();
 
       setPages([]);
+      setLoadedPages(new Set());
       setPageCount(0);
       setVariant(null);
       setUpgradeRequired(false);
@@ -882,14 +886,17 @@ await refreshPromise;
    * appears after page 3 instead of exposing page 4.
    */
 const showUpgradeScreen =
-  upgradeRequired ||
+  variant === "free" &&
+  pageCount > FREE_PREVIEW_PAGE_LIMIT &&
   (
-    variant === "free" &&
-    pageCount > FREE_PREVIEW_PAGE_LIMIT &&
+    upgradeRequired ||
     pages.some(
       (page) =>
         page.pageNumber === FREE_PREVIEW_PAGE_LIMIT,
     )
+  ) &&
+  [1, 2, 3].every((pageNumber) =>
+    loadedPages.has(pageNumber),
   );
 
   if (!isSupportedFile) {
@@ -986,6 +993,13 @@ const showUpgradeScreen =
           ) : (
             <img
               src={page.url}
+              onLoad={() => {
+                setLoadedPages((previous) => {
+                  const updated = new Set(previous);
+                  updated.add(page.pageNumber);
+                  return updated;
+                });
+              }}
               alt={
                 title
                   ? `${title} — page ${page.pageNumber}`
@@ -997,9 +1011,15 @@ const showUpgradeScreen =
                   ? "eager"
                   : "lazy"
               }
-              onError={() =>
-                void refreshPageBatch(page.pageNumber)
-              }
+              onError={() => {
+                setLoadedPages((previous) => {
+                  const updated = new Set(previous);
+                  updated.delete(page.pageNumber);
+                  return updated;
+                });
+
+                void refreshPageBatch(page.pageNumber);
+              }}
               className="block h-auto w-full"
             />
           )}
