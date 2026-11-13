@@ -606,7 +606,7 @@ if (!isGlobalCategory && !form.level) {
 
   return (
     <>
-      <div className="mx-auto max-w-3xl space-y-5 sm:space-y-6">
+      <div className="mx-auto max-w-8xl space-y-5 sm:space-y-6">
         <div>
           <p className="text-[10px] uppercase tracking-[0.2em] text-gold sm:text-xs">
             {draftId ? "Draft" : "Upload"}

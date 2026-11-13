@@ -899,6 +899,16 @@ const showUpgradeScreen =
     loadedPages.has(pageNumber),
   );
 
+  const loadingPageImages = pages.some(
+  (page) =>
+    page.pageNumber > PAGE_BATCH_SIZE &&
+    !loadedPages.has(page.pageNumber) &&
+    !imageErrors.has(page.pageNumber),
+);
+
+const showLoadingMore =
+  loadingMore || loadingPageImages;
+
   if (!isSupportedFile) {
     return (
       <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed bg-muted/20 p-12 text-center">
@@ -1026,54 +1036,69 @@ const showUpgradeScreen =
         </div>
       ))}
 
-      {showUpgradeScreen && (
-        <div
-          className="relative mx-auto flex min-h-[420px] w-full items-center justify-center overflow-hidden"
-        >
-          <PreviewRestrictionOverlay
-            onUpgradeClick={onUpgradeClick}
-          />
-        </div>
+            {showUpgradeScreen && (
+        <>
+          <p
+            className="py-3 text-center text-sm font-medium text-muted-foreground"
+            aria-live="polite"
+          >
+            {pageCount - FREE_PREVIEW_PAGE_LIMIT}{" "}
+            {pageCount - FREE_PREVIEW_PAGE_LIMIT === 1
+              ? "page"
+              : "pages"}{" "}
+            remaining
+          </p>
+
+          <div className="relative mx-auto flex min-h-[420px] w-full items-center justify-center overflow-hidden">
+            <PreviewRestrictionOverlay
+              onUpgradeClick={onUpgradeClick}
+            />
+          </div>
+        </>
       )}
 
-      {hasMore && (
-        <div
-          ref={loaderRef}
-          className="flex min-h-16 items-center justify-center"
-          aria-live="polite"
-        >
-          {loadingMore && (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <LoaderCircle className="h-4 w-4 animate-spin" />
-              Loading more pages...
-            </div>
-          )}
-
-          {loadMoreError && (
-            <div className="flex flex-col items-center gap-2 text-center">
-              <p className="text-sm text-muted-foreground">
-                {loadMoreError}
-              </p>
-
-              <button
-                type="button"
-                onClick={() => void loadMorePages()}
-                className="inline-flex min-h-9 items-center gap-2 rounded-sm border border-border px-3 py-2 text-sm font-medium transition-colors hover:bg-muted"
-              >
-                <RefreshCw className="h-4 w-4" />
-                Retry loading pages
-              </button>
-            </div>
-          )}
-        </div>
-      )}
-
-      {!hasMore && !showUpgradeScreen && pageCount > 0 && (
-        <p className="py-3 text-center text-xs text-muted-foreground">
-          End of document · {pageCount}{" "}
-          {pageCount === 1 ? "page" : "pages"}
+{(hasMore || showLoadingMore || loadMoreError) && (
+  <div
+    ref={loaderRef}
+    className="flex min-h-16 items-center justify-center"
+    aria-live="polite"
+  >
+    {loadMoreError ? (
+      <div className="flex flex-col items-center gap-2 text-center">
+        <p className="text-sm text-muted-foreground">
+          {loadMoreError}
         </p>
-      )}
+
+        <button
+          type="button"
+          onClick={() => void loadMorePages()}
+          className="inline-flex min-h-9 items-center gap-2 rounded-sm border border-border px-3 py-2 text-sm font-medium transition-colors hover:bg-muted"
+        >
+          <RefreshCw className="h-4 w-4" />
+          Retry loading pages
+        </button>
+      </div>
+    ) : showLoadingMore ? (
+      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <LoaderCircle className="h-4 w-4 animate-spin" />
+        Loading more pages...
+      </div>
+    ) : null}
+  </div>
+)}
+        {!hasMore &&
+          !showUpgradeScreen &&
+          !(variant === "free" && pageCount > FREE_PREVIEW_PAGE_LIMIT) &&
+          pageCount > 0 &&
+          pages.length === pageCount &&
+          pages.every((page) =>
+          loadedPages.has(page.pageNumber),
+        ) && (
+          <p className="py-3 text-center text-xs text-muted-foreground">
+            End of document · {pageCount}{" "}
+            {pageCount === 1 ? "page" : "pages"}
+          </p>
+        )}
     </div>
   );
 }

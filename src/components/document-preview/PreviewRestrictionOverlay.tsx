@@ -17,22 +17,23 @@ export function PreviewRestrictionOverlay({
         <LockKeyhole className="h-8 w-8 text-gold" />
       </div>
 
-      <h3 className="mt-5 text-lg font-semibold">
-        Premium Preview
+      <h3 className="mt-5 text-base font-semibold sm:text-lg">
+        Continue with Premium
       </h3>
 
-      <p className="mt-2 max-w-md text-sm leading-relaxed text-muted-foreground">
-        You've reached the free preview limit for this document.
-        Upgrade to Premium to read the full document.
+      <p className="mt-2 max-w-lg text-sm leading-relaxed text-muted-foreground lg:text-lg">
+        Unlock the remaining pages and enjoy full access to exclusive academic resources and other Premium benefits.
       </p>
 
       {onUpgradeClick && (
         <button
           type="button"
           onClick={onUpgradeClick}
-          className="mt-5 inline-flex min-h-10 items-center justify-center rounded-sm bg-primary px-5 py-2 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
+          className="group mt-5 inline-flex min-h-10 w-50 items-center justify-center rounded-sm bg-gradient-emerald px-5 py-2 text-sm font-medium text-primary-foreground shadow-elegant transition-all hover:bg-none hover:bg-accent hover:shadow-md"
         >
-          Upgrade to Premium
+          <span className="transition-colors group-hover:text-primary">
+            Upgrade to Premium
+          </span>
         </button>
       )}
     </div>

@@ -525,13 +525,13 @@ function ProfilePage() {
   };
 
   return (
-    <div className="mx-auto w-full max-w-6xl">
+    <div className="mx-auto w-full max-w-8xl">
       <div className="mb-5 sm:mb-6">
         <p className="text-[10px] uppercase tracking-[0.2em] text-gold sm:text-xs">
           Profile
         </p>
 
-        <h1 className="mt-1 font-display text-lg font-semibold sm:text-2xl">
+        <h1 className="mt-3 font-display text-3xl font-semibold sm:text-4xl md:mt-3 md:text-[1.7rem] lg:mt-3 lg:text-4xl">
           Your account
         </h1>
 

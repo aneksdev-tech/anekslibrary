@@ -81,11 +81,6 @@ const NAV: NavItem[] = [
     label: "Bookmarks",
   },
   {
-    to: "/premium",
-    icon: Crown,
-    label: "Premium",
-  },
-  {
     to: "/notifications",
     icon: Bell,
     label: "Notifications",
@@ -94,6 +89,11 @@ const NAV: NavItem[] = [
     to: "/announcements",
     icon: Megaphone,
     label: "Announcements",
+  },
+  {
+    to: "/premium",
+    icon: Crown,
+    label: "Premium",
   },
   {
     to: "/profile",
