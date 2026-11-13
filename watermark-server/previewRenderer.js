@@ -26,7 +26,7 @@ const PAGE_BATCH_SIZE = 3;
 const PREVIEW_WAIT_TIMEOUT_MS = 25000;
 const PREVIEW_POLL_INTERVAL_MS = 500;
 
-const MANIFEST_VERSION = 7;
+const MANIFEST_VERSION = 8;
 
 const activeJobs = new Map();
 
@@ -428,7 +428,7 @@ async function createWatermarkOverlay(
 
   const targetWidth = Math.max(
     1,
-    Math.round(width * 0.40),
+    Math.round(width * 0.50),
   );
 
   // Extract only the visible watermark before resizing.
