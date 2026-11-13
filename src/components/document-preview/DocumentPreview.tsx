@@ -14,6 +14,8 @@ type PreviewContext =
   | "approvals"
   | "resources";
 
+type PreviewVariant = "full" | "free";
+
 interface PreviewPage {
   pageNumber: number;
   url: string;
@@ -22,11 +24,14 @@ interface PreviewPage {
 interface PreviewResponse {
   resourceId: string;
   pageCount: number;
+  renderedPageCount: number;
   pageFrom: number;
-  variant: "full" | "restricted";
+  variant: PreviewVariant;
   pages: PreviewPage[];
   nextPageFrom: number | null;
   hasMore: boolean;
+  upgradeRequired: boolean;
+  upgradePage: number | null;
   renderingStatus: "rendering" | "completed" | "failed";
 }
 
@@ -55,7 +60,9 @@ interface DocumentPreviewProps {
 }
 
 const PAGE_BATCH_SIZE = 3;
+const FREE_PREVIEW_PAGE_LIMIT = 3;
 const MAX_PREPARATION_TIME_MS = 5 * 60 * 1000;
+const MAX_AUTOMATIC_IMAGE_REFRESHES = 2;
 
 function getFileExtension(filePath: string) {
   return filePath
@@ -163,9 +170,11 @@ async function requestPreviewBatch({
       signal,
     });
 
-    const data = await response.json().catch(() => null);
+    const data = await response
+      .json()
+      .catch(() => null);
 
-    /*
+    /**
      * The renderer has not completed the requested batch.
      * Wait and retry instead of treating HTTP 202 as an error.
      */
@@ -196,39 +205,151 @@ async function requestPreviewBatch({
       );
     }
 
-        if (
+    if (
       !data ||
       data.resourceId !== resourceId ||
       data.pageFrom !== pageFrom ||
-      !Number.isInteger(data.pageCount) ||
+      !Number.isSafeInteger(data.pageCount) ||
       data.pageCount < 1 ||
-      pageFrom >= data.pageCount ||
-      !["full", "restricted"].includes(
-        data.variant,
-      ) ||
+      !Number.isSafeInteger(data.renderedPageCount) ||
+      data.renderedPageCount < 0 ||
+      data.renderedPageCount > data.pageCount ||
+      pageFrom > data.pageCount ||
+      !["full", "free"].includes(data.variant) ||
       !Array.isArray(data.pages) ||
-      data.pages.length === 0 ||
       data.pages.length > PAGE_BATCH_SIZE ||
-      data.pages.length > data.pageCount - pageFrom ||
       typeof data.hasMore !== "boolean" ||
       !(
         data.nextPageFrom === null ||
-        Number.isInteger(data.nextPageFrom)
+        Number.isSafeInteger(data.nextPageFrom)
       ) ||
-      data.nextPageFrom !==
-        (
-          data.hasMore
-            ? pageFrom + data.pages.length
-            : null
-        ) ||
-      data.hasMore !==
-        (pageFrom + data.pages.length < data.pageCount) ||
-      !["rendering", "completed", "failed"].includes(
-        data.renderingStatus,
-      )
+      typeof data.upgradeRequired !== "boolean" ||
+      !(
+        data.upgradePage === null ||
+        Number.isSafeInteger(data.upgradePage)
+      ) ||
+      ![
+        "rendering",
+        "completed",
+        "failed",
+      ].includes(data.renderingStatus)
     ) {
       throw new Error(
         "The preview server returned an invalid response.",
+      );
+    }
+
+    const isFreeVariant =
+      data.variant === "free";
+
+    /**
+     * Validate the server's Free preview page limit.
+     */
+    if (
+      isFreeVariant &&
+      (
+        data.renderedPageCount >
+          FREE_PREVIEW_PAGE_LIMIT ||
+        (
+          data.pageCount <= FREE_PREVIEW_PAGE_LIMIT &&
+          data.renderedPageCount !== data.pageCount
+        ) ||
+        (
+          data.pageCount > FREE_PREVIEW_PAGE_LIMIT &&
+          data.renderedPageCount !== FREE_PREVIEW_PAGE_LIMIT
+        )
+      )
+    ) {
+      throw new Error(
+        "The preview server returned inconsistent Free preview limits.",
+      );
+    }
+
+    /**
+     * A full variant must expose the complete document.
+     */
+    if (
+      !isFreeVariant &&
+      data.renderedPageCount !== data.pageCount
+    ) {
+      throw new Error(
+        "The preview server returned inconsistent full-preview metadata.",
+      );
+    }
+
+    /**
+     * Handle the dedicated Premium upgrade response.
+     * No page URLs are accepted in this response.
+     */
+    if (data.upgradeRequired) {
+      if (
+        !isFreeVariant ||
+        data.pageCount <= FREE_PREVIEW_PAGE_LIMIT ||
+        data.renderedPageCount !== FREE_PREVIEW_PAGE_LIMIT ||
+        data.upgradePage !== FREE_PREVIEW_PAGE_LIMIT + 1 ||
+        pageFrom < FREE_PREVIEW_PAGE_LIMIT ||
+        pageFrom >= data.pageCount ||
+        data.pages.length !== 0 ||
+        data.hasMore ||
+        data.nextPageFrom !== null
+      ) {
+        throw new Error(
+          "The preview server returned invalid upgrade metadata.",
+        );
+      }
+
+      return data as PreviewResponse;
+    }
+
+    if (data.upgradePage !== null) {
+      throw new Error(
+        "The preview server returned unexpected upgrade metadata.",
+      );
+    }
+
+    /**
+     * Ordinary page responses must contain actual pages.
+     */
+    if (
+      pageFrom >= data.renderedPageCount ||
+      data.pages.length === 0 ||
+      data.pages.length >
+        data.renderedPageCount - pageFrom
+    ) {
+      throw new Error(
+        "The preview server returned an invalid page range.",
+      );
+    }
+
+    /**
+     * Free users must never receive page 4 or later.
+     */
+    if (
+      isFreeVariant &&
+      data.pageCount > FREE_PREVIEW_PAGE_LIMIT &&
+      pageFrom + data.pages.length >
+        FREE_PREVIEW_PAGE_LIMIT
+    ) {
+      throw new Error(
+        "The preview server returned pages beyond the Free preview limit.",
+      );
+    }
+
+    const expectedHasMore =
+      pageFrom + data.pages.length <
+      data.renderedPageCount;
+
+    const expectedNextPageFrom =
+      expectedHasMore
+        ? pageFrom + data.pages.length
+        : null;
+
+    if (
+      data.hasMore !== expectedHasMore ||
+      data.nextPageFrom !== expectedNextPageFrom
+    ) {
+      throw new Error(
+        "The preview server returned inconsistent pagination metadata.",
       );
     }
 
@@ -236,7 +357,7 @@ async function requestPreviewBatch({
 
     const validPages = pages.every(
       (page, index) =>
-        Number.isInteger(page.pageNumber) &&
+        Number.isSafeInteger(page.pageNumber) &&
         page.pageNumber === pageFrom + index + 1 &&
         typeof page.url === "string" &&
         page.url.startsWith("https://"),
@@ -267,11 +388,14 @@ export function DocumentPreview({
   onUpgradeClick,
 }: DocumentPreviewProps) {
   const [pages, setPages] = useState<PreviewPage[]>([]);
+
   const [pageCount, setPageCount] = useState(0);
 
-  const [variant, setVariant] = useState<
-    "full" | "restricted" | null
-  >(null);
+   const [variant, setVariant] =
+    useState<PreviewVariant | null>(null);
+
+  const [upgradeRequired, setUpgradeRequired] =
+    useState(false);
 
   const [nextPageFrom, setNextPageFrom] =
     useState<number | null>(null);
@@ -293,12 +417,23 @@ export function DocumentPreview({
   const [retryInitial, setRetryInitial] =
     useState(0);
 
+  const [imageErrors, setImageErrors] =
+    useState<Set<number>>(new Set());
+
   const loaderRef = useRef<HTMLDivElement>(null);
 
   const loadingMoreRef = useRef(false);
 
   const controllersRef = useRef(
     new Set<AbortController>(),
+  );
+
+  const imageRefreshAttemptsRef = useRef(
+    new Map<number, number>(),
+  );
+
+  const refreshingBatchesRef = useRef(
+    new Map<number, Promise<void>>(),
   );
 
   const extension = getFileExtension(filePath);
@@ -313,7 +448,7 @@ export function DocumentPreview({
     "webp",
   ].includes(extension ?? "");
 
-  /*
+  /**
    * Cancel outstanding requests when this component
    * is unmounted.
    */
@@ -324,10 +459,11 @@ export function DocumentPreview({
       );
 
       controllersRef.current.clear();
+      refreshingBatchesRef.current.clear();
     };
   }, []);
 
-  /*
+  /**
    * Load the first batch of processed pages.
    *
    * The browser never downloads the original resource.
@@ -345,12 +481,18 @@ export function DocumentPreview({
 
     async function loadInitialPages() {
       setLoadingInitial(true);
+      loadingMoreRef.current = false;
+      setLoadingMore(false);
       setPreviewError("");
       setLoadMoreError("");
+      setImageErrors(new Set());
+
+      imageRefreshAttemptsRef.current.clear();
 
       setPages([]);
       setPageCount(0);
       setVariant(null);
+      setUpgradeRequired(false);
       setNextPageFrom(null);
       setHasMore(false);
 
@@ -368,9 +510,17 @@ export function DocumentPreview({
           return;
         }
 
+        if (result.upgradeRequired) {
+          setUpgradeRequired(true);
+          setPageCount(result.pageCount);
+          setVariant(result.variant);
+          return;
+        }
+
         setPages(result.pages);
         setPageCount(result.pageCount);
         setVariant(result.variant);
+        setUpgradeRequired(result.upgradeRequired);
         setNextPageFrom(result.nextPageFrom);
         setHasMore(result.hasMore);
       } catch (error) {
@@ -399,10 +549,17 @@ export function DocumentPreview({
 
     loadInitialPages();
 
-    return () => {
-      controller.abort();
-      controllersRef.current.delete(controller);
-    };
+return () => {
+  controllersRef.current.forEach(
+    (activeController) => activeController.abort(),
+  );
+
+  controllersRef.current.clear();
+
+  loadingMoreRef.current = false;
+
+  refreshingBatchesRef.current.clear();
+};
   }, [
     url,
     token,
@@ -413,7 +570,7 @@ export function DocumentPreview({
     isSupportedFile,
   ]);
 
-  /*
+  /**
    * Request the next batch when the user approaches
    * the bottom of the currently displayed pages.
    */
@@ -451,6 +608,13 @@ export function DocumentPreview({
         return;
       }
 
+      if (result.upgradeRequired) {
+        setUpgradeRequired(true);
+        setHasMore(false);
+        setNextPageFrom(null);
+        return;
+      }
+
       setPages((previousPages) => {
         const existingPageNumbers = new Set(
           previousPages.map(
@@ -460,9 +624,7 @@ export function DocumentPreview({
 
         const newPages = result.pages.filter(
           (page) =>
-            !existingPageNumbers.has(
-              page.pageNumber,
-            ),
+            !existingPageNumbers.has(page.pageNumber),
         );
 
         return [
@@ -476,6 +638,7 @@ export function DocumentPreview({
 
       setPageCount(result.pageCount);
       setVariant(result.variant);
+      setUpgradeRequired(result.upgradeRequired);
       setNextPageFrom(result.nextPageFrom);
       setHasMore(result.hasMore);
     } catch (error) {
@@ -493,15 +656,14 @@ export function DocumentPreview({
           ? error.message
           : "Unable to load additional pages.",
       );
-    } finally {
-      controllersRef.current.delete(controller);
+} finally {
+  controllersRef.current.delete(controller);
 
-      loadingMoreRef.current = false;
-
-      if (!controller.signal.aborted) {
-        setLoadingMore(false);
-      }
-    }
+  if (!controller.signal.aborted) {
+    loadingMoreRef.current = false;
+    setLoadingMore(false);
+  }
+}
   }, [
     url,
     token,
@@ -513,7 +675,157 @@ export function DocumentPreview({
     loadingMore,
   ]);
 
-  /*
+  /**
+   * Refresh signed URLs for a batch when an image
+   * request fails.
+   *
+   * This is useful when a signed URL has expired.
+   * It also allows recovery from temporary image
+   * request failures.
+   */
+  const refreshPageBatch = useCallback(
+    async (pageNumber: number) => {
+      const pageFrom =
+        Math.floor(
+          (pageNumber - 1) / PAGE_BATCH_SIZE,
+        ) * PAGE_BATCH_SIZE;
+
+      const existingRefresh =
+        refreshingBatchesRef.current.get(pageFrom);
+
+      if (existingRefresh) {
+        await existingRefresh;
+        return;
+      }
+
+      const attempts =
+        imageRefreshAttemptsRef.current.get(pageNumber) ?? 0;
+
+      if (attempts >= MAX_AUTOMATIC_IMAGE_REFRESHES) {
+        setImageErrors((previous) => {
+          const updated = new Set(previous);
+          updated.add(pageNumber);
+          return updated;
+        });
+
+        return;
+      }
+
+      imageRefreshAttemptsRef.current.set(
+        pageNumber,
+        attempts + 1,
+      );
+
+      const controller = new AbortController();
+
+      controllersRef.current.add(controller);
+
+let refreshPromise!: Promise<void>;
+
+refreshPromise = (async () => {
+  try {
+    const result = await requestPreviewBatch({
+      url,
+      token,
+      resourceId,
+      context,
+      pageFrom,
+      signal: controller.signal,
+    });
+
+    if (
+      controller.signal.aborted ||
+      result.upgradeRequired
+    ) {
+      throw new Error(
+        "Unable to refresh this preview page.",
+      );
+    }
+
+    setPages((previousPages) =>
+      previousPages.map((existingPage) => {
+        const refreshedPage = result.pages.find(
+          (page) =>
+            page.pageNumber === existingPage.pageNumber,
+        );
+
+        return refreshedPage
+          ? refreshedPage
+          : existingPage;
+      }),
+    );
+
+    setImageErrors((previous) => {
+      const updated = new Set(previous);
+
+      result.pages.forEach((page) => {
+        updated.delete(page.pageNumber);
+      });
+
+      return updated;
+    });
+  } catch (error) {
+    if (controller.signal.aborted) {
+      return;
+    }
+
+    console.error(
+      `Unable to refresh preview page ${pageNumber}:`,
+      error,
+    );
+
+    setImageErrors((previous) => {
+      const updated = new Set(previous);
+      updated.add(pageNumber);
+      return updated;
+    });
+  } finally {
+    controllersRef.current.delete(controller);
+
+    if (
+      refreshingBatchesRef.current.get(pageFrom) ===
+      refreshPromise
+    ) {
+      refreshingBatchesRef.current.delete(pageFrom);
+    }
+  }
+})();
+
+refreshingBatchesRef.current.set(
+  pageFrom,
+  refreshPromise,
+);
+
+await refreshPromise;
+    },
+    [
+      url,
+      token,
+      resourceId,
+      context,
+    ],
+  );
+
+  /**
+   * Manually retry a page whose automatic URL
+   * refresh attempts have been exhausted.
+   */
+  const retryImagePage = useCallback(
+    async (pageNumber: number) => {
+      imageRefreshAttemptsRef.current.delete(pageNumber);
+
+      setImageErrors((previous) => {
+        const updated = new Set(previous);
+        updated.delete(pageNumber);
+        return updated;
+      });
+
+      await refreshPageBatch(pageNumber);
+    },
+    [refreshPageBatch],
+  );
+
+  /**
    * Infinite scrolling.
    *
    * The supplied scrollRoot supports both the dedicated
@@ -563,6 +875,22 @@ export function DocumentPreview({
   ) => {
     event.preventDefault();
   };
+
+  /**
+   * The first three pages are fully displayed.
+   * For a long Free preview, the upgrade screen
+   * appears after page 3 instead of exposing page 4.
+   */
+const showUpgradeScreen =
+  upgradeRequired ||
+  (
+    variant === "free" &&
+    pageCount > FREE_PREVIEW_PAGE_LIMIT &&
+    pages.some(
+      (page) =>
+        page.pageNumber === FREE_PREVIEW_PAGE_LIMIT,
+    )
+  );
 
   if (!isSupportedFile) {
     return (
@@ -636,29 +964,57 @@ export function DocumentPreview({
           key={`${resourceId}-${page.pageNumber}`}
           className="relative mx-auto w-full overflow-hidden"
         >
-          <img
-            src={page.url}
-            alt={
-              title
-                ? `${title} — page ${page.pageNumber}`
-                : `Document page ${page.pageNumber}`
-            }
-            draggable={false}
-            loading={
-              page.pageNumber <= PAGE_BATCH_SIZE
-                ? "eager"
-                : "lazy"
-            }
-            className="block h-auto w-full"
-          />
+          {imageErrors.has(page.pageNumber) ? (
+            <div className="flex min-h-[300px] flex-col items-center justify-center gap-3 bg-muted/30 p-6 text-center">
+              <FileText className="h-8 w-8 text-muted-foreground" />
 
-          {variant === "restricted" && (
-            <PreviewRestrictionOverlay
-              onUpgradeClick={onUpgradeClick}
+              <p className="text-sm text-muted-foreground">
+                Unable to load page {page.pageNumber}.
+              </p>
+
+              <button
+                type="button"
+                onClick={() =>
+                  void retryImagePage(page.pageNumber)
+                }
+                className="inline-flex min-h-9 items-center gap-2 rounded-sm border border-border px-3 py-2 text-sm font-medium transition-colors hover:bg-muted"
+              >
+                <RefreshCw className="h-4 w-4" />
+                Retry page
+              </button>
+            </div>
+          ) : (
+            <img
+              src={page.url}
+              alt={
+                title
+                  ? `${title} — page ${page.pageNumber}`
+                  : `Document page ${page.pageNumber}`
+              }
+              draggable={false}
+              loading={
+                page.pageNumber <= PAGE_BATCH_SIZE
+                  ? "eager"
+                  : "lazy"
+              }
+              onError={() =>
+                void refreshPageBatch(page.pageNumber)
+              }
+              className="block h-auto w-full"
             />
           )}
         </div>
       ))}
+
+      {showUpgradeScreen && (
+        <div
+          className="relative mx-auto flex min-h-[420px] w-full items-center justify-center overflow-hidden"
+        >
+          <PreviewRestrictionOverlay
+            onUpgradeClick={onUpgradeClick}
+          />
+        </div>
+      )}
 
       {hasMore && (
         <div
@@ -692,7 +1048,7 @@ export function DocumentPreview({
         </div>
       )}
 
-      {!hasMore && pageCount > 0 && (
+      {!hasMore && !showUpgradeScreen && pageCount > 0 && (
         <p className="py-3 text-center text-xs text-muted-foreground">
           End of document · {pageCount}{" "}
           {pageCount === 1 ? "page" : "pages"}

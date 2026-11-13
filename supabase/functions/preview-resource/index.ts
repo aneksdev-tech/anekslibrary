@@ -8,6 +8,7 @@ const corsHeaders = {
 };
 
 const PAGE_BATCH_SIZE = 3;
+const FREE_PREVIEW_PAGE_LIMIT = 3;
 const SIGNED_URL_EXPIRY = 300;
 
 const VALID_CONTEXTS = [
@@ -16,6 +17,13 @@ const VALID_CONTEXTS = [
   "approvals",
   "resources",
 ] as const;
+
+type PreviewVariant = "full" | "free";
+
+type SignedPage = {
+  pageNumber: number;
+  url: string;
+};
 
 function jsonResponse(
   body: Record<string, unknown>,
@@ -43,7 +51,7 @@ function isValidRendererUrl(value: string) {
     const url = new URL(value);
 
     return (
-      (url.protocol === "https:" || url.protocol === "http:") &&
+      url.protocol === "https:" &&
       !url.username &&
       !url.password
     );
@@ -55,7 +63,7 @@ function isValidRendererUrl(value: string) {
 function isValidPreviewPath(
   objectPath: unknown,
   resourceId: string,
-  variant: string,
+  variant: PreviewVariant,
   expectedPageNumber: number,
 ) {
   if (typeof objectPath !== "string") {
@@ -92,13 +100,29 @@ function isValidPreviewPath(
   }
 
   const fileName = objectPath.split("/").pop() ?? "";
-  const pageMatch = fileName.match(/^page-(\d{6})\.(png|gif)$/i);
+  const pageMatch = fileName.match(
+    /^page-(\d{6})\.(png|gif)$/i,
+  );
 
   if (!pageMatch) {
     return false;
   }
 
   return Number(pageMatch[1]) === expectedPageNumber;
+}
+
+function isNonNegativeInteger(value: unknown): value is number {
+  return Number.isSafeInteger(value) && (value as number) >= 0;
+}
+
+function isPositiveInteger(value: unknown): value is number {
+  return Number.isSafeInteger(value) && (value as number) >= 1;
+}
+
+function isPreviewVariant(
+  value: unknown,
+): value is PreviewVariant {
+  return value === "full" || value === "free";
 }
 
 Deno.serve(async (req) => {
@@ -166,7 +190,9 @@ Deno.serve(async (req) => {
     }
 
     if (!isValidRendererUrl(rendererUrl)) {
-      console.error("Preview renderer URL is invalid.");
+      console.error(
+        "Preview renderer URL must use HTTPS and contain no credentials.",
+      );
 
       return jsonResponse(
         { error: "Preview service is not configured correctly." },
@@ -266,27 +292,21 @@ Deno.serve(async (req) => {
     const requestedPageFrom =
       body.pageFrom === undefined ? 0 : body.pageFrom;
 
-    if (
-      !Number.isInteger(requestedPageFrom) ||
-      (requestedPageFrom as number) < 0
-    ) {
+    if (!isNonNegativeInteger(requestedPageFrom)) {
       return jsonResponse(
         { error: "Invalid pageFrom value." },
         400,
       );
     }
 
-    const pageFrom = requestedPageFrom as number;
+    const pageFrom = requestedPageFrom;
 
     const requestedPageCount =
       body.pageCount === undefined
         ? PAGE_BATCH_SIZE
         : body.pageCount;
 
-    if (
-      !Number.isInteger(requestedPageCount) ||
-      (requestedPageCount as number) < 1
-    ) {
+    if (!isPositiveInteger(requestedPageCount)) {
       return jsonResponse(
         { error: "Invalid pageCount value." },
         400,
@@ -294,7 +314,7 @@ Deno.serve(async (req) => {
     }
 
     const pageCount = Math.min(
-      requestedPageCount as number,
+      requestedPageCount,
       PAGE_BATCH_SIZE,
     );
 
@@ -358,8 +378,7 @@ Deno.serve(async (req) => {
      * The renderer uses HTTP 202 while the requested
      * pages are still being prepared.
      *
-     * Do not treat this as an error and do not attempt
-     * to sign URLs until pages are actually ready.
+     * Do not sign URLs or treat this as completed data.
      */
     if (rendererResponse.status === 202) {
       const suppliedRetryAfter = rendererData.retryAfterMs;
@@ -418,33 +437,36 @@ Deno.serve(async (req) => {
     }
 
     /*
-     * Validate the renderer's progressive response.
+     * Validate the renderer's core response metadata.
      *
-     * A successful response may contain fewer than
-     * three pages when fewer pages remain in the resource.
+     * pageCount:
+     *   Total pages in the original resource.
+     *
+     * renderedPageCount:
+     *   Pages actually available in this preview variant.
      */
     const rendererPageCount = rendererData.pageCount;
+    const renderedPageCount = rendererData.renderedPageCount;
     const rendererPageFrom = rendererData.pageFrom;
     const variant = rendererData.variant;
     const allPages = rendererData.pages;
     const renderingStatus = rendererData.renderingStatus;
 
     if (
-      !Number.isInteger(rendererPageCount) ||
-      (rendererPageCount as number) < 1 ||
-      !Number.isInteger(rendererPageFrom) ||
+      !isPositiveInteger(rendererPageCount) ||
+      !isNonNegativeInteger(renderedPageCount) ||
+      (renderedPageCount as number) > (rendererPageCount as number) ||
+      !isNonNegativeInteger(rendererPageFrom) ||
       rendererPageFrom !== pageFrom ||
-      (variant !== "full" && variant !== "restricted") ||
+      !isPreviewVariant(variant) ||
       !Array.isArray(allPages) ||
-      allPages.length < 1 ||
       allPages.length > pageCount ||
-      pageFrom + allPages.length > (rendererPageCount as number) ||
       (renderingStatus !== "rendering" &&
         renderingStatus !== "completed" &&
         renderingStatus !== "failed")
     ) {
       console.error(
-        "Renderer returned an invalid progressive preview response.",
+        "Renderer returned invalid preview metadata.",
       );
 
       return jsonResponse(
@@ -457,10 +479,147 @@ Deno.serve(async (req) => {
     }
 
     /*
-     * Validate pagination metadata.
+     * Validate the Free preview policy.
+     *
+     * A Free variant must never expose more than
+     * three rendered pages.
+     */
+    if (
+      variant === "free" &&
+      renderedPageCount > FREE_PREVIEW_PAGE_LIMIT
+    ) {
+      console.error(
+        "Renderer exceeded the Free preview page limit.",
+      );
+
+      return jsonResponse(
+        {
+          error:
+            "The preview renderer returned invalid page data.",
+        },
+        502,
+      );
+    }
+
+    /*
+     * Validate upgrade metadata.
+     *
+     * The renderer returns an upgrade response when
+     * a Free user requests the restricted page boundary.
+     */
+    const upgradeRequired = rendererData.upgradeRequired;
+    const upgradePage = rendererData.upgradePage;
+
+    if (typeof upgradeRequired !== "boolean") {
+      console.error(
+        "Renderer returned invalid upgrade metadata.",
+      );
+
+      return jsonResponse(
+        {
+          error:
+            "The preview renderer returned invalid upgrade data.",
+        },
+        502,
+      );
+    }
+
+    if (upgradeRequired) {
+      if (
+        variant !== "free" ||
+        rendererPageCount <= FREE_PREVIEW_PAGE_LIMIT ||
+        renderedPageCount !== FREE_PREVIEW_PAGE_LIMIT ||
+        upgradePage !== FREE_PREVIEW_PAGE_LIMIT + 1 ||
+        pageFrom < FREE_PREVIEW_PAGE_LIMIT ||
+        pageFrom >= rendererPageCount ||
+        allPages.length !== 0 ||
+        rendererData.hasMore !== false ||
+        rendererData.nextPageFrom !== null
+      ) {
+        console.error(
+          "Renderer returned an inconsistent Premium upgrade response.",
+        );
+
+        return jsonResponse(
+          {
+            error:
+              "The preview renderer returned invalid upgrade data.",
+          },
+          502,
+        );
+      }
+
+      /*
+       * Forward the upgrade boundary without signing
+       * or exposing any additional page paths.
+       */
+      return jsonResponse({
+        resourceId,
+        pageCount: rendererPageCount,
+        renderedPageCount,
+        pageFrom,
+        variant,
+        pages: [],
+        nextPageFrom: null,
+        hasMore: false,
+        upgradeRequired: true,
+        upgradePage,
+        renderingStatus,
+      });
+    }
+
+    /*
+     * A response without an upgrade screen must not
+     * claim to be at or beyond the restricted boundary.
+     */
+    if (
+      variant === "free" &&
+      rendererPageCount > FREE_PREVIEW_PAGE_LIMIT &&
+      pageFrom >= FREE_PREVIEW_PAGE_LIMIT
+    ) {
+      console.error(
+        "Renderer failed to enforce the Free preview upgrade boundary.",
+      );
+
+      return jsonResponse(
+        {
+          error:
+            "The preview renderer returned invalid page data.",
+        },
+        502,
+      );
+    }
+
+    /*
+     * Validate the requested page range.
+     *
+     * A successful ordinary response must contain
+     * at least one page.
+     */
+    if (
+      allPages.length < 1 ||
+      pageFrom + allPages.length > (renderedPageCount as number)
+    ) {
+      console.error(
+        "Renderer returned an invalid page range.",
+      );
+
+      return jsonResponse(
+        {
+          error:
+            "The preview renderer returned invalid page data.",
+        },
+        502,
+      );
+    }
+
+    /*
+     * Validate pagination metadata against the number
+     * of pages actually rendered, not the original
+     * resource page count.
      */
     const nextPageFrom = pageFrom + allPages.length;
-    const hasMore = nextPageFrom < (rendererPageCount as number);
+    const hasMore = nextPageFrom < (renderedPageCount as number);
 
     if (
       rendererData.hasMore !== hasMore ||
@@ -489,7 +648,11 @@ Deno.serve(async (req) => {
      */
     const selectedPages = allPages as unknown[];
 
-    for (let index = 0; index < selectedPages.length; index++) {
+    for (
+      let index = 0;
+      index < selectedPages.length;
+      index++
+    ) {
       const expectedPageNumber = pageFrom + index + 1;
 
       if (
@@ -523,10 +686,7 @@ Deno.serve(async (req) => {
       serviceRoleKey,
     );
 
-    const signedPages: Array<{
-      pageNumber: number;
-      url: string;
-    }> = [];
+    const signedPages: SignedPage[] = [];
 
     for (
       let index = 0;
@@ -570,7 +730,8 @@ Deno.serve(async (req) => {
     }
 
     /*
-     * Return the ready pages and pagination information.
+     * Return the ready pages and complete pagination
+     * metadata.
      *
      * The client can request the next batch using
      * nextPageFrom while hasMore is true.
@@ -578,11 +739,14 @@ Deno.serve(async (req) => {
     return jsonResponse({
       resourceId,
       pageCount: rendererPageCount,
+      renderedPageCount,
       pageFrom,
       variant,
       pages: signedPages,
       nextPageFrom: hasMore ? nextPageFrom : null,
       hasMore,
+      upgradeRequired: false,
+      upgradePage: null,
       renderingStatus,
     });
   } catch (error) {

@@ -8,40 +8,33 @@ export function PreviewRestrictionOverlay({
   onUpgradeClick,
 }: PreviewRestrictionOverlayProps) {
   return (
-    <>
-      {/* Frosted-glass cover over the right half */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-y-0 left-1/2 z-20 w-1/2 border-l border-border/40 bg-background/75 shadow-[-8px_0_24px_rgba(0,0,0,0.04)] backdrop-blur-xl"
-        style={{
-          WebkitBackdropFilter: "blur(24px)",
-        }}
-      />
-
-      {/* Premium upgrade prompt */}
-      <div className="absolute right-2 top-1/2 z-20 w-[46%] -translate-y-1/2 sm:right-4">
-        <div className="p-2 text-center sm:p-4">
-          <LockKeyhole className="mx-auto h-4 w-4 text-gold sm:h-6 sm:w-6" />
-
-          <p className="mt-1 text-[10px] font-semibold leading-tight sm:mt-2 sm:text-sm">
-            Premium Preview
-          </p>
-
-          <p className="mt-1 text-[10px] leading-relaxed text-muted-foreground sm:mt-2 sm:text-xs">
-            Upgrade to read the full document.
-          </p>
-
-          {onUpgradeClick && (
-            <button
-              type="button"
-              onClick={onUpgradeClick}
-              className="mt-2 inline-flex min-h-7 items-center justify-center rounded-sm bg-primary px-2 py-1 text-[10px] font-medium text-primary-foreground transition-opacity hover:opacity-90 sm:mt-3 sm:min-h-9 sm:px-3 sm:text-xs"
-            >
-              Upgrade
-            </button>
-          )}
-        </div>
+    <div
+      className="flex min-h-[420px] w-full flex-col items-center justify-center rounded-sm border border-border bg-muted/20 px-6 py-12 text-center"
+      role="region"
+      aria-label="Premium preview restriction"
+    >
+      <div className="rounded-full bg-primary/10 p-4">
+        <LockKeyhole className="h-8 w-8 text-gold" />
       </div>
-    </>
+
+      <h3 className="mt-5 text-lg font-semibold">
+        Premium Preview
+      </h3>
+
+      <p className="mt-2 max-w-md text-sm leading-relaxed text-muted-foreground">
+        You've reached the free preview limit for this document.
+        Upgrade to Premium to read the full document.
+      </p>
+
+      {onUpgradeClick && (
+        <button
+          type="button"
+          onClick={onUpgradeClick}
+          className="mt-5 inline-flex min-h-10 items-center justify-center rounded-sm bg-primary px-5 py-2 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
+        >
+          Upgrade to Premium
+        </button>
+      )}
+    </div>
   );
 }

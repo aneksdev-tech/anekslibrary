@@ -22,11 +22,17 @@ const WATERMARK_PATH = path.join(
 
 const PAGE_DPI = 144;
 const PAGE_BATCH_SIZE = 3;
+const FREE_PREVIEW_PAGE_LIMIT = 3;
+
+const FREE_PREVIEW_EXEMPT_CATEGORIES = new Set([
+  "publications",
+  "lecture-timetables",
+]);
 
 const PREVIEW_WAIT_TIMEOUT_MS = 25000;
 const PREVIEW_POLL_INTERVAL_MS = 500;
 
-const MANIFEST_VERSION = 10;
+const MANIFEST_VERSION = 12;
 
 const activeJobs = new Map();
 
@@ -147,65 +153,58 @@ function getPreviewPageExtension(resource) {
 function getContextAuthorization(
   context,
   role,
-  subscriptionPlan,
-  categoryName,
+  isPremium,
+  categorySlug,
 ) {
-  const isAdminOrCoAdmin = [
+  const isPrivileged = [
     "admin",
     "co-admin",
   ].includes(role);
 
-  const canManageApprovals = [
-    "admin",
-    "co-admin",
-    "staff",
-    "lecturer",
-  ].includes(role);
+  const isExemptCategory =
+    FREE_PREVIEW_EXEMPT_CATEGORIES.has(
+      categorySlug,
+    );
 
-  const isExemptCategory = [
-    "lecture timetables",
-    "publications",
-  ].includes(
-    (categoryName || "").trim().toLowerCase(),
-  );
+  switch (context) {
+    case "academic":
+      return {
+        allowed: role === "lecturer",
+        freeLimited: false,
+      };
 
-  if (context === "academic") {
-    return {
-      allowed: role === "lecturer",
-      restricted: false,
-    };
+    case "approvals":
+      return {
+        allowed: [
+          "admin",
+          "co-admin",
+          "staff",
+          "lecturer",
+        ].includes(role),
+        freeLimited: false,
+      };
+
+    case "resources":
+      return {
+        allowed: isPrivileged,
+        freeLimited: false,
+      };
+
+    case "public":
+      return {
+        allowed: true,
+        freeLimited:
+          !isPrivileged &&
+          !isPremium &&
+          !isExemptCategory,
+      };
+
+    default:
+      return {
+        allowed: false,
+        freeLimited: false,
+      };
   }
-
-  if (context === "approvals") {
-    return {
-      allowed: canManageApprovals,
-      restricted: false,
-    };
-  }
-
-  if (context === "resources") {
-    return {
-      allowed: isAdminOrCoAdmin,
-      restricted: false,
-    };
-  }
-
-  if (context === "public") {
-    return {
-      allowed: true,
-      restricted:
-        !(
-          isAdminOrCoAdmin ||
-          subscriptionPlan === "premium" ||
-          isExemptCategory
-        ),
-    };
-  }
-
-  return {
-    allowed: false,
-    restricted: true,
-  };
 }
 
 async function authorizePreview(
@@ -228,9 +227,7 @@ async function authorizePreview(
     error: profileError,
   } = await supabase
     .from("private_profiles")
-    .select(
-      "primary_role, status, subscription_plan",
-    )
+    .select("primary_role, status")
     .eq("id", user.id)
     .maybeSingle();
 
@@ -247,6 +244,16 @@ async function authorizePreview(
       403,
     );
   }
+
+const {
+  data: premiumData,
+  error: premiumError,
+} = await supabase.rpc("is_premium", {
+  _user: user.id,
+});
+
+const isPremium =
+  !premiumError && premiumData === true;
 
   const validContexts = [
     "public",
@@ -275,9 +282,8 @@ async function authorizePreview(
       status,
       deleted_at,
       updated_at,
-      category:categories (
-        name,
-        deleted_at
+      categories!resources_category_id_fkey (
+        slug
       )
     `)
     .eq("id", resourceId)
@@ -289,6 +295,12 @@ async function authorizePreview(
       404,
     );
   }
+
+const categoryRelation = resource.categories;
+
+const categorySlug = Array.isArray(categoryRelation)
+  ? categoryRelation[0]?.slug ?? null
+  : categoryRelation?.slug ?? null;
 
   // Always reject deleted records first.
   if (
@@ -312,21 +324,12 @@ async function authorizePreview(
     );
   }
 
-  const category = normalizeCategory(
-    resource.category,
-  );
-
-  const categoryName =
-    category?.deleted_at == null
-      ? category?.name?.trim() || ""
-      : "";
-
   const contextAccess = getContextAuthorization(
-    context,
-    profile.primary_role,
-    profile.subscription_plan,
-    categoryName,
-  );
+  context,
+  profile.primary_role,
+  isPremium,
+  categorySlug,
+);
 
   if (!contextAccess.allowed) {
     throw createHttpError(
@@ -372,7 +375,7 @@ async function authorizePreview(
     user,
     profile,
     resource,
-    restricted: contextAccess.restricted,
+    freeLimited: contextAccess.freeLimited,
   };
 }
 
@@ -541,33 +544,9 @@ watermark = await sharp(watermarkData, {
     .toBuffer();
 }
 
-async function createRestrictionOverlay(
-  width,
-  height,
-) {
-  const svg = Buffer.from(`
-    <svg
-      width="${width}"
-      height="${height}"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <rect
-        x="${Math.floor(width / 2)}"
-        y="0"
-        width="${Math.ceil(width / 2)}"
-        height="${height}"
-        fill="#f5f5f5"
-      />
-    </svg>
-  `);
-
-  return sharp(svg).png().toBuffer();
-}
-
 async function processPage(
   inputPath,
   outputPath,
-  restricted,
 ) {
   const input = await readFile(inputPath);
 
@@ -582,56 +561,17 @@ async function processPage(
     );
   }
 
-  const overlays = [];
-
-  if (restricted) {
-    /*
-     * Blur the complete source first, then extract
-     * only the right half.
-     *
-     * This avoids an artificial blur boundary at
-     * the centre of the page.
-     */
-    const blurredPage = await sharp(input)
-      .blur(40)
-      .png()
-      .toBuffer();
-
-    const midpoint = Math.floor(width / 2);
-    const rightWidth = width - midpoint;
-
-    const blurredRightHalf = await sharp(blurredPage)
-      .extract({
-        left: midpoint,
-        top: 0,
-        width: rightWidth,
-        height,
-      })
-      .png()
-      .toBuffer();
-
-    overlays.push({
-      input: blurredRightHalf,
-      left: midpoint,
-      top: 0,
-    });
-  }
-
-  /*
-   * Apply the watermark after the blur so that
-   * it remains visible across both halves.
-   */
   const watermarkOverlay =
     await createWatermarkOverlay(width, height);
 
-  overlays.push({
-    input: watermarkOverlay,
-    left: 0,
-    top: 0,
-  });
-
   await sharp(input)
-    .composite(overlays)
+    .composite([
+      {
+        input: watermarkOverlay,
+        left: 0,
+        top: 0,
+      },
+    ])
     .png()
     .toFile(outputPath);
 }
@@ -715,7 +655,6 @@ async function renderPdfPage(
   pdfPath,
   tempDirectory,
   pageNumber,
-  restricted,
   uploadPage,
 ) {
   const prefix = path.join(
@@ -753,7 +692,6 @@ async function renderPdfPage(
   await processPage(
     sourcePage,
     processedPage,
-    restricted,
   );
 
   await uploadPage(
@@ -785,7 +723,6 @@ async function getImagePageCount(sourceBuffer) {
 async function renderImage(
   sourceBuffer,
   tempDirectory,
-  restricted,
   uploadPage,
 ) {
   const metadata = await sharp(
@@ -808,27 +745,6 @@ async function renderImage(
     const watermarkOverlay =
       await createWatermarkOverlay(width, height);
 
-    const overlays = [
-      {
-        input: watermarkOverlay,
-        left: 0,
-        top: 0,
-        tile: true,
-      },
-    ];
-
-    if (restricted) {
-      overlays.push({
-        input: await createRestrictionOverlay(
-          width,
-          height,
-        ),
-        left: 0,
-        top: 0,
-        tile: true,
-      });
-    }
-
     const outputPath = path.join(
       tempDirectory,
       "processed-image.gif",
@@ -837,7 +753,14 @@ async function renderImage(
     await sharp(sourceBuffer, {
       animated: true,
     })
-      .composite(overlays)
+      .composite([
+        {
+          input: watermarkOverlay,
+          left: 0,
+          top: 0,
+          tile: true,
+        },
+      ])
       .gif({
         loop: metadata.loop ?? 0,
         delay: metadata.delay,
@@ -853,7 +776,6 @@ async function renderImage(
     return 1;
   }
 
-  // Rotate once and reuse the resulting image.
   const rotatedImage = await sharp(sourceBuffer)
     .rotate()
     .png()
@@ -871,46 +793,8 @@ async function renderImage(
     );
   }
 
-  const overlays = [];
-
-  if (restricted) {
-    // Blur the complete image before extracting
-    // the right half to avoid a visible blur boundary.
-    const blurredImage = await sharp(rotatedImage)
-      .blur(40)
-      .png()
-      .toBuffer();
-
-    const midpoint = Math.floor(width / 2);
-    const rightWidth = width - midpoint;
-
-    const blurredRightHalf = await sharp(blurredImage)
-      .extract({
-        left: midpoint,
-        top: 0,
-        width: rightWidth,
-        height,
-      })
-      .png()
-      .toBuffer();
-
-    overlays.push({
-      input: blurredRightHalf,
-      left: midpoint,
-      top: 0,
-    });
-  }
-
-  // Apply watermark after the blur so it remains
-  // visible across the entire image.
   const watermarkOverlay =
     await createWatermarkOverlay(width, height);
-
-  overlays.push({
-    input: watermarkOverlay,
-    left: 0,
-    top: 0,
-  });
 
   const outputPath = path.join(
     tempDirectory,
@@ -918,7 +802,13 @@ async function renderImage(
   );
 
   await sharp(rotatedImage)
-    .composite(overlays)
+    .composite([
+      {
+        input: watermarkOverlay,
+        left: 0,
+        top: 0,
+      },
+    ])
     .png()
     .toFile(outputPath);
 
@@ -1005,6 +895,111 @@ async function listCachedPages(
   return pages.sort();
 }
 
+function isValidManifest({
+  manifest,
+  resourceId,
+  sourceVersion,
+  variant,
+}) {
+  if (
+    !manifest ||
+    typeof manifest !== "object" ||
+    Array.isArray(manifest)
+  ) {
+    return false;
+  }
+
+  if (
+    manifest.version !== MANIFEST_VERSION ||
+    manifest.resourceId !== resourceId ||
+    manifest.sourceVersion !== sourceVersion ||
+    manifest.variant !== variant
+  ) {
+    return false;
+  }
+
+  if (
+    !Number.isInteger(manifest.pageCount) ||
+    manifest.pageCount < 1 ||
+    !Number.isInteger(manifest.renderPageCount) ||
+    manifest.renderPageCount < 1 ||
+    manifest.renderPageCount > manifest.pageCount
+  ) {
+    return false;
+  }
+
+  if (
+    variant === "free" &&
+    manifest.renderPageCount >
+      FREE_PREVIEW_PAGE_LIMIT
+  ) {
+    return false;
+  }
+
+  if (
+    !["png", "gif"].includes(
+      manifest.pageExtension,
+    )
+  ) {
+    return false;
+  }
+
+  if (
+    !Array.isArray(manifest.completedPages) ||
+    !Array.isArray(manifest.pages)
+  ) {
+    return false;
+  }
+
+const expectedPages = getExpectedPageNames(
+  manifest.renderPageCount,
+  manifest.pageExtension,
+).map(
+  (name) => `${resourceId}/${sourceVersion}/${variant}/${name}`,
+);
+
+if (
+  manifest.pages.length !== expectedPages.length ||
+  manifest.pages.some(
+    (page, index) =>
+      page !== expectedPages[index],
+  )
+) {
+  return false;
+}
+
+  const completedPages = manifest.completedPages;
+
+  if (
+    completedPages.some(
+      (page) =>
+        !Number.isInteger(page) ||
+        page < 1 ||
+        page > manifest.renderPageCount,
+    ) ||
+    new Set(completedPages).size !== completedPages.length
+  ) {
+    return false;
+  }
+
+  if (
+    manifest.status === "completed" &&
+    completedPages.length !== manifest.renderPageCount
+  ) {
+    return false;
+  }
+
+  if (
+    !["rendering", "completed", "failed"].includes(
+      manifest.status,
+    )
+  ) {
+    return false;
+  }
+
+  return true;
+}
+
 async function readPreviewManifest(
   supabase,
   folder,
@@ -1077,7 +1072,7 @@ function getExpectedPageNames(
 
 function getCompletedPageNumbers(
   cachedPageNames,
-  pageCount,
+  renderPageCount,
   extension,
 ) {
   const cachedNames = new Set(cachedPageNames);
@@ -1086,7 +1081,7 @@ function getCompletedPageNumbers(
 
   for (
     let pageNumber = 1;
-    pageNumber <= pageCount;
+    pageNumber <= renderPageCount;
     pageNumber++
   ) {
     const expectedName = getPageObjectName(
@@ -1107,6 +1102,7 @@ async function isCompletedPreviewCache(
   folder,
   sourceVersion,
   variant,
+  resourceId,
 ) {
   const manifest = await readPreviewManifest(
     supabase,
@@ -1114,14 +1110,13 @@ async function isCompletedPreviewCache(
   );
 
   if (
-    !manifest ||
-    manifest.version !== MANIFEST_VERSION ||
-    manifest.sourceVersion !== sourceVersion ||
-    manifest.variant !== variant ||
-    manifest.status !== "completed" ||
-    !Number.isInteger(manifest.pageCount) ||
-    manifest.pageCount < 1 ||
-    !["png", "gif"].includes(manifest.pageExtension)
+    !isValidManifest({
+      manifest,
+      resourceId,
+      sourceVersion,
+      variant,
+    }) ||
+    manifest.status !== "completed"
   ) {
     return null;
   }
@@ -1132,12 +1127,12 @@ async function isCompletedPreviewCache(
   );
 
   const expectedPages = getExpectedPageNames(
-    manifest.pageCount,
+    manifest.renderPageCount,
     manifest.pageExtension,
   );
 
   const cacheIsComplete =
-    cachedPages.length === manifest.pageCount &&
+    cachedPages.length === manifest.renderPageCount &&
     expectedPages.every(
       (name, index) => cachedPages[index] === name,
     );
@@ -1152,7 +1147,7 @@ async function isCompletedPreviewCache(
 async function removeUnexpectedCachedPages(
   supabase,
   folder,
-  pageCount,
+  renderPageCount,
   extension,
 ) {
   const cachedPages = await listCachedPages(
@@ -1161,7 +1156,10 @@ async function removeUnexpectedCachedPages(
   );
 
   const expectedNames = new Set(
-    getExpectedPageNames(pageCount, extension),
+    getExpectedPageNames(
+      renderPageCount,
+      extension,
+    ),
   );
 
   const unexpectedNames = cachedPages.filter(
@@ -1198,7 +1196,7 @@ async function removeUnexpectedCachedPages(
 async function runRenderJob({
   supabase,
   resource,
-  restricted,
+  freeLimited,
   folder,
   sourceVersion,
   variant,
@@ -1257,17 +1255,27 @@ async function runRenderJob({
       pageCount = await getPdfPageCount(pdfPath);
     }
 
+  const renderPageCount = freeLimited
+  ? Math.min(
+      pageCount,
+      FREE_PREVIEW_PAGE_LIMIT,
+    )
+  : pageCount;
+
 const previousManifest = await readPreviewManifest(
   supabase,
   folder,
 );
 
 const canResumeCachedPages =
-  previousManifest &&
-  previousManifest.version === MANIFEST_VERSION &&
-  previousManifest.sourceVersion === sourceVersion &&
-  previousManifest.variant === variant &&
+  isValidManifest({
+    manifest: previousManifest,
+    resourceId: resource.id,
+    sourceVersion,
+    variant,
+  }) &&
   previousManifest.pageCount === pageCount &&
+  previousManifest.renderPageCount === renderPageCount &&
   previousManifest.pageExtension === pageExtension;
 
 const cachedPageNames = canResumeCachedPages
@@ -1277,29 +1285,30 @@ const cachedPageNames = canResumeCachedPages
 const completedPages = new Set(
   getCompletedPageNumbers(
     cachedPageNames,
-    pageCount,
+    renderPageCount,
     pageExtension,
   ),
 );
-      manifest = {
-      version: MANIFEST_VERSION,
-      resourceId: resource.id,
-      sourceVersion,
-      variant,
-      status: "rendering",
-      pageCount,
-      pageExtension,
-      completedPages: [...completedPages].sort(
-        (a, b) => a - b,
-      ),
-      pages: getExpectedPageNames(
-        pageCount,
-        pageExtension,
-      ).map((name) => `${folder}/${name}`),
-      startedAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      completedAt: null,
-    };
+  manifest = {
+   version: MANIFEST_VERSION,
+   resourceId: resource.id,
+   sourceVersion,
+   variant,
+   status: "rendering",
+   pageCount,
+   renderPageCount,
+   pageExtension,
+   completedPages: [...completedPages].sort(
+    (a, b) => a - b,
+  ),
+  pages: getExpectedPageNames(
+    renderPageCount,
+    pageExtension,
+  ).map((name) => `${folder}/${name}`),
+  startedAt: new Date().toISOString(),
+  updatedAt: new Date().toISOString(),
+  completedAt: null,
+};
 
     await writePreviewManifest(
       supabase,
@@ -1354,7 +1363,7 @@ const completedPages = new Set(
       ].sort((a, b) => a - b);
 
       manifest.status =
-        completedPages.size === pageCount
+        completedPages.size === renderPageCount
           ? "completed"
           : "rendering";
 
@@ -1378,7 +1387,6 @@ const completedPages = new Set(
         await renderImage(
           sourceBuffer,
           tempDirectory,
-          restricted,
           uploadPage,
         );
       }
@@ -1389,7 +1397,7 @@ const completedPages = new Set(
        */
       for (
         let pageNumber = 1;
-        pageNumber <= pageCount;
+        pageNumber <= renderPageCount;
         pageNumber++
       ) {
         if (completedPages.has(pageNumber)) {
@@ -1400,13 +1408,12 @@ const completedPages = new Set(
           pdfPath,
           tempDirectory,
           pageNumber,
-          restricted,
           uploadPage,
         );
       }
     }
 
-    if (completedPages.size !== pageCount) {
+    if (completedPages.size !== renderPageCount) {
       throw new Error(
         "Preview generation did not produce every expected page.",
       );
@@ -1415,7 +1422,7 @@ const completedPages = new Set(
     await removeUnexpectedCachedPages(
       supabase,
       folder,
-      pageCount,
+      renderPageCount,
       pageExtension,
     );
 
@@ -1485,7 +1492,7 @@ function ensureRenderJob({
   cacheKey,
   supabase,
   resource,
-  restricted,
+  freeLimited,
   folder,
   sourceVersion,
   variant,
@@ -1499,7 +1506,7 @@ function ensureRenderJob({
   const job = runRenderJob({
     supabase,
     resource,
-    restricted,
+    freeLimited,
     folder,
     sourceVersion,
     variant,
@@ -1507,10 +1514,6 @@ function ensureRenderJob({
 
   activeJobs.set(cacheKey, job);
 
-  /*
-   * Attach both completion handlers so background
-   * failures do not become unhandled rejections.
-   */
   job.then(
     () => {
       if (activeJobs.get(cacheKey) === job) {
@@ -1542,6 +1545,7 @@ function ensureRenderJob({
 async function waitForRequestedPages({
   supabase,
   folder,
+  resourceId,
   sourceVersion,
   variant,
   pageFrom,
@@ -1556,30 +1560,18 @@ async function waitForRequestedPages({
       folder,
     );
 
-if (manifest) {
-  const isStaleManifest =
-  manifest.version !== MANIFEST_VERSION ||
-  manifest.sourceVersion !== sourceVersion ||
-  manifest.variant !== variant;
-
-if (isStaleManifest) {
-  await sleep(PREVIEW_POLL_INTERVAL_MS);
-  continue;
-}
-
-if (
-  !Number.isInteger(manifest.pageCount) ||
-  manifest.pageCount < 1 ||
-  !["png", "gif"].includes(manifest.pageExtension) ||
-  !["rendering", "completed", "failed"].includes(
-    manifest.status,
-  )
-) {
-  throw createHttpError(
-    "The preview cache is invalid.",
-    500,
-  );
-}
+    if (manifest) {
+      if (
+        !isValidManifest({
+          manifest,
+          resourceId,
+          sourceVersion,
+          variant,
+        })
+      ) {
+        await sleep(PREVIEW_POLL_INTERVAL_MS);
+        continue;
+      }
 
       if (pageFrom >= manifest.pageCount) {
         throw createHttpError(
@@ -1588,23 +1580,55 @@ if (
         );
       }
 
+      const upgradeRequired =
+        manifest.pageCount > manifest.renderPageCount;
+
+      /*
+       * Free users requesting page 4 or later receive
+       * upgrade metadata, never a derivative page path.
+       */
+      if (pageFrom >= manifest.renderPageCount) {
+        if (!upgradeRequired) {
+          throw createHttpError(
+            "The requested page is outside this document.",
+            416,
+          );
+        }
+
+        return {
+          pageCount: manifest.pageCount,
+          renderedPageCount: manifest.renderPageCount,
+          pageFrom,
+          pages: [],
+          variant,
+          hasMore: false,
+          nextPageFrom: null,
+          upgradeRequired: true,
+          upgradePage: FREE_PREVIEW_PAGE_LIMIT + 1,
+          renderingStatus: manifest.status,
+        };
+      }
+
       const endPage = Math.min(
         pageFrom + requestedPageCount,
-        manifest.pageCount,
+        manifest.renderPageCount,
       );
 
       const completedPages = new Set(
-        Array.isArray(manifest.completedPages)
-          ? manifest.completedPages
-          : [],
+        manifest.completedPages,
       );
 
       /*
-       * Determine the contiguous sequence of ready pages.
-       *
-       * We cannot skip a missing page because the browser
-       * expects sequential pagination.
+       * Check actual Storage objects as well as
+       * the manifest's completed-page records.
        */
+      const cachedPageNames = await listCachedPages(
+        supabase,
+        folder,
+      );
+
+      const cachedPageSet = new Set(cachedPageNames);
+
       const readyPages = [];
 
       for (
@@ -1614,6 +1638,15 @@ if (
       ) {
         if (!completedPages.has(pageNumber)) {
           break;
+        }
+
+        const pageObjectName = getPageObjectName(
+          pageNumber,
+          manifest.pageExtension,
+        );
+
+        if (!cachedPageSet.has(pageObjectName)) {
+          return null;
         }
 
         readyPages.push(
@@ -1628,13 +1661,6 @@ if (
       const requestedPagesReady =
         readyPages.length === endPage - pageFrom;
 
-      /*
-       * Normally, wait for the complete requested batch.
-       *
-       * If rendering has failed, return any contiguous
-       * pages already completed instead of blocking them.
-       * A subsequent request can restart the failed job.
-       */
       if (
         requestedPagesReady ||
         (
@@ -1645,25 +1671,27 @@ if (
         const nextPageFrom =
           pageFrom + readyPages.length;
 
+        const hasMore =
+          nextPageFrom < manifest.renderPageCount;
+
         return {
           pageCount: manifest.pageCount,
+          renderedPageCount: manifest.renderPageCount,
           pageFrom,
           pages: readyPages,
           variant,
-          hasMore:
-            nextPageFrom < manifest.pageCount,
-          nextPageFrom:
-            nextPageFrom < manifest.pageCount
-              ? nextPageFrom
-              : null,
+          hasMore,
+          nextPageFrom: hasMore
+            ? nextPageFrom
+            : null,
+          upgradeRequired,
+          upgradePage: upgradeRequired
+            ? FREE_PREVIEW_PAGE_LIMIT + 1
+            : null,
           renderingStatus: manifest.status,
         };
       }
 
-      /*
-       * No usable pages remain for this request after
-       * a failed rendering attempt.
-       */
       if (manifest.status === "failed") {
         throw createHttpError(
           "Preview generation was interrupted. Please retry.",
@@ -1675,10 +1703,6 @@ if (
     await sleep(PREVIEW_POLL_INTERVAL_MS);
   }
 
-  /*
-   * The requested batch is not ready yet.
-   * The client can retry after the supplied delay.
-   */
   throw createHttpError(
     "The requested preview pages are still being prepared. Please retry shortly.",
     202,
@@ -1776,7 +1800,7 @@ export function createPreviewRenderer({
           );
 
         const resource = authorization.resource;
-        const restricted = authorization.restricted;
+        const freeLimited = authorization.freeLimited;
 
         const sourceVersion = sha256(
           [
@@ -1787,8 +1811,8 @@ export function createPreviewRenderer({
           ].join("|"),
         );
 
-        const variant = restricted
-          ? "restricted"
+        const variant = freeLimited
+          ? "free"
           : "full";
 
         const folder = [
@@ -1815,6 +1839,7 @@ export function createPreviewRenderer({
             folder,
             sourceVersion,
             variant,
+            resource.id,
           );
 
         if (!completedCache) {
@@ -1822,38 +1847,75 @@ export function createPreviewRenderer({
             cacheKey,
             supabase,
             resource,
-            restricted,
+            freeLimited,
             folder,
             sourceVersion,
             variant,
           });
         }
 
-        const result =
-          await waitForRequestedPages({
-            supabase,
-            folder,
-            sourceVersion,
-            variant,
-            pageFrom,
-            requestedPageCount: pageCount,
-          });
+let result = await waitForRequestedPages({
+  supabase,
+  folder,
+  resourceId: resource.id,
+  sourceVersion,
+  variant,
+  pageFrom,
+  requestedPageCount: pageCount,
+});
 
-        res.setHeader(
-          "Cache-Control",
-          "private, no-store",
-        );
+/*
+ * A null result means the manifest is invalid
+ * or one of its recorded page objects is missing.
+ * Start or resume rendering to repair the cache.
+ */
+if (!result) {
+  ensureRenderJob({
+    cacheKey,
+    supabase,
+    resource,
+    freeLimited,
+    folder,
+    sourceVersion,
+    variant,
+  });
 
-        return res.status(200).json({
-          resourceId: resource.id,
-          pageCount: result.pageCount,
-          pageFrom: result.pageFrom,
-          variant: result.variant,
-          pages: result.pages,
-          nextPageFrom: result.nextPageFrom,
-          hasMore: result.hasMore,
-          renderingStatus: result.renderingStatus,
-        });
+  result = await waitForRequestedPages({
+    supabase,
+    folder,
+    resourceId: resource.id,
+    sourceVersion,
+    variant,
+    pageFrom,
+    requestedPageCount: pageCount,
+  });
+}
+
+if (!result) {
+  throw createHttpError(
+    "The preview cache could not be recovered. Please retry.",
+    503,
+  );
+}
+
+res.setHeader(
+  "Cache-Control",
+  "private, no-store",
+);
+
+return res.status(200).json({
+  resourceId: resource.id,
+  pageCount: result.pageCount,
+  renderedPageCount: result.renderedPageCount,
+  pageFrom: result.pageFrom,
+  variant: result.variant,
+  pages: result.pages,
+  nextPageFrom: result.nextPageFrom,
+  hasMore: result.hasMore,
+  upgradeRequired: result.upgradeRequired,
+  upgradePage: result.upgradePage,
+  renderingStatus: result.renderingStatus,
+});
       } catch (error) {
         console.error(
           "Secure preview preparation failed:",
