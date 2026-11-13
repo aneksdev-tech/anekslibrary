@@ -1684,10 +1684,8 @@ async function waitForRequestedPages({
           nextPageFrom: hasMore
             ? nextPageFrom
             : null,
-          upgradeRequired,
-          upgradePage: upgradeRequired
-            ? FREE_PREVIEW_PAGE_LIMIT + 1
-            : null,
+          upgradeRequired: false,
+          upgradePage: null,
           renderingStatus: manifest.status,
         };
       }
