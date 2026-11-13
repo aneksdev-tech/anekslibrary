@@ -26,7 +26,7 @@ const PAGE_BATCH_SIZE = 3;
 const PREVIEW_WAIT_TIMEOUT_MS = 25000;
 const PREVIEW_POLL_INTERVAL_MS = 500;
 
-const MANIFEST_VERSION = 9;
+const MANIFEST_VERSION = 10;
 
 const activeJobs = new Map();
 
@@ -454,18 +454,37 @@ async function createWatermarkOverlay(
     .png()
     .toBuffer();
 
-  // Reduce the existing watermark alpha to 25%.
-  const reducedAlpha = await sharp(watermark)
-    .extractChannel("alpha")
-    .linear(0.25, 0)
-    .png()
-    .toBuffer();
+// Reduce the existing watermark alpha to 25%.
+// Preserve the original RGB values and transparent background.
+const {
+  data: watermarkData,
+  info: watermarkInfo,
+} = await sharp(watermark)
+  .ensureAlpha()
+  .raw()
+  .toBuffer({
+    resolveWithObject: true,
+  });
 
-  watermark = await sharp(watermark)
-    .removeAlpha()
-    .joinChannel(reducedAlpha)
-    .png()
-    .toBuffer();
+for (
+  let i = 3;
+  i < watermarkData.length;
+  i += 4
+) {
+  watermarkData[i] = Math.round(
+    watermarkData[i] * 0.25,
+  );
+}
+
+watermark = await sharp(watermarkData, {
+  raw: {
+    width: watermarkInfo.width,
+    height: watermarkInfo.height,
+    channels: 4,
+  },
+})
+  .png()
+  .toBuffer();
 
   let metadata = await sharp(watermark).metadata();
 
