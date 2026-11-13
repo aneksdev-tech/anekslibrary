@@ -335,25 +335,24 @@ async function authorizePreview(
     );
   }
 
-  if (resource.status === "pending") {
-    const canPreviewPending = [
-      "admin",
-      "co-admin",
-      "lecturer",
-      "staff",
-    ].includes(profile.primary_role);
+ if (resource.status === "pending") {
+  const canPreviewPending = [
+    "admin",
+    "co-admin",
+    "lecturer",
+    "staff",
+  ].includes(profile.primary_role);
 
-    if (
-      !canPreviewPending ||
-      context === "public" ||
-      context === "academic"
-    ) {
-      throw createHttpError(
-        "This resource is not available for preview.",
-        403,
-      );
-    }
+  if (
+    !canPreviewPending ||
+    context === "public"
+  ) {
+    throw createHttpError(
+      "This resource is not available for preview.",
+      403,
+    );
   }
+}
 
   if (!isSupportedResource(resource)) {
     throw createHttpError(
