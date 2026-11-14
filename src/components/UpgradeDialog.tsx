@@ -57,7 +57,7 @@ export function UpgradeDialog({
           <Feature text="Full access to exclusive Premium materials" />
           <Feature text="10 Download Credits every billing month" />
           <Feature text="Option to purchase additional Download Credits" />
-          <Feature text="Access to Marketplace resources" />
+          <Feature text="Marketplace resource upload/purchase" />
           <Feature text="Ad-free experience" />
           <Feature text="Enhanced AI Study Assistant" />
         </div>

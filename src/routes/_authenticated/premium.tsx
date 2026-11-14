@@ -93,7 +93,7 @@ function PremiumPage() {
 
             <UnavailableFeature text="Full previews of Premium materials" />
             <UnavailableFeature text="Monthly Download Credits" />
-            <UnavailableFeature text="Marketplace Access" />
+            <UnavailableFeature text="Marketplace resource upload/purchase" />
             <UnavailableFeature text="Ad-free experience" />
           </div>
 
@@ -145,7 +145,7 @@ function PremiumPage() {
             <Feature premium text="Full access to exclusive Premium materials" />
             <Feature premium text="10 Download Credits every billing month" />
             <Feature premium text="Option to purchase additional Download Credits" />
-            <Feature premium text="Marketplace Access" />
+            <Feature premium text="Marketplace resource upload/purchase" />
             <Feature premium text="Ad-free experience" />
             <Feature premium text="Enhanced AI Study Assistant" />
           </div>
@@ -153,7 +153,7 @@ function PremiumPage() {
           {isAdmin ? (
             <Button
               disabled
-              className="mt-7 h-9 w-full text-xs sm:h-10 sm:text-sm"
+              className="mt-7 h-9 w-full bg-gold text-xs sm:h-10 sm:text-sm"
             >
               Administrator
             </Button>
@@ -313,26 +313,31 @@ function PremiumPage() {
           </p>
 
           <h2 className="mt-3 font-display text-3xl font-semibold sm:text-4xl md:mt-3 md:text-[1.7rem] lg:mt-3 lg:text-4xl">
-            Marketplace Purchases
+            Marketplace Resource Upload and Purchase
           </h2>
 
           <p className="mt-2 text-xs text-muted-foreground sm:text-sm">
-            Explore exclusive academic resources available to Premium members.
-            Purchase individual materials with direct monetary payments, separately
-            from your subscription and Download Credits.
+            Explore academic resources listed on the Marketplace. All users can browse
+            available Marketplace resources, while uploading, previewing, and purchasing
+            individual materials are exclusive to Premium members. Purchases are made
+            through direct monetary payments, separately from your subscription and
+            Download Credits.
           </p>
         </div>
 
         <div className="rounded-sm border bg-card p-4">
-          <p className="text-xs leading-6 text-muted-foreground sm:text-sm">
-            The Marketplace gives Premium members access to individually
-            purchasable academic resources. Each resource has its own price and
-            must be purchased separately through direct monetary payment before
-            access is granted. Marketplace purchases are independent of your
-            Premium subscription, and neither your subscription fee nor your
-            Download Credits can be used to pay for them. Download Credits remain
-            exclusively for downloading eligible resources outside the Marketplace.
-          </p>
+          <div className="rounded-sm border bg-card p-4">
+            <p className="text-xs leading-6 text-muted-foreground sm:text-sm">
+              The Marketplace is accessible to all users for browsing available academic
+              resources. However, only Premium members can upload resources, preview
+              Marketplace materials, and purchase individual listings. Each resource has
+              its own price and must be purchased separately through direct monetary
+              payment before access is granted. Marketplace purchases are independent of
+              your Premium subscription, and neither your subscription fee nor your
+              Download Credits can be used to pay for them. Download Credits remain
+              exclusively for downloading eligible resources outside the Marketplace.
+            </p>
+          </div>
         </div>
       </section>
 
@@ -424,7 +429,7 @@ function PremiumPage() {
               What can I access with the Free Plan?
             </AccordionTrigger>
             <AccordionContent className="text-sm text-primary">
-              Free members can browse, bookmark, preview, and read standard resources, upload resources, and use the basic text-based AI
+              Free users can upload resources, browse, bookmark, preview, and read standard resources. Free users can also use the basic text-based AI
               Study Assistant.
             </AccordionContent>
           </AccordionItem>
