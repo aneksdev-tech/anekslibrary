@@ -1913,7 +1913,7 @@ function UsersPage() {
           <AlertDialogFooter className="gap-2">
             <AlertDialogCancel
               disabled={actionLoading}
-              className="h-9 text-xs sm:h-10 sm:text-sm"
+              className="h-9 bg-destructive text-xs text-white shadow-soft !transition-none hover:bg-none hover:bg-accent hover:text-foreground sm:h-10 sm:text-sm"
             >
               Cancel
             </AlertDialogCancel>
@@ -1927,7 +1927,7 @@ function UsersPage() {
                 actionLoading ||
                 !actionReason.trim()
               }
-              className="h-9 text-xs sm:h-10 sm:text-sm"
+              className="h-9 bg-gradient-emerald text-xs text-white shadow-soft !transition-none hover:bg-none hover:bg-accent hover:text-foreground sm:h-10 sm:text-sm"
             >
               {actionLoading && (
                 <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin sm:mr-2 sm:h-4 sm:w-4" />

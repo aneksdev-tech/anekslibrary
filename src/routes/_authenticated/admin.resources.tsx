@@ -2589,7 +2589,7 @@ onValueChange={(value) => {
               disabled={
                 editResource.isPending
               }
-              className="h-9 w-full text-xs sm:h-10 sm:w-auto sm:text-sm"
+              className="h-9 bg-destructive text-xs text-white shadow-soft !transition-none hover:bg-none hover:bg-accent hover:text-foreground sm:h-10 sm:text-sm"
             >
               Cancel
             </AlertDialogCancel>
@@ -2603,7 +2603,7 @@ onValueChange={(value) => {
                 editResource.isPending ||
                 !editForm.title.trim()
               }
-              className="h-9 w-full text-xs sm:h-10 sm:w-auto sm:text-sm"
+              className="h-9 bg-gradient-emerald text-xs text-white shadow-soft !transition-none hover:bg-none hover:bg-accent hover:text-foreground sm:h-10 sm:text-sm"
             >
               Save changes
             </AlertDialogAction>
@@ -2709,7 +2709,7 @@ onValueChange={(value) => {
                   event.preventDefault();
                   setEditConfirmation(null);
                 }}
-                className="h-9 w-full text-xs sm:h-10 sm:w-auto sm:text-sm"
+                className="h-9 bg-gradient-emerald text-xs text-white shadow-soft !transition-none hover:bg-none hover:bg-accent hover:text-foreground sm:h-10 sm:text-sm"
               >
                 Close
               </AlertDialogAction>
@@ -2719,7 +2719,7 @@ onValueChange={(value) => {
                   disabled={
                     editResource.isPending
                   }
-                  className="h-9 w-full text-xs sm:h-10 sm:w-auto sm:text-sm"
+                  className="h-9 bg-destructive text-xs text-white shadow-soft !transition-none hover:bg-none hover:bg-accent hover:text-foreground sm:h-10 sm:text-sm"
                 >
                   Cancel
                 </AlertDialogCancel>
@@ -2733,7 +2733,7 @@ onValueChange={(value) => {
                     editResource.isPending ||
                     !editForm.edit_summary.trim()
                   }
-                  className="h-9 w-full text-xs sm:h-10 sm:w-auto sm:text-sm"
+                  className="h-9 bg-gradient-emerald text-xs text-white shadow-soft !transition-none hover:bg-none hover:bg-accent hover:text-foreground sm:h-10 sm:text-sm"
                 >
                   {editResource.isPending && (
                     <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin sm:mr-2 sm:h-4 sm:w-4" />
@@ -2831,7 +2831,7 @@ onValueChange={(value) => {
               disabled={
                 deleteResource.isPending
               }
-              className="h-9 w-full text-xs sm:h-10 sm:w-auto sm:text-sm"
+              className="h-9 bg-gradient-emerald text-xs text-white shadow-soft !transition-none hover:bg-none hover:bg-accent hover:text-foreground sm:h-10 sm:text-sm"
             >
               Cancel
             </AlertDialogCancel>
@@ -2845,7 +2845,7 @@ onValueChange={(value) => {
                 deleteResource.isPending ||
                 !deletionReason.trim()
               }
-              className="h-9 w-full text-xs sm:h-10 sm:w-auto sm:text-sm"
+              className="h-9 bg-destructive text-xs text-white shadow-soft !transition-none hover:bg-none hover:bg-accent hover:text-foreground sm:h-10 sm:text-sm"
             >
               {deleteResource.isPending && (
                 <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin sm:mr-2 sm:h-4 sm:w-4" />

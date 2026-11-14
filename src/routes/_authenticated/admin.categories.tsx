@@ -1462,7 +1462,7 @@ function CategoriesPage() {
             <AlertDialogCancel
               disabled={updateLoading}
               onClick={closeEditDialog}
-              className="h-9 text-xs sm:h-10 sm:text-sm"
+              className="h-9 bg-destructive text-xs text-white shadow-soft !transition-none hover:bg-none hover:bg-accent hover:text-foreground sm:h-10 sm:text-sm"
             >
               Cancel
             </AlertDialogCancel>
@@ -1477,7 +1477,7 @@ function CategoriesPage() {
                 !editName.trim() ||
                 !editSlug.trim()
               }
-              className="h-9 text-xs sm:h-10 sm:text-sm"
+              className="h-9 bg-gradient-emerald text-xs text-white shadow-soft !transition-none hover:bg-none hover:bg-accent hover:text-foreground sm:h-10 sm:text-sm"
             >
               Review changes
             </AlertDialogAction>
@@ -1538,7 +1538,7 @@ function CategoriesPage() {
             <AlertDialogCancel
               disabled={updateLoading}
               onClick={closeEditConfirmation}
-              className="h-9 text-xs sm:h-10 sm:text-sm"
+              className="h-9 bg-destructive text-xs text-white shadow-soft !transition-none hover:bg-none hover:bg-accent hover:text-foreground sm:h-10 sm:text-sm"
             >
               Cancel
             </AlertDialogCancel>
@@ -1552,7 +1552,7 @@ function CategoriesPage() {
                 updateLoading ||
                 editSummaryMissing
               }
-              className="h-9 text-xs sm:h-10 sm:text-sm"
+              className="h-9 bg-gradient-emerald text-xs text-white shadow-soft !transition-none hover:bg-none hover:bg-accent hover:text-foreground sm:h-10 sm:text-sm"
             >
               {updateLoading && (
                 <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin sm:mr-2 sm:h-4 sm:w-4" />
@@ -1621,7 +1621,7 @@ function CategoriesPage() {
             <AlertDialogCancel
               disabled={deleteLoading}
               onClick={closeDeleteDialog}
-              className="h-9 text-xs sm:h-10 sm:text-sm"
+              className="h-9 bg-gradient-emerald text-xs text-white shadow-soft !transition-none hover:bg-none hover:bg-accent hover:text-foreground sm:h-10 sm:text-sm"
             >
               Cancel
             </AlertDialogCancel>
@@ -1635,7 +1635,7 @@ function CategoriesPage() {
                 deleteLoading ||
                 deleteReasonMissing
               }
-              className="h-9 text-xs bg-destructive text-destructive-foreground hover:bg-destructive/90 sm:h-10 sm:text-sm"
+              className="h-9 bg-destructive text-xs text-white shadow-soft !transition-none hover:bg-none hover:bg-accent hover:text-foreground sm:h-10 sm:text-sm"
             >
               {deleteLoading && (
                 <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin sm:mr-2 sm:h-4 sm:w-4" />
@@ -1679,7 +1679,7 @@ function CategoriesPage() {
               onClick={() =>
                 setPendingRestore(null)
               }
-              className="h-9 text-xs sm:h-10 sm:text-sm"
+              className="h-9 bg-destructive text-xs text-white shadow-soft !transition-none hover:bg-none hover:bg-accent hover:text-foreground sm:h-10 sm:text-sm"
             >
               Cancel
             </AlertDialogCancel>
@@ -1690,7 +1690,7 @@ function CategoriesPage() {
                 confirmRestore();
               }}
               disabled={restoreLoading}
-              className="h-9 text-xs sm:h-10 sm:text-sm"
+              className="h-9 bg-gradient-emerald text-xs text-white shadow-soft !transition-none hover:bg-none hover:bg-accent hover:text-foreground sm:h-10 sm:text-sm"
             >
               {restoreLoading && (
                 <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin sm:mr-2 sm:h-4 sm:w-4" />

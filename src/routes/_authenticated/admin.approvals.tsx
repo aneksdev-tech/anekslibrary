@@ -1715,7 +1715,7 @@ useEffect(() => {
           <AlertDialogFooter className="gap-2">
             <AlertDialogCancel
               disabled={decisionLoading}
-              className="h-9 w-full text-xs sm:h-10 sm:w-auto sm:text-sm"
+              className="h-9 bg-muted text-xs text-muted-foreground shadow-soft !transition-none hover:bg-none hover:bg-accent hover:text-white sm:h-10 sm:text-sm"
             >
               Cancel
             </AlertDialogCancel>
@@ -1731,8 +1731,8 @@ useEffect(() => {
               }
               className={`h-9 w-full text-xs sm:h-10 sm:w-auto sm:text-sm ${
                 pendingDecision?.type === "reject"
-                  ? "bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                  : "bg-gradient-emerald text-primary-foreground"
+                  ? "bg-destructive text-xs text-white shadow-soft !transition-none hover:bg-none hover:bg-accent hover:text-foreground"
+                  : "bg-gradient-emerald text-xs text-white shadow-soft !transition-none hover:bg-none hover:bg-accent hover:text-foreground"
               }`}
             >
               {decisionLoading && (
@@ -1824,7 +1824,7 @@ useEffect(() => {
           <AlertDialogFooter className="gap-2">
             <AlertDialogCancel
               disabled={userDecisionLoading}
-              className="h-9 w-full text-xs sm:h-10 sm:w-auto sm:text-sm"
+              className="h-9 bg-muted text-xs text-muted-foreground shadow-soft !transition-none hover:bg-none hover:bg-accent hover:text-white sm:h-10 sm:text-sm"
             >
               Cancel
             </AlertDialogCancel>
@@ -1840,8 +1840,8 @@ useEffect(() => {
               }
               className={`h-9 w-full text-xs sm:h-10 sm:w-auto sm:text-sm ${
                 pendingUserDecision?.type === "reject"
-                  ? "bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                  : "bg-gradient-emerald text-primary-foreground"
+                  ? "bg-destructive text-xs text-white shadow-soft !transition-none hover:bg-none hover:bg-accent hover:text-foreground"
+                  : "bg-gradient-emerald text-xs text-white shadow-soft !transition-none hover:bg-none hover:bg-accent hover:text-foreground"
               }`}
             >
               {userDecisionLoading && (

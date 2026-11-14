@@ -1171,7 +1171,7 @@ const clearAnnouncementFilters = () => {
                 variant="outline"
                 onClick={cancelEditing}
                 disabled={saveAnnouncement.isPending}
-                className="h-9 w-full text-xs sm:h-10 sm:w-auto sm:text-sm"
+                className="h-9 bg-destructive text-xs text-white shadow-soft !transition-none hover:bg-none hover:bg-accent hover:text-foreground sm:h-10 sm:text-sm"
               >
                 Cancel
               </Button>
@@ -1863,7 +1863,7 @@ const clearAnnouncementFilters = () => {
           <AlertDialogFooter className="gap-2 sm:gap-0">
             <AlertDialogCancel
               disabled={saveAnnouncement.isPending}
-              className="h-9 text-xs sm:h-10 sm:text-sm"
+              className="h-9 text-xs bg-destructive sm:h-10 sm:text-sm"
             >
               Cancel
             </AlertDialogCancel>
@@ -1884,7 +1884,7 @@ const clearAnnouncementFilters = () => {
                 (hasActualChanges() &&
                   !editSummary.trim())
               }
-              className="h-9 text-xs sm:h-10 sm:text-sm"
+              className="h-9 bg-gradient-emerald text-xs text-white shadow-soft !transition-none hover:bg-none hover:bg-accent hover:text-foreground sm:h-10 sm:text-sm"
             >
               {hasActualChanges()
                 ? "Save changes"
@@ -1963,7 +1963,7 @@ const clearAnnouncementFilters = () => {
             <AlertDialogFooter className="gap-2 sm:gap-0">
               <AlertDialogCancel
                 disabled={toggleAnnouncement.isPending}
-                className="h-9 text-xs sm:h-10 sm:text-sm"
+                className="h-9 bg-destructive text-xs text-white shadow-soft !transition-none hover:bg-none hover:bg-accent hover:text-foreground sm:h-10 sm:text-sm"
               >
                 Cancel
               </AlertDialogCancel>
@@ -1977,7 +1977,7 @@ const clearAnnouncementFilters = () => {
                   toggleAnnouncement.isPending ||
                   !toggleReason.trim()
                 }
-                className="h-9 text-xs sm:h-10 sm:text-sm"
+                className="h-9 bg-gradient-emerald text-xs text-white shadow-soft !transition-none hover:bg-none hover:bg-accent hover:text-foreground sm:h-10 sm:text-sm"
               >
                 {toggleAnnouncement.isPending && (
                   <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin sm:mr-2 sm:h-4 sm:w-4" />
@@ -2048,7 +2048,7 @@ const clearAnnouncementFilters = () => {
           <AlertDialogFooter className="gap-2 sm:gap-0">
             <AlertDialogCancel
               disabled={deleteAnnouncement.isPending}
-              className="h-9 text-xs sm:h-10 sm:text-sm"
+              className="h-9 bg-gradient-emerald text-xs text-white shadow-soft !transition-none hover:bg-none hover:bg-accent hover:text-foreground sm:h-10 sm:text-sm"
             >
               Cancel
             </AlertDialogCancel>
@@ -2062,7 +2062,7 @@ const clearAnnouncementFilters = () => {
                 deleteAnnouncement.isPending ||
                 !deleteReason.trim()
               }
-              className="h-9 text-xs bg-destructive text-destructive-foreground hover:bg-destructive/90 sm:h-10 sm:text-sm"
+              className="h-9 bg-destructive text-xs text-white shadow-soft !transition-none hover:bg-none hover:bg-accent hover:text-foreground sm:h-10 sm:text-sm"
             >
               {deleteAnnouncement.isPending && (
                 <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin sm:mr-2 sm:h-4 sm:w-4" />
@@ -2128,7 +2128,7 @@ const clearAnnouncementFilters = () => {
           <AlertDialogFooter className="gap-2 sm:gap-0">
             <AlertDialogCancel
               disabled={republishAnnouncement.isPending}
-              className="h-9 text-xs sm:h-10 sm:text-sm"
+              className="h-9 bg-destructive text-xs text-white shadow-soft !transition-none hover:bg-none hover:bg-accent hover:text-foreground sm:h-10 sm:text-sm"
             >
               Cancel
             </AlertDialogCancel>
@@ -2142,7 +2142,7 @@ const clearAnnouncementFilters = () => {
                 republishAnnouncement.isPending ||
                 !republishReason.trim()
               }
-              className="h-9 text-xs sm:h-10 sm:text-sm"
+              className="h-9 bg-gradient-emerald text-xs text-white shadow-soft !transition-none hover:bg-none hover:bg-accent hover:text-foreground sm:h-10 sm:text-sm"
             >
               {republishAnnouncement.isPending && (
                 <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin sm:mr-2 sm:h-4 sm:w-4" />
