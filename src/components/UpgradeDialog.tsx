@@ -62,7 +62,7 @@ export function UpgradeDialog({
           <Feature text="Enhanced AI Study Assistant" />
         </div>
 
-        <p className="text-5xl font-bold sm:text-5xl">
+        <p className="text-4xl font-bold sm:text-4xl">
             ₦3,000
             <span className="text-sm font-normal sm:text-lg">
               /month

@@ -175,6 +175,40 @@ function PremiumPage() {
         </div>
       </div>
 
+    {/* Marketplace */}
+     <section>
+        <div className="mb-6 text-left">
+          <p className="mt-12 text-[10px] uppercase tracking-[0.2em] text-gold sm:text-xs">
+            MARKETPLACE
+          </p>
+
+          <h2 className="mt-3 font-display text-3xl font-semibold sm:text-4xl md:mt-3 md:text-[1.7rem] lg:mt-3 lg:text-4xl">
+            Marketplace Resource Upload and Purchase
+          </h2>
+
+          <p className="mt-2 text-xs text-muted-foreground sm:text-sm">
+            Upload and explore academic resources available on the Marketplace. All users can browse
+            available Marketplace resources, while uploading, previewing, and purchasing
+            individual Marketplace materials are exclusive to Premium members. Purchases are made
+            through direct monetary payments, separately from your subscription and
+            Download Credits.
+          </p>
+        </div>
+
+        <div className="rounded-sm border bg-card p-4">
+            <p className="text-xs leading-6 text-muted-foreground sm:text-sm">
+              The Marketplace is accessible to all users for browsing available academic
+              resources. However, only Premium members can upload Marketplace resources, preview
+              Marketplace materials, and purchase Marketplace resources. Each resource has
+              its own price and must be purchased separately through direct monetary
+              payment before access is granted. Marketplace purchases are independent of
+              your Premium subscription, and neither your subscription fee nor your
+              Download Credits can be used to pay for them. Download Credits remain
+              exclusively for downloading eligible resources outside the Marketplace.
+            </p>
+        </div>
+      </section>
+      
       {/* Download Credits */}
       <section>
         <div className="mb-6 text-left">
@@ -304,40 +338,6 @@ function PremiumPage() {
     </p>
   </div>
 </section>
-
-    {/* Marketplace */}
-     <section>
-        <div className="mb-6 text-left">
-          <p className="mt-12 text-[10px] uppercase tracking-[0.2em] text-gold sm:text-xs">
-            MARKETPLACE
-          </p>
-
-          <h2 className="mt-3 font-display text-3xl font-semibold sm:text-4xl md:mt-3 md:text-[1.7rem] lg:mt-3 lg:text-4xl">
-            Marketplace Resource Upload and Purchase
-          </h2>
-
-          <p className="mt-2 text-xs text-muted-foreground sm:text-sm">
-            Upload and explore academic resources available on the Marketplace. All users can browse
-            available Marketplace resources, while uploading, previewing, and purchasing
-            individual Marketplace materials are exclusive to Premium members. Purchases are made
-            through direct monetary payments, separately from your subscription and
-            Download Credits.
-          </p>
-        </div>
-
-        <div className="rounded-sm border bg-card p-4">
-            <p className="text-xs leading-6 text-muted-foreground sm:text-sm">
-              The Marketplace is accessible to all users for browsing available academic
-              resources. However, only Premium members can upload Marketplace resources, preview
-              Marketplace materials, and purchase Marketplace resources. Each resource has
-              its own price and must be purchased separately through direct monetary
-              payment before access is granted. Marketplace purchases are independent of
-              your Premium subscription, and neither your subscription fee nor your
-              Download Credits can be used to pay for them. Download Credits remain
-              exclusively for downloading eligible resources outside the Marketplace.
-            </p>
-        </div>
-      </section>
 
       {/* Frequently Asked Questions */}
       <section>
