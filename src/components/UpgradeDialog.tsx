@@ -62,22 +62,20 @@ export function UpgradeDialog({
           <Feature text="Enhanced AI Study Assistant" />
         </div>
 
-        <div className="rounded-md border bg-primary/5 p-2.5 text-left sm:rounded-xl sm:p-4">
-          <p className="text-xl font-bold sm:text-3xl">
+        <p className="text-xl font-bold sm:text-3xl">
             ₦3,000
             <span className="text-sm font-normal sm:text-lg">
               /month
             </span>
           </p>
-        </div>
 
         <DialogFooter className="flex-col gap-2 pt-1 sm:flex-row sm:gap-3">
           <Button
             variant="outline"
-            className="h-9 w-full bg-muted text-xs sm:h-10 sm:text-sm"
+            className="h-9 w-full bg-destructive text-xs sm:h-10 sm:text-sm"
             onClick={() => onOpenChange(false)}
           >
-            Back
+            Cancel
           </Button>
 
           <Button

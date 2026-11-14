@@ -317,9 +317,9 @@ function PremiumPage() {
           </h2>
 
           <p className="mt-2 text-xs text-muted-foreground sm:text-sm">
-            Explore academic resources listed on the Marketplace. All users can browse
+            Upload and explore academic resources available on the Marketplace. All users can browse
             available Marketplace resources, while uploading, previewing, and purchasing
-            individual materials are exclusive to Premium members. Purchases are made
+            individual Marketplace materials are exclusive to Premium members. Purchases are made
             through direct monetary payments, separately from your subscription and
             Download Credits.
           </p>
@@ -329,8 +329,8 @@ function PremiumPage() {
           <div className="rounded-sm border bg-card p-4">
             <p className="text-xs leading-6 text-muted-foreground sm:text-sm">
               The Marketplace is accessible to all users for browsing available academic
-              resources. However, only Premium members can upload resources, preview
-              Marketplace materials, and purchase individual listings. Each resource has
+              resources. However, only Premium members can upload Marketplace resources, preview
+              Marketplace materials, and purchase Marketplace resources. Each resource has
               its own price and must be purchased separately through direct monetary
               payment before access is granted. Marketplace purchases are independent of
               your Premium subscription, and neither your subscription fee nor your
