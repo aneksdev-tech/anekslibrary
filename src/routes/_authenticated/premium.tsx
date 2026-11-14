@@ -93,7 +93,7 @@ function PremiumPage() {
 
             <UnavailableFeature text="Full previews of Premium materials" />
             <UnavailableFeature text="Monthly Download Credits" />
-            <UnavailableFeature text="Marketplace resources" />
+            <UnavailableFeature text="Marketplace Access" />
             <UnavailableFeature text="Ad-free experience" />
           </div>
 
@@ -145,7 +145,7 @@ function PremiumPage() {
             <Feature premium text="Full access to exclusive Premium materials" />
             <Feature premium text="10 Download Credits every billing month" />
             <Feature premium text="Option to purchase additional Download Credits" />
-            <Feature premium text="Marketplace resources" />
+            <Feature premium text="Marketplace Access" />
             <Feature premium text="Ad-free experience" />
             <Feature premium text="Enhanced AI Study Assistant" />
           </div>
