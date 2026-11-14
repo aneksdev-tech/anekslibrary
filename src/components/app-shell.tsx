@@ -1,4 +1,3 @@
-
 import {
   Link,
   useNavigate,
@@ -52,6 +51,7 @@ interface NavItem {
   label: string;
   admin?: boolean;
   academic?: boolean;
+  excludeGuest?: boolean;
 }
 
 const NAV: NavItem[] = [
@@ -65,21 +65,24 @@ const NAV: NavItem[] = [
     icon: Library,
     label: "Library",
   },
-  {
-    to: "/upload",
-    icon: Upload,
-    label: "Upload",
-  },
-  {
-    to: "/my-uploads",
-    icon: FileCheck2,
-    label: "My Uploads",
-  },
-  {
-    to: "/bookmarks",
-    icon: Bookmark,
-    label: "Bookmarks",
-  },
+{
+  to: "/upload",
+  icon: Upload,
+  label: "Upload",
+  excludeGuest: true,
+},
+{
+  to: "/my-uploads",
+  icon: FileCheck2,
+  label: "My Uploads",
+  excludeGuest: true,
+},
+{
+  to: "/bookmarks",
+  icon: Bookmark,
+  label: "Bookmarks",
+  excludeGuest: true,
+},
   {
     to: "/notifications",
     icon: Bell,
@@ -150,7 +153,9 @@ export function AppShell({
     role === "staff";
 
   const canAccessAcademic =
-    role === "lecturer";
+    role === "admin" ||
+    role === "co-admin" ||
+    role === "lecturer" ;
 
   const {
     data: attentionCount = 0,
@@ -187,6 +192,42 @@ refetchOnMount: true,
 refetchOnWindowFocus: true,
 refetchOnReconnect: true,
 refetchInterval: 15_000,
+  });
+
+  const {
+    data: academicAttentionCount = 0,
+  } = useQuery({
+    queryKey: [
+      "academic-workspace-attention-count",
+      user?.id,
+      role,
+    ],
+    enabled:
+      !!user &&
+      (
+        role === "admin" ||
+        role === "co-admin" ||
+        role === "lecturer"
+      ),
+    queryFn: async () => {
+      const {
+        data,
+        error,
+      } = await supabase.rpc(
+        "get_academic_workspace_attention_count",
+      );
+
+      if (error) {
+        throw error;
+      }
+
+      return data ?? 0;
+    },
+    staleTime: 10_000,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+    refetchInterval: 15_000,
   });
 
   const {
@@ -277,20 +318,32 @@ useEffect(() => {
     void queryClient.invalidateQueries({
       queryKey: ["workspace-attention-count", user.id, role],
     });
+
+    void queryClient.invalidateQueries({
+      queryKey: [
+        "academic-workspace-attention-count",
+        user.id,
+        role,
+      ],
+    });
   }
 }, [pathname, user?.id, role, queryClient]);
 
-  const items = NAV.filter((n) => {
-    if (n.admin) {
-      return canAccessAdmin;
-    }
+const items = NAV.filter((n) => {
+  if (n.admin) {
+    return canAccessAdmin;
+  }
 
-    if (n.academic) {
-      return canAccessAcademic;
-    }
+  if (n.academic) {
+    return canAccessAcademic;
+  }
 
-    return true;
-  });
+  if (n.excludeGuest && role === "guest") {
+    return false;
+  }
+
+  return true;
+});
 
   const handleSignOut = async () => {
     await signOut();
@@ -326,6 +379,7 @@ useEffect(() => {
           items={items}
           pathname={pathname}
           attentionCount={attentionCount}
+          academicAttentionCount={academicAttentionCount}
           notificationCount={notificationCount}
           announcementCount={announcementCount}
         />
@@ -371,6 +425,7 @@ useEffect(() => {
               items={items}
               pathname={pathname}
               attentionCount={attentionCount}
+              academicAttentionCount={academicAttentionCount}
               notificationCount={notificationCount}
               announcementCount={announcementCount}
               onNavigate={() => setMobileOpen(false)}
@@ -396,7 +451,7 @@ useEffect(() => {
             <button
               onClick={toggle}
               aria-label="Toggle theme"
-              className="rounded-sm border border-border p-2 text-muted-foreground hover:text-foreground"
+              className="cursor-pointer rounded-sm border border-border p-2 text-muted-foreground hover:text-foreground"
             >
               {theme === "dark" ? (
                 <Sun className="h-4 w-4" />
@@ -483,6 +538,7 @@ function SidebarNav({
   pathname,
   onNavigate,
   attentionCount,
+  academicAttentionCount,
   notificationCount,
   announcementCount,
 }: {
@@ -490,6 +546,7 @@ function SidebarNav({
   pathname: string;
   onNavigate?: () => void;
   attentionCount: number;
+  academicAttentionCount: number;
   notificationCount: number;
   announcementCount: number;
 }) {
@@ -505,9 +562,14 @@ function SidebarNav({
               pathname.startsWith("/profile/")
             ));
 
+        const itemAttentionCount = item.admin
+          ? attentionCount
+          : item.academic
+            ? academicAttentionCount
+            : 0;
+
         const showAttentionBadge =
-          (item.admin || item.academic) &&
-          attentionCount > 0;
+          itemAttentionCount > 0;
 
         const showNotificationBadge =
           item.to === "/notifications" &&
@@ -538,9 +600,9 @@ function SidebarNav({
             {showAttentionBadge ? (
               <span
                 className="ml-auto grid h-4 min-w-4 shrink-0 place-items-center rounded-full bg-gold px-1 text-[9px] font-semibold text-gold-foreground md:h-5 md:min-w-5 md:text-[10px]"
-                aria-label={`${attentionCount} pending items`}
+                aria-label={`${itemAttentionCount} pending items`}
               >
-                {attentionCount > 99 ? "99+" : attentionCount}
+                {itemAttentionCount > 99 ? "99+" : itemAttentionCount}
               </span>
             ) : null}
 

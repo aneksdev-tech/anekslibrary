@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Megaphone, Plus, Pencil, Trash2, Power, PowerOff, Loader2, History, ChevronDown, ChevronUp, Filter, X, RotateCcw } from "lucide-react";
+import { Pencil, Trash2, Power, PowerOff, Loader2, History, ChevronDown, ChevronUp, Filter, X, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
@@ -1144,30 +1144,27 @@ const clearAnnouncementFilters = () => {
 
           <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
             <Button
-              type="button"
-              onClick={handleSave}
-              disabled={saveAnnouncement.isPending}
-              className="h-9 w-full text-xs bg-gradient-emerald text-primary-foreground sm:h-10 sm:w-auto sm:text-sm"
-            >
-              {saveAnnouncement.isPending ? (
-                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin sm:h-4 sm:w-4" />
-              ) : (
-                <Plus className="mr-1.5 h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              )}
-
-              {saveAnnouncement.isPending
-                ? editingAnnouncement
-                  ? "Saving…"
-                  : canPublishAnnouncements
-                    ? "Publishing…"
-                    : "Submitting…"
-                : editingAnnouncement
-                  ? "Save changes"
-                  : canPublishAnnouncements
-                    ? "Publish announcement"
-                    : "Submit announcement"}
-            </Button>
-
+  type="button"
+  variant="ghost"
+  onClick={handleSave}
+  disabled={saveAnnouncement.isPending}
+  className="h-9 w-full bg-gradient-emerald text-xs text-white shadow-soft !transition-none hover:bg-none hover:bg-accent hover:text-foreground sm:h-10 sm:w-auto sm:text-sm"
+>
+  {saveAnnouncement.isPending && (
+  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin sm:h-4 sm:w-4" />
+)}
+  {saveAnnouncement.isPending
+    ? editingAnnouncement
+      ? "Saving…"
+      : canPublishAnnouncements
+        ? "Publishing…"
+        : "Submitting…"
+    : editingAnnouncement
+      ? "Save changes"
+      : canPublishAnnouncements
+        ? "Publish announcement"
+        : "Submit announcement"}
+</Button>
             {editingAnnouncement && (
               <Button
                 type="button"
@@ -1889,10 +1886,6 @@ const clearAnnouncementFilters = () => {
               }
               className="h-9 text-xs sm:h-10 sm:text-sm"
             >
-              {saveAnnouncement.isPending && (
-                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin sm:mr-2 sm:h-4 sm:w-4" />
-              )}
-
               {hasActualChanges()
                 ? "Save changes"
                 : "Close"}

@@ -20,7 +20,6 @@ import {
   History,
   Loader2,
   Pencil,
-  Plus,
   RotateCcw,
   Tag,
   Trash2,
@@ -893,20 +892,19 @@ function CategoriesPage() {
 
             <div className="flex justify-end">
               <Button
-                type="submit"
-                disabled={create.isPending}
-                className="h-9 w-full text-xs bg-gradient-emerald text-primary-foreground sm:h-10 sm:w-auto sm:text-sm"
-              >
-                {create.isPending ? (
-                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin sm:h-4 sm:w-4" />
-                ) : (
-                  <Plus className="mr-1.5 h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                )}
+  type="submit"
+  variant="ghost"
+  disabled={create.isPending}
+  className="h-9 w-full bg-gradient-emerald text-xs text-white shadow-soft !transition-none hover:bg-none hover:bg-accent hover:text-foreground sm:h-10 sm:w-auto sm:text-sm"
+>
+  {create.isPending && (
+    <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin sm:h-4 sm:w-4" />
+  )}
 
-                {create.isPending
-                  ? "Creating…"
-                  : "Create category"}
-              </Button>
+  {create.isPending
+    ? "Creating…"
+    : "Create category"}
+</Button>
             </div>
           </form>
         </div>

@@ -175,7 +175,7 @@ function Notifications() {
         {unreadCount > 0 && (
           <button
             type="button"
-            className="mb-0.5 inline-flex shrink-0 items-center gap-1.5 rounded-sm border border-primary bg-primary px-2.5 py-1.5 text-[10px] font-medium text-primary-foreground transition-colors hover:border-border hover:bg-transparent hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:pointer-events-none disabled:opacity-50 sm:mb-1 sm:gap-2 sm:px-3 sm:py-2 sm:text-xs"
+            className="group mb-0.5 inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-sm bg-gradient-emerald px-2.5 py-1.5 text-[10px] font-medium text-white shadow-soft hover:bg-none hover:bg-accent hover:text-foreground sm:mb-1 sm:gap-2 sm:px-3 sm:py-2 sm:text-xs"
             disabled={
               markAll.isPending
             }
@@ -183,7 +183,7 @@ function Notifications() {
               markAll.mutate()
             }
           >
-            <CheckCheck className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            <CheckCheck className="h-3.5 w-3.5 transition-colors group-hover:text-foreground sm:h-4 sm:w-4" />
 
             {markAll.isPending
               ? "Marking…"

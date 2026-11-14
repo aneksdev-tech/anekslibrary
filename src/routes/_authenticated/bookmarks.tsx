@@ -1,3 +1,4 @@
+import { requireRole } from "@/lib/route-guards";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,6 +8,16 @@ import { ResourceCard, type ResourceRow } from "./library";
 import { EmptyState } from "./dashboard";
 
 export const Route = createFileRoute("/_authenticated/bookmarks")({
+  beforeLoad: async () => {
+    await requireRole([
+      "admin",
+      "co-admin",
+      "lecturer",
+      "staff",
+      "student",
+      "researcher",
+    ]);
+  },
   head: () => ({
     meta: [
       { title: "Bookmarks | Aneks Library" },

@@ -38,6 +38,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
+import { requireRole } from "@/lib/route-guards";
 import {
   EmptyState,
   StatusPill,
@@ -46,6 +47,16 @@ import {
 export const Route = createFileRoute(
   "/_authenticated/my-uploads",
 )({
+  beforeLoad: async () => {
+    await requireRole([
+      "admin",
+      "co-admin",
+      "lecturer",
+      "staff",
+      "student",
+      "researcher",
+    ]);
+  },
   head: () => ({
     meta: [
       {

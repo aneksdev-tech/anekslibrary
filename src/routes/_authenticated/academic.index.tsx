@@ -54,12 +54,17 @@ export const Route = createFileRoute(
       });
     }
 
-    if (profile.primary_role !== "lecturer") {
-      throw redirect({
-        to: "/dashboard",
-        replace: true,
-      });
-    }
+    if (
+      !profile.primary_role ||
+      !["admin", "co-admin", "lecturer"].includes(
+        profile.primary_role
+      )
+    ) {
+  throw redirect({
+    to: "/dashboard",
+    replace: true,
+  });
+}
   },
 
   head: () => ({
@@ -200,7 +205,9 @@ useEffect(() => {
 
   if (
     profile.status !== "active" ||
-    !roles?.includes("lecturer")
+    !roles?.some((role) =>
+      ["admin", "co-admin", "lecturer"].includes(role)
+    )
   ) {
     toast.error(
       "Your account no longer has permission to access the Academic Workspace.",

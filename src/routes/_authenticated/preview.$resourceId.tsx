@@ -379,24 +379,24 @@ const semesterLabel = getResourceScopeLabel(
 
             <div className="max-w-sm pt-1 sm:pt-2 mb-4 lg:mb-5">
               <Button
-                type="button"
-                variant="outline"
-                className="h-9 w-full border-primary/40 bg-gradient-emerald text-primary-foreground transition-all duration-300 hover:brightness-130 hover:text-white lg:w-49 md:w-49"
-                onClick={download}
-                disabled={downloading}
-              >
-                {downloading ? (
-                  <>
-                    <Loader2 className="mr-1.5 h-3.5 w-3.5 shrink-0 animate-spin sm:mr-2 sm:h-4 sm:w-4" />
-                    Preparing Download...
-                  </>
-                ) : (
-                  <>
-                    <Download className="mr-1.5 h-3.5 w-3.5 shrink-0 sm:mr-2 sm:h-4 sm:w-4" />
-                    Download
-                  </>
-                )}
-              </Button>
+  type="button"
+  variant="ghost"
+  className="h-9 w-52 bg-gradient-emerald text-white text-xs !transition-none hover:bg-none hover:bg-accent hover:text-foreground sm:h-10 sm:text-sm"
+  onClick={download}
+  disabled={downloading}
+>
+  {downloading ? (
+    <>
+      <Loader2 className="mr-1.5 h-3.5 w-3.5 shrink-0 animate-spin sm:mr-2 sm:h-4 sm:w-4" />
+      Preparing Download...
+    </>
+  ) : (
+    <>
+      <Download className="mr-1.5 h-3.5 w-3.5 shrink-0 sm:mr-2 sm:h-4 sm:w-4" />
+      Download
+    </>
+  )}
+</Button>
             </div>
           </div>
         </div>

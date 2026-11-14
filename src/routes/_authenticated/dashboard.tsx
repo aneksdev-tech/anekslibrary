@@ -71,6 +71,10 @@ function DashboardPage() {
   const { profile, user, roles } =
     useAuth();
 
+  const isGuest =
+    profile?.primary_role === "guest" ||
+    roles.includes("guest");
+
   const queryClient =
     useQueryClient();
 
@@ -89,7 +93,7 @@ function DashboardPage() {
         "dash-stats",
         user?.id,
       ],
-      enabled: !!user,
+      enabled: !!user && !isGuest,
       queryFn: async () => {
         const [
           uploads,
@@ -169,7 +173,7 @@ function DashboardPage() {
         "recent-uploads",
         user?.id,
       ],
-      enabled: !!user,
+      enabled: !!user && !isGuest,
       queryFn: async () => {
         const {
           data,
@@ -381,9 +385,11 @@ function DashboardPage() {
     <div className="space-y-6 sm:space-y-8">
       <div>
         <p className="text-xs uppercase tracking-[0.2em] text-gold">
-          {roles.includes("admin")
-            ? "Admin"
-            : roles[0] ?? "Member"}
+          {isGuest
+            ? "Guest"
+            : roles.includes("admin")
+              ? "Admin"
+              : roles[0] ?? "Member"}
         </p>
 
         <h1 className="mt-1 font-display text-lg font-semibold sm:text-3xl">
@@ -402,251 +408,280 @@ function DashboardPage() {
       <AnnouncementBanner />
       <AnnouncementPopup />
 
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
-        {cards.map((c) => (
-          <div
-            key={c.label}
-            className="rounded-sm border border-border bg-card p-3 shadow-soft transition-all duration-200 hover:-translate-y-0.5 hover:shadow-elegant sm:p-4 lg:p-5"
+      {isGuest ? (
+        <div className="flex flex-col items-center justify-center gap-3 rounded-sm border border-border bg-card px-4 py-10 text-center shadow-soft sm:py-12">
+          <FileCheck2 className="h-9 w-9 text-muted-foreground" />
+
+          <h2 className="font-display text-lg font-semibold">
+            Explore Aneks Library
+          </h2>
+
+          <p className="max-w-sm text-sm text-muted-foreground">
+            Browse academic resources, discover learning materials, and access resources available to you.
+          </p>
+
+          <Button
+            asChild
+            className="group cursor-pointer border border-primary bg-gradient-emerald text-primary-foreground shadow-soft transition-all hover:border-border hover:bg-none hover:bg-accent hover:text-primary hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           >
-            <div className="flex items-center justify-between gap-2">
-              <span className="min-w-0 truncate text-[10px] uppercase tracking-wider text-muted-foreground sm:text-xs">
-                {c.label}
+            <Link to="/library">
+              <span className="transition-colors group-hover:text-primary">
+                Browse Library
               </span>
+              <ArrowUpRight className="ml-1 h-4 w-4 transition-colors group-hover:text-primary" />
+            </Link>
+          </Button>
+        </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
+            {cards.map((c) => (
+              <div
+                key={c.label}
+                className="rounded-sm border border-border bg-card p-3 shadow-soft transition-all duration-200 hover:-translate-y-0.5 hover:shadow-elegant sm:p-4 lg:p-5"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="min-w-0 truncate text-[10px] uppercase tracking-wider text-muted-foreground sm:text-xs">
+                    {c.label}
+                  </span>
 
-              <c.icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground sm:h-4 sm:w-4" />
-            </div>
-
-            <div className="mt-3 font-display text-2xl font-semibold sm:mt-4 sm:text-3xl">
-              {c.value}
-            </div>
-
-            <div className="mt-1 truncate text-[10px] text-muted-foreground sm:text-xs">
-  {c.label === "Reputation" ? (
-    <span className="text-gold">
-      {contributor.emoji} {contributor.name}
-    </span>
-  ) : (
-    c.sub
-  )}
-</div>
-
-            {c.label ===
-              "Reputation" && (
-              <>
-                <div className="mt-2 h-1.5 overflow-hidden rounded-sm bg-muted sm:mt-3 sm:h-2">
-                  <div
-                    className="h-full rounded-sm bg-gradient-gold transition-all duration-500"
-                    style={{
-                      width: `${progress}%`,
-                    }}
-                  />
+                  <c.icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground sm:h-4 sm:w-4" />
                 </div>
 
-                <p className="mt-1.5 text-[9px] leading-tight text-muted-foreground sm:mt-2 sm:text-[11px]">
-                  {nextLevel
-                    ? `${nextLevel.pointsNeeded} pts to ${nextLevel.emoji} ${nextLevel.name}`
-                    : "Highest contributor level reached 👑"}
-                </p>
-              </>
-            )}
-          </div>
-        ))}
-      </div>
+                <div className="mt-3 font-display text-2xl font-semibold sm:mt-4 sm:text-3xl">
+                  {c.value}
+                </div>
 
-      <div>
-        {/* Section heading outside the card */}
-        <div className="mb-3 flex items-center justify-between gap-3">
-          <div className="min-w-0">
-            <h2 className="font-display text-base font-semibold sm:text-lg">
-              Recent uploads
-            </h2>
+                <div className="mt-1 truncate text-[10px] text-muted-foreground sm:text-xs">
+                  {c.label === "Reputation" ? (
+                    <span className="text-gold">
+                      {contributor.emoji} {contributor.name}
+                    </span>
+                  ) : (
+                    c.sub
+                  )}
+                </div>
 
-            <p className="mt-0.5 text-xs text-muted-foreground sm:text-sm">
-              Your latest uploads and their current status.
-            </p>
-          </div>
-
-          <Link
-            to="/my-uploads"
-            className="inline-flex shrink-0 items-center text-xs font-medium text-base transition-colors hover:text-muted-foreground sm:text-sm"
-          >
-            View all
-            <ArrowUpRight className="ml-1 h-3.5 w-3.5" />
-          </Link>
-        </div>
-
-        {/* Card containing only the resources */}
-        <div className="overflow-hidden rounded-sm border border-border bg-card shadow-soft">
-          {recent && recent.length > 0 ? (
-            <ul className="divide-y divide-border">
-              {recent.map((r) => {
-                const categoryName =
-                  r.category?.deleted_at == null &&
-                  r.category?.name?.trim()
-                    ? r.category.name.trim()
-                    : "Uncategorized";
-
-                return (
-                  <li
-                    key={r.id}
-                    className={`px-4 py-4 transition-colors sm:py-5 ${
-                      r.status === "deleted"
-                        ? "bg-muted/30"
-                        : ""
-                    }`}
-                  >
-                    <div className="flex items-start gap-3 sm:gap-4">
-                      <div className="min-w-0 flex-1">
-                        <div className="mb-1.5">
-                          <StatusPill status={r.status} />
-                        </div>
-
-                        <p className="truncate text-sm font-medium sm:text-base">
-                          {r.title}
-                        </p>
-
-                        <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] text-muted-foreground sm:text-xs">
-                          <span>{categoryName}</span>
-                          <span>·</span>
-                          <span>
-                            {r.download_count} downloads
-                          </span>
-                          <span>·</span>
-                          <span>
-                            {new Date(
-                              r.created_at,
-                            ).toLocaleDateString()}
-                          </span>
-                        </div>
-
-                        {r.status === "rejected" &&
-                          r.rejection_reason && (
-                            <p className="mt-1.5 text-xs leading-5 text-muted-foreground sm:mt-2 sm:text-sm sm:leading-6">
-                              <span className="font-medium text-foreground">
-                                Reason:
-                              </span>{" "}
-                              {r.rejection_reason}
-                            </p>
-                          )}
-                      </div>
-
-                      {r.status === "draft" && (
-                        <div className="flex shrink-0 flex-col gap-2">
-                          <Link
-                            to="/upload/$draftId"
-                            params={{
-                              draftId: r.id,
-                            }}
-                            className="inline-flex h-9 w-16 items-center justify-center rounded-sm border border-border bg-card px-2 text-sm font-medium transition-colors hover:bg-primary"
-                          >
-                            Edit
-                          </Link>
-
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setPendingDelete({
-                                id: r.id,
-                                title: r.title,
-                              })
-                            }
-                            disabled={deletingDraftId === r.id}
-                            className="inline-flex h-9 w-16 items-center justify-center rounded-sm border border-destructive/30 bg-destructive/5 px-2 text-sm font-medium text-destructive transition-colors hover:bg-destructive hover:text-muted-foreground disabled:pointer-events-none disabled:opacity-50"
-                          >
-                            {deletingDraftId === r.id
-                              ? "Deleting…"
-                              : "Delete"}
-                          </button>
-                        </div>
-                      )}
+                {c.label ===
+                  "Reputation" && (
+                  <>
+                    <div className="mt-2 h-1.5 overflow-hidden rounded-sm bg-muted sm:mt-3 sm:h-2">
+                      <div
+                        className="h-full rounded-sm bg-gradient-gold transition-all duration-500"
+                        style={{
+                          width: `${progress}%`,
+                        }}
+                      />
                     </div>
-                  </li>
-                );
-              })}
-            </ul>
-          ) : (
-            <div className="py-8">
-              <EmptyState
-                title="No uploads yet"
-                desc="Contribute your first resource. A past question, handout, lecture note, publication, etc."
-                cta={
-                  <Button
-  asChild
-  className="bg-gradient-emerald text-primary-foreground transition-all duration-300 hover:brightness-130 hover:text-white"
->
-  <Link to="/upload">
-    Upload
-  </Link>
-</Button>
-                }
-              />
+
+                    <p className="mt-1.5 text-[9px] leading-tight text-muted-foreground sm:mt-2 sm:text-[11px]">
+                      {nextLevel
+                        ? `${nextLevel.pointsNeeded} pts to ${nextLevel.emoji} ${nextLevel.name}`
+                        : "Highest contributor level reached 👑"}
+                    </p>
+                  </>
+                )}
+              </div>
+            ))}
+          </div>
+
+          <div>
+            {/* Section heading outside the card */}
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <h2 className="font-display text-base font-semibold sm:text-lg">
+                  Recent uploads
+                </h2>
+
+                <p className="mt-0.5 text-xs text-muted-foreground sm:text-sm">
+                  Your latest uploads and their current status.
+                </p>
+              </div>
+
+              <Link
+                to="/my-uploads"
+                className="inline-flex shrink-0 items-center text-xs font-medium text-base transition-colors hover:text-muted-foreground sm:text-sm"
+              >
+                View all
+                <ArrowUpRight className="ml-1 h-3.5 w-3.5" />
+              </Link>
             </div>
-          )}
-        </div>
-      </div>
 
-      <AlertDialog
-        open={
-          pendingDelete !== null
-        }
-        onOpenChange={(open) => {
-          if (
-            !open &&
-            !deletingDraftId
-          ) {
-            setPendingDelete(null);
-          }
-        }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              Delete draft?
-            </AlertDialogTitle>
+            {/* Card containing only the resources */}
+            <div className="overflow-hidden rounded-sm border border-border bg-card shadow-soft">
+              {recent && recent.length > 0 ? (
+                <ul className="divide-y divide-border">
+                  {recent.map((r) => {
+                    const categoryName =
+                      r.category?.deleted_at == null &&
+                      r.category?.name?.trim()
+                        ? r.category.name.trim()
+                        : "Uncategorized";
 
-            <AlertDialogDescription className="text-sm">
-              Delete{" "}
-              <strong>
-                {pendingDelete?.title}
-              </strong>
-              ? This will permanently
-              remove the draft and its
-              attached file. This action
-              cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
+                    return (
+                      <li
+                        key={r.id}
+                        className={`px-4 py-4 transition-colors sm:py-5 ${
+                          r.status === "deleted"
+                            ? "bg-muted/30"
+                            : ""
+                        }`}
+                      >
+                        <div className="flex items-start gap-3 sm:gap-4">
+                          <div className="min-w-0 flex-1">
+                            <div className="mb-1.5">
+                              <StatusPill status={r.status} />
+                            </div>
 
-          <AlertDialogFooter className="gap-2 sm:gap-0">
-            <AlertDialogCancel
-              disabled={
-                deletingDraftId !==
-                null
-              }
-            >
-              Cancel
-            </AlertDialogCancel>
+                            <p className="truncate text-sm font-medium sm:text-base">
+                              {r.title}
+                            </p>
 
-            <AlertDialogAction
-              onClick={(event) => {
-                event.preventDefault();
-                handleDeleteDraft();
-              }}
-              disabled={
-                deletingDraftId !==
-                null
-              }
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {deletingDraftId !==
-                null && (
-                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin sm:mr-2 sm:h-4 sm:w-4" />
+                            <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] text-muted-foreground sm:text-xs">
+                              <span>{categoryName}</span>
+                              <span>·</span>
+                              <span>
+                                {r.download_count} downloads
+                              </span>
+                              <span>·</span>
+                              <span>
+                                {new Date(
+                                  r.created_at,
+                                ).toLocaleDateString()}
+                              </span>
+                            </div>
+
+                            {r.status === "rejected" &&
+                              r.rejection_reason && (
+                                <p className="mt-1.5 text-xs leading-5 text-muted-foreground sm:mt-2 sm:text-sm sm:leading-6">
+                                  <span className="font-medium text-foreground">
+                                    Reason:
+                                  </span>{" "}
+                                  {r.rejection_reason}
+                                </p>
+                              )}
+                          </div>
+
+                          {r.status === "draft" && (
+                            <div className="flex shrink-0 flex-col gap-2">
+                              <Link
+                                to="/upload/$draftId"
+                                params={{
+                                  draftId: r.id,
+                                }}
+                                className="inline-flex h-9 w-16 items-center justify-center rounded-sm border border-border bg-card px-2 text-sm font-medium transition-colors hover:bg-gradient-emerald"
+                              >
+                                Edit
+                              </Link>
+
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setPendingDelete({
+                                    id: r.id,
+                                    title: r.title,
+                                  })
+                                }
+                                disabled={deletingDraftId === r.id}
+                                className="inline-flex h-9 w-16 items-center justify-center rounded-sm border border-destructive/30 bg-destructive/5 px-2 text-sm font-medium text-destructive transition-colors hover:bg-destructive hover:text-muted-foreground disabled:pointer-events-none disabled:opacity-50"
+                              >
+                                {deletingDraftId === r.id
+                                  ? "Deleting…"
+                                  : "Delete"}
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              ) : (
+                <div className="py-8">
+                  <EmptyState
+                    title="No uploads yet"
+                    desc="Contribute your first resource. A past question, handout, lecture note, publication, etc."
+                    cta={
+                      <Button
+                        asChild
+                        variant="ghost"
+                        className="group cursor-pointer bg-gradient-emerald text-white shadow-soft !transition-none hover:bg-none hover:bg-accent hover:text-foreground"
+                      >
+                        <Link to="/upload">
+                          Upload
+                        </Link>
+                      </Button>
+                    }
+                  />
+                </div>
               )}
+            </div>
+          </div>
 
-              Delete draft
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+          <AlertDialog
+            open={
+              pendingDelete !== null
+            }
+            onOpenChange={(open) => {
+              if (
+                !open &&
+                !deletingDraftId
+              ) {
+                setPendingDelete(null);
+              }
+            }}
+          >
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>
+                  Delete draft?
+                </AlertDialogTitle>
+
+                <AlertDialogDescription className="text-sm">
+                  Delete{" "}
+                  <strong>
+                    {pendingDelete?.title}
+                  </strong>
+                  ? This will permanently
+                  remove the draft and its
+                  attached file. This action
+                  cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+
+              <AlertDialogFooter className="gap-2 sm:gap-0">
+                <AlertDialogCancel
+                  disabled={
+                    deletingDraftId !==
+                    null
+                  }
+                >
+                  Cancel
+                </AlertDialogCancel>
+
+                <AlertDialogAction
+                  onClick={(event) => {
+                    event.preventDefault();
+                    handleDeleteDraft();
+                  }}
+                  disabled={
+                    deletingDraftId !==
+                    null
+                  }
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  {deletingDraftId !==
+                    null && (
+                    <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin sm:mr-2 sm:h-4 sm:w-4" />
+                  )}
+
+                  Delete draft
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </>
+      )}
     </div>
   );
 }

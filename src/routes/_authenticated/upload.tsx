@@ -1,3 +1,4 @@
+import { requireRole } from "@/lib/route-guards";
 import {
   createFileRoute,
   Outlet,
@@ -90,6 +91,16 @@ type UploadPageProps = {
 };
 
 export const Route = createFileRoute("/_authenticated/upload")({
+  beforeLoad: async () => {
+    await requireRole([
+      "admin",
+      "co-admin",
+      "lecturer",
+      "staff",
+      "student",
+      "researcher",
+    ]);
+  },
   component: UploadRouteLayout,
 });
 
@@ -98,7 +109,7 @@ function UploadRouteLayout() {
 }
 
 export function UploadPage({ draftId }: UploadPageProps) {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const nav = useNavigate();
   const qc = useQueryClient();
 
@@ -281,6 +292,10 @@ const departments =
   const validateForSubmit = () => {
     if (!user) {
       throw new Error("You must be signed in.");
+    }
+
+    if (profile?.primary_role === "guest") {
+      throw new Error("Guests cannot upload resources.");
     }
 
     if (!file && !existingFilePath) {
@@ -532,21 +547,26 @@ if (!isGlobalCategory && !form.level) {
     }
   };
 
-  const handleSaveDraft = () => {
-    if (!user) {
-      toast.error("You must be signed in.");
-      return;
-    }
+const handleSaveDraft = () => {
+  if (!user) {
+    toast.error("You must be signed in.");
+    return;
+  }
 
-    if (!file && !existingFilePath) {
-      toast.error(
-        "Please select a file before saving a draft.",
-      );
-      return;
-    }
+  if (profile?.primary_role === "guest") {
+    toast.error("Guests cannot save upload drafts.");
+    return;
+  }
 
-    setShowDraftConfirm(true);
-  };
+  if (!file && !existingFilePath) {
+    toast.error(
+      "Please select a file before saving a draft.",
+    );
+    return;
+  }
+
+  setShowDraftConfirm(true);
+};
 
   const confirmSubmit = () => {
     setShowSubmitConfirm(false);
@@ -1085,40 +1105,41 @@ onValueChange={(value) => {
             </Button>
 
             <Button
-              type="button"
-              variant="outline"
-              onClick={handleSaveDraft}
-              disabled={
-                saveResource.isPending ||
-                (!file && !existingFilePath)
-              }
-              className="h-9 text-xs sm:h-10 sm:text-sm"
-            >
-              {saveResource.isPending &&
-              exitAction === "save" ? (
-                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin sm:mr-2 sm:h-4 sm:w-4" />
-              ) : (
-                <Save className="mr-1.5 h-3.5 w-3.5 sm:mr-2 sm:h-4 sm:w-4" />
-              )}
+  type="button"
+  variant="outline"
+  onClick={handleSaveDraft}
+  disabled={
+    saveResource.isPending ||
+    (!file && !existingFilePath)
+  }
+  className="h-9 bg-muted text-xs sm:h-10 sm:text-sm"
+>
+  {saveResource.isPending &&
+  exitAction === "save" ? (
+    <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin sm:mr-2 sm:h-4 sm:w-4" />
+  ) : (
+    <Save className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+  )}
 
-              Save as draft
-            </Button>
+  Save as draft
+</Button>
 
             <Button
-              type="submit"
-              disabled={
-                saveResource.isPending ||
-                (!file && !existingFilePath)
-              }
-              className="h-9 bg-gradient-emerald text-xs text-primary-foreground shadow-soft sm:h-10 sm:text-sm"
-            >
-              {saveResource.isPending &&
-              exitAction !== "save" ? (
-                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin sm:mr-2 sm:h-4 sm:w-4" />
-              ) : null}
+  type="submit"
+  variant="ghost"
+  disabled={
+    saveResource.isPending ||
+    (!file && !existingFilePath)
+  }
+  className="h-9 bg-gradient-emerald text-xs text-white shadow-soft !transition-none hover:bg-none hover:bg-accent hover:text-foreground sm:h-10 sm:text-sm"
+>
+  {saveResource.isPending &&
+  exitAction !== "save" ? (
+    <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin sm:mr-2 sm:h-4 sm:w-4" />
+  ) : null}
 
-              Submit for review
-            </Button>
+  Submit for review
+</Button>
           </div>
         </form>
       </div>
@@ -1216,26 +1237,27 @@ onValueChange={(value) => {
                 type="button"
                 variant="destructive"
                 onClick={handleDiscard}
-                className="h-9 text-xs sm:h-10 sm:text-sm"
+                className="h-9 text-xs sm:h-10 sm:text-sm hover hover:bg-accent hover:text-foreground"
               >
                 Discard
               </Button>
 
-              <Button
-                type="button"
-                onClick={handleExitSave}
-                disabled={saveResource.isPending}
-                className="h-9 bg-gradient-emerald text-xs text-primary-foreground sm:h-10 sm:text-sm"
-              >
-                {saveResource.isPending &&
-                exitAction === "save" ? (
-                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin sm:mr-2 sm:h-4 sm:w-4" />
-                ) : (
-                  <Save className="mr-1.5 h-3.5 w-3.5 animate-spin sm:mr-2 sm:h-4 sm:w-4" />
-                )}
+<Button
+  type="button"
+  variant="ghost"
+  onClick={handleExitSave}
+  disabled={saveResource.isPending}
+  className="h-9 bg-gradient-emerald text-xs text-white shadow-soft !transition-none hover:bg-none hover:bg-accent hover:text-foreground sm:h-10 sm:text-sm"
+>
+  {saveResource.isPending &&
+  exitAction === "save" ? (
+    <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin sm:mr-2 sm:h-4 sm:w-4" />
+  ) : (
+    <Save className="mr-1.5 h-3.5 w-3.5 sm:mr-2 sm:h-4 sm:w-4" />
+  )}
 
-                Save as draft
-              </Button>
+  Save as draft
+</Button>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>

@@ -244,7 +244,7 @@ function ThemeToggle() {
     <button
       onClick={toggle}
       aria-label="Toggle theme"
-      className="rounded-sm border border-border bg-card p-2 text-muted-foreground shadow-soft transition-colors hover:text-foreground"
+      className="cursor-pointer rounded-sm border border-border bg-card p-2 text-muted-foreground shadow-soft transition-colors hover:text-foreground"
     >
       {theme === "dark" ? (
         <Sun className="h-4 w-4" />
@@ -358,7 +358,7 @@ function Header() {
 
           <button
             onClick={() => setOpen(!open)}
-            className="rounded-sm border border-border bg-card p-2 shadow-soft md:hidden"
+            className="cursor-pointer rounded-sm border border-border bg-card p-2 shadow-soft md:hidden"
             aria-label="Toggle menu"
           >
             {open ? (

@@ -42,7 +42,7 @@ function PremiumPage() {
   }
 
   return (
-    <div className="mx-auto max-w-7xl space-y-5 pb-8 sm:space-y-6">
+    <div className="mx-auto max-w-8xl space-y-5 pb-8 sm:space-y-6">
       {/* Page Introduction */}
 
       <div>
@@ -54,7 +54,7 @@ function PremiumPage() {
           Choose Your Plan
         </h1>
 
-        <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
+        <p className="mt-2 text-xs text-muted-foreground sm:text-sm">
           Explore the Free and Premium plans and find the right fit for your academic needs.
         </p>
       </div>
@@ -84,18 +84,17 @@ function PremiumPage() {
 
           <div className="flex-1 space-y-3">
             <Feature text="Browse academic resources" />
-            <Feature text="Preview available resources" />
-            <Feature text="Read resource previews" />
+            <Feature text="Preview and read standard academic materials" />
             <Feature text="Bookmark resources" />
             <Feature text="Upload resources" />
-            <Feature text="Purchase Marketplace resources separately" />
+            <Feature text="Basic and limited text-based AI Study Assistant" />
 
             <div className="my-4 border-t" />
 
+            <UnavailableFeature text="Full previews of Premium materials" />
             <UnavailableFeature text="Monthly Download Credits" />
-            <UnavailableFeature text="Exclusive Premium materials" />
+            <UnavailableFeature text="Marketplace resources" />
             <UnavailableFeature text="Ad-free experience" />
-            <UnavailableFeature text="AI Study Assistant" />
           </div>
 
           <Button
@@ -113,12 +112,12 @@ function PremiumPage() {
 
         {/* Premium Plan */}
 
-        <div className="relative flex flex-col rounded-sm border-2 border-primary bg-primary/[0.035] p-4 sm:p-6">
-          <div className="absolute right-4 top-4 rounded-sm bg-primary px-2.5 py-1 text-[10px] font-semibold text-primary-foreground sm:text-xs">
+        <div className="relative flex flex-col rounded-sm border-2 border bg-card p-4 sm:p-6">
+          <div className="absolute right-4 top-4 rounded-sm bg-gold px-2.5 py-1 text-[10px] font-semibold text-primary-foreground sm:text-xs">
             PREMIUM
           </div>
 
-          <div>
+          <div className="pr-20 sm:pr-24">
             <div className="flex items-center gap-2">
               <Crown className="h-5 w-5 text-yellow-500" />
 
@@ -143,23 +142,12 @@ function PremiumPage() {
 
           <div className="flex-1 space-y-3">
             <Feature premium text="Everything in the Free Plan" />
+            <Feature premium text="Full access to exclusive Premium materials" />
             <Feature premium text="10 Download Credits every billing month" />
-            <Feature premium text="Access to exclusive Premium materials" />
-            <Feature premium text="Ad-free experience" />
             <Feature premium text="Option to purchase additional Download Credits" />
-
-            <div className="my-4 border-t border-gold/20" />
-
-            <div className="flex items-center gap-2">
-              <Sparkles className="h-4 w-4 shrink-0 text-gold sm:h-5 sm:w-5" />
-
-              <span className="text-xs sm:text-sm">
-                AI Study Assistant
-                <span className="ml-2 rounded-sm bg-gold/10 px-2 py-0.5 text-[10px] font-semibold text-gold sm:text-xs">
-                  Coming Soon
-                </span>
-              </span>
-            </div>
+            <Feature premium text="Marketplace resources" />
+            <Feature premium text="Ad-free experience" />
+            <Feature premium text="Enhanced AI Study Assistant" />
           </div>
 
           {isAdmin ? (
@@ -179,7 +167,7 @@ function PremiumPage() {
           ) : (
             <Button
               disabled
-              className="mt-7 h-9 w-full text-xs sm:h-10 sm:text-sm"
+              className="bg-gold mt-7 h-9 w-full text-xs sm:h-10 sm:text-sm"
             >
               Upgrade to Premium
             </Button>
@@ -187,173 +175,275 @@ function PremiumPage() {
         </div>
       </div>
 
-{/* Download Credits */}
-<section>
-  <div className="mb-6 text-left">
-    <p className="mt-12 text-sm uppercase tracking-[0.2em] text-gold md:text-[11px] lg:text-sm">
-      PREMIUM BENEFITS
-    </p>
+      {/* Download Credits */}
+      <section>
+        <div className="mb-6 text-left">
+          <p className="mt-12 text-[10px] uppercase tracking-[0.2em] text-gold sm:text-xs">
+            DOWNLOAD CREDITS
+          </p>
 
-    <h2 className="mt-3 font-display text-3xl font-semibold sm:text-4xl md:mt-3 md:text-[1.7rem] lg:mt-3 lg:text-4xl">
-      Understanding Download Credits
-    </h2>
+          <h2 className="mt-3 font-display text-3xl font-semibold sm:text-4xl md:mt-3 md:text-[1.7rem] lg:mt-3 lg:text-4xl">
+            Understanding Download Credits
+          </h2>
 
-    <p className="mt-2 text-xs leading-5 text-muted-foreground sm:text-sm sm:leading-6">
-      Premium includes 10 Download Credits per billing month.
-      Credits are used when downloading eligible resources.
-      Monthly credits are consumed before purchased credits.
-    </p>
-  </div>
+          <p className="mt-2 text-xs text-muted-foreground sm:text-sm">
+            Download Credits provide a flexible way to access eligible academic
+            resources on Aneks Library. Premium members receive monthly credits
+            and can purchase additional credits whenever they need them.
+          </p>
+        </div>
 
-  <div className="rounded-sm border bg-card p-4 sm:p-6">
-    <div className="grid gap-4 sm:grid-cols-2">
-      <div className="rounded-sm border p-4">
-        <h3 className="text-sm font-semibold">
-          Monthly Credits
-        </h3>
+        <div className="rounded-sm border bg-card p-4 sm:p-6">
+          {/* Download Credits */}
+           <div className="flex items-center gap-2">
+              <h3 className="text-lg font-semibold">
+                Download Credits
+              </h3>
+            </div>
 
-        <p className="mt-1.5 text-xs leading-5 text-muted-foreground sm:text-sm">
-          Your 10 monthly credits reset with each billing period.
-          Unused monthly credits expire at the reset.
-        </p>
-      </div>
-
-      <div className="rounded-sm border p-4">
-        <h3 className="text-sm font-semibold">
-          Purchased Credits
-        </h3>
-
-        <p className="mt-1.5 text-xs leading-5 text-muted-foreground sm:text-sm">
-          Premium members can purchase additional Download Credits.
-          Purchased credits are kept separately from monthly credits.
-        </p>
-      </div>
-    </div>
-  </div>
-</section>
-
-{/* Marketplace */}
-      <section className="rounded-sm border bg-card p-4 sm:p-6">
-        <div className="flex items-start gap-3">
-          <div>
-            <h2 className="text-lg font-semibold sm:text-xl">
-              Marketplace Purchases
-            </h2>
-
-            <p className="mt-1 text-xs leading-5 text-muted-foreground sm:text-sm sm:leading-6">
-              Marketplace resources are purchased directly with money.
-              Download Credits cannot be used to purchase Marketplace
-              resources. Premium membership does not replace individual
-              Marketplace purchases.
+            <p className="mt-2 text-xs leading-6 text-muted-foreground sm:text-sm">
+              Premium includes 10 Download Credits per billing month.
+              Use these credits to download eligible academic resources.
+              Monthly credits are automatically used before any purchased
+              credits.
             </p>
+
+            <div className="mt-5 grid gap-5 sm:grid-cols-2 sm:gap-6">
+              <div className="border-b pb-5 sm:border-b-0 sm:border-r sm:pb-0 sm:pr-6">
+                <h4 className="text-sm font-semibold">
+                  Monthly Credits
+                </h4>
+
+                <p className="mt-2 text-xs leading-6 text-muted-foreground sm:text-sm">
+                  Your 10 monthly credits reset with each billing period.
+                  Any unused monthly credits expire when the billing period
+                  resets and do not carry over.
+                </p>
+              </div>
+
+              <div className="sm:pl-0">
+                <h4 className="text-sm font-semibold">
+                  Purchased Credits
+                </h4>
+
+                <p className="mt-2 text-xs leading-6 text-muted-foreground sm:text-sm">
+                  Premium members can purchase additional Download Credits
+                  whenever they need more. Purchased credits are maintained
+                  separately and are not affected by the monthly credit reset.
+                </p>
+              </div>
           </div>
         </div>
       </section>
 
-{/* Frequently Asked Questions */}
+      {/* AI Study Assistant */}
 <section>
-  <div className="mb-10 text-left md:mb-8 lg:mb-10">
-    <p className="mt-12 text-sm uppercase tracking-[0.2em] text-gold md:text-[11px] lg:text-sm">
-      FAQ
+  <div className="mb-6 text-left">
+    <p className="mt-12 text-[10px] uppercase tracking-[0.2em] text-gold sm:text-xs">
+      AI STUDY ASSISTANT
     </p>
 
     <h2 className="mt-3 font-display text-3xl font-semibold sm:text-4xl md:mt-3 md:text-[1.7rem] lg:mt-3 lg:text-4xl">
-      Frequently Asked Questions
+      Understanding AI Study Assistant
     </h2>
-    <p className="mt-2 text-xs leading-5 text-muted-foreground sm:text-sm sm:leading-6">
-      Find answers to common questions about subscription plans,
-      Premium benefits, Download Credits, and Marketplace purchases.
+
+    <p className="mt-2 text-xs leading-relaxed text-muted-foreground sm:text-sm">
+      Enhance your learning experience with AI-powered academic assistance.
+      Get explanations, explore academic topics, and clarify difficult
+      concepts through text-based interactions, with advanced AI capabilities
+      available to Premium members.
     </p>
   </div>
 
-  <Accordion
-    type="single"
-    collapsible
-    className="rounded-sm border border-border/60 bg-card px-4 shadow-soft md:rounded-sm md:px-4 lg:rounded-sm lg:px-4"
-  >
-    <AccordionItem value="item-0" className="border-border/60">
-      <AccordionTrigger className="text-left font-display text-base md:text-sm lg:text-base">
-        How many Download Credits do Premium members receive?
-      </AccordionTrigger>
-      <AccordionContent className="text-sm text-muted-foreground">
-        Premium members receive 10 Download Credits every billing month.
-        Additional credits can also be purchased.
-      </AccordionContent>
-    </AccordionItem>
+  <div className="rounded-sm border bg-card p-4 sm:p-6">
+    <div>
+      <h3 className="text-lg font-semibold">
+        AI Study Assistant
+      </h3>
 
-    <AccordionItem value="item-1" className="border-border/60">
-      <AccordionTrigger className="text-left font-display text-base md:text-sm lg:text-base">
-        Do unused monthly credits carry over?
-      </AccordionTrigger>
-      <AccordionContent className="text-sm text-muted-foreground">
-        No. Monthly credits expire when the billing period resets.
-        Purchased credits are maintained separately.
-      </AccordionContent>
-    </AccordionItem>
+      <p className="mt-2 text-xs leading-6 text-muted-foreground sm:text-sm">
+        Access intelligent academic assistance for your studies.
+        Free members can interact with the AI using text-based questions,
+        while Premium members enjoy enhanced capabilities, including
+        academic document uploads and analysis, image-based questions,
+        voice interactions, and a higher AI usage allowance.
+      </p>
 
-    <AccordionItem value="item-2" className="border-border/60">
-      <AccordionTrigger className="text-left font-display text-base md:text-sm lg:text-base">
-        Which credits are used first?
-      </AccordionTrigger>
-      <AccordionContent className="text-sm text-muted-foreground">
-        Monthly Download Credits are consumed before purchased Download
-        Credits.
-      </AccordionContent>
-    </AccordionItem>
+      <div className="mt-5 grid gap-5 sm:grid-cols-2 sm:gap-6">
+        <div className="border-b pb-5 sm:border-b-0 sm:border-r sm:pb-0 sm:pr-6">
+          <h4 className="text-sm font-semibold">
+            Text-Based Study Assistance
+          </h4>
 
-    <AccordionItem value="item-3" className="border-border/60">
-      <AccordionTrigger className="text-left font-display text-base md:text-sm lg:text-base">
-        Can I use Download Credits to buy Marketplace resources?
-      </AccordionTrigger>
-      <AccordionContent className="text-sm text-muted-foreground">
-        No. Marketplace resources require separate money purchases and
-        cannot be purchased with Download Credits.
-      </AccordionContent>
-    </AccordionItem>
+          <p className="mt-2 text-xs leading-6 text-muted-foreground sm:text-sm">
+            Ask questions, get explanations, clarify difficult concepts,
+            explore academic topics, and receive step-by-step assistance
+            with your studies through text-based interactions.
+          </p>
+        </div>
 
-    <AccordionItem value="item-4" className="border-border/60">
-      <AccordionTrigger className="text-left font-display text-base md:text-sm lg:text-base">
-        What happens when my Premium subscription expires?
-      </AccordionTrigger>
-      <AccordionContent className="text-sm text-muted-foreground">
-        Your account returns to the Free Plan. Premium-only benefits and
-        access to exclusive Premium materials are no longer available.
-      </AccordionContent>
-    </AccordionItem>
+        <div className="sm:pl-0">
+          <h4 className="text-sm font-semibold">
+            Enhanced AI Study Assistant
+          </h4>
 
-    <AccordionItem value="item-5" className="border-border/60">
-      <AccordionTrigger className="text-left font-display text-base md:text-sm lg:text-base">
-        Does Premium include unlimited downloads?
-      </AccordionTrigger>
-      <AccordionContent className="text-sm text-muted-foreground">
-        No. Premium includes 10 monthly Download Credits. Additional
-        Download Credits can be purchased separately.
-      </AccordionContent>
-    </AccordionItem>
+          <p className="mt-2 text-xs leading-6 text-muted-foreground sm:text-sm">
+            Upload academic documents and images for analysis, ask
+            questions about their contents, and interact with the AI
+            through voice. Premium also provides a higher AI usage
+            allowance for more extensive academic assistance.
+          </p>
+        </div>
+      </div>
+    </div>
 
-    <AccordionItem value="item-6" className="border-border/60">
-      <AccordionTrigger className="text-left font-display text-base md:text-sm lg:text-base">
-        What can I access with the Free Plan?
-      </AccordionTrigger>
-      <AccordionContent className="text-sm text-muted-foreground">
-        Free members can browse, preview, read and bookmark available
-        resources, and upload resources.
-      </AccordionContent>
-    </AccordionItem>
-
-    <AccordionItem value="item-7" className="border-border/60 last:border-b-0">
-      <AccordionTrigger className="text-left font-display text-base md:text-sm lg:text-base">
-        What is the AI Study Assistant?
-      </AccordionTrigger>
-      <AccordionContent className="text-sm text-muted-foreground">
-        The AI Study Assistant is a planned Premium feature designed to
-        help members ask questions about academic documents and images,
-        including through voice interactions. It is coming soon and is
-        not yet available.
-      </AccordionContent>
-    </AccordionItem>
-  </Accordion>
+    <p className="mt-5 border-t border-border/60 pt-4 text-xs leading-6 text-muted-foreground sm:text-sm">
+      Basic text-based AI assistance is available to Free members,
+      while Premium unlocks enhanced document, image, and voice
+      interactions with a higher AI usage allowance.
+    </p>
+  </div>
 </section>
+
+    {/* Marketplace */}
+     <section>
+        <div className="mb-6 text-left">
+          <p className="mt-12 text-[10px] uppercase tracking-[0.2em] text-gold sm:text-xs">
+            MARKETPLACE
+          </p>
+
+          <h2 className="mt-3 font-display text-3xl font-semibold sm:text-4xl md:mt-3 md:text-[1.7rem] lg:mt-3 lg:text-4xl">
+            Marketplace Purchases
+          </h2>
+
+          <p className="mt-2 text-xs text-muted-foreground sm:text-sm">
+            Explore exclusive academic resources available to Premium members.
+            Purchase individual materials with direct monetary payments, separately
+            from your subscription and Download Credits.
+          </p>
+        </div>
+
+        <div className="rounded-sm border bg-card p-4">
+          <p className="text-xs leading-6 text-muted-foreground sm:text-sm">
+            The Marketplace gives Premium members access to individually
+            purchasable academic resources. Each resource has its own price and
+            must be purchased separately through direct monetary payment before
+            access is granted. Marketplace purchases are independent of your
+            Premium subscription, and neither your subscription fee nor your
+            Download Credits can be used to pay for them. Download Credits remain
+            exclusively for downloading eligible resources outside the Marketplace.
+          </p>
+        </div>
+      </section>
+
+      {/* Frequently Asked Questions */}
+      <section>
+        <div className="mb-10 text-left md:mb-8 lg:mb-10">
+          <p className="mt-12 text-[10px] uppercase tracking-[0.2em] text-gold sm:text-xs">
+            FAQ
+          </p>
+
+          <h2 className="mt-3 font-display text-3xl font-semibold sm:text-4xl md:mt-3 md:text-[1.7rem] lg:mt-3 lg:text-4xl">
+            Frequently Asked Questions
+          </h2>
+
+          <p className="mt-2 text-xs text-muted-foreground sm:text-sm">
+            Find answers to common questions about subscription plans,
+            Premium benefits, Download Credits, Marketplace purchases,
+            and the AI Study Assistant.
+          </p>
+        </div>
+
+        <Accordion
+          type="single"
+          collapsible
+          className="rounded-sm border border-border/60 bg-card px-4 shadow-soft md:rounded-sm md:px-4 lg:rounded-sm lg:px-4"
+        >
+          <AccordionItem value="item-0" className="border-border/60">
+            <AccordionTrigger className="text-left text-muted-foreground text-sm">
+              How many Download Credits do Premium members receive?
+            </AccordionTrigger>
+            <AccordionContent className="text-sm text-primary">
+              Premium members receive 10 Download Credits every billing month.
+              Additional credits can also be purchased.
+            </AccordionContent>
+          </AccordionItem>
+
+          <AccordionItem value="item-1" className="border-border/60">
+            <AccordionTrigger className="text-left text-muted-foreground text-sm">
+              Do unused monthly credits carry over?
+            </AccordionTrigger>
+            <AccordionContent className="text-sm text-primary">
+              No. Monthly credits expire when the billing period resets.
+              Purchased credits are maintained separately.
+            </AccordionContent>
+          </AccordionItem>
+
+          <AccordionItem value="item-2" className="border-border/60">
+            <AccordionTrigger className="text-left text-muted-foreground text-sm">
+              Which credits are used first?
+            </AccordionTrigger>
+            <AccordionContent className="text-sm text-primary">
+              Monthly Download Credits are consumed before purchased Download
+              Credits.
+            </AccordionContent>
+          </AccordionItem>
+
+          <AccordionItem value="item-3" className="border-border/60">
+            <AccordionTrigger className="text-left text-muted-foreground text-sm">
+              Can I use Download Credits to buy Marketplace resources?
+            </AccordionTrigger>
+            <AccordionContent className="text-sm text-primary">
+              No. Marketplace resources require separate money purchases and
+              cannot be purchased with Download Credits.
+            </AccordionContent>
+          </AccordionItem>
+
+          <AccordionItem value="item-4" className="border-border/60">
+            <AccordionTrigger className="text-left text-muted-foreground text-sm">
+              What happens when my Premium subscription expires?
+            </AccordionTrigger>
+            <AccordionContent className="text-sm text-primary">
+              Your account returns to the Free Plan. Premium-only benefits and
+              access to exclusive Premium materials are no longer available.
+            </AccordionContent>
+          </AccordionItem>
+
+          <AccordionItem value="item-5" className="border-border/60">
+            <AccordionTrigger className="text-left text-muted-foreground text-sm">
+              Does Premium include unlimited downloads?
+            </AccordionTrigger>
+            <AccordionContent className="text-sm text-primary">
+              No. Premium includes 10 monthly Download Credits. Additional
+              Download Credits can be purchased separately.
+            </AccordionContent>
+          </AccordionItem>
+
+          <AccordionItem value="item-6" className="border-border/60">
+            <AccordionTrigger className="text-left text-muted-foreground text-sm">
+              What can I access with the Free Plan?
+            </AccordionTrigger>
+            <AccordionContent className="text-sm text-primary">
+              Free members can browse, bookmark, preview, and read standard resources, upload resources, and use the basic text-based AI
+              Study Assistant.
+            </AccordionContent>
+          </AccordionItem>
+
+          <AccordionItem value="item-7" className="border-border/60 last:border-b-0">
+            <AccordionTrigger className="text-left text-muted-foreground text-sm">
+              What is the AI Study Assistant?
+            </AccordionTrigger>
+            <AccordionContent className="text-sm text-primary">
+              The AI Study Assistant provides academic assistance through
+              text-based questions, explanations, and concept clarification.
+              Free members have access to basic text-based interactions.
+              Premium members additionally get academic document uploads,
+              document analysis, image-based questions, voice interactions,
+              and a higher AI usage allowance.
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+      </section>
     </div>
   );
 }
@@ -410,7 +500,7 @@ function FAQ({
       </summary>
 
       <div className="border-t px-4 py-3">
-        <p className="text-xs leading-5 text-muted-foreground sm:text-sm sm:leading-6">
+        <p className="text-xs leading-6 text-muted-foreground sm:text-sm sm:leading-6">
           {answer}
         </p>
       </div>

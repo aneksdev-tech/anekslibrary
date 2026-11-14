@@ -57,6 +57,9 @@ function ProfilePage() {
   const isStudent = profile?.primary_role === "student";
   const isStaff = profile?.primary_role === "staff";
 
+  const collegeLocked = Boolean(profile?.college?.trim());
+  const departmentLocked = Boolean(profile?.department?.trim());
+
   const hasAcademicInformation =
     isStudent ||
     isLecturer ||
@@ -382,147 +385,164 @@ function ProfilePage() {
     }
   };
 
-  const uploadAvatar = async (
-    file: File,
-  ) => {
-    if (!user) return;
+const uploadAvatar = async (file: File) => {
+  if (!user) return;
 
-    /*
-     * Basic image validation.
-     */
-    if (!file.type.startsWith("image/")) {
-      toast.error(
-        "Please select a valid image file.",
-      );
-      return;
-    }
+  const allowedTypes = [
+    "image/jpeg",
+    "image/png",
+    "image/webp",
+  ];
 
-    /*
-     * Prevent unnecessarily large uploads.
-     */
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error(
-        "Profile photo must be 5MB or smaller.",
-      );
-      return;
-    }
+  const extensions: Record<string, string> = {
+    "image/jpeg": "jpg",
+    "image/png": "png",
+    "image/webp": "webp",
+  };
 
+  if (!allowedTypes.includes(file.type)) {
+    toast.error(
+      "Only JPEG, PNG, and WebP images are allowed.",
+    );
+    return;
+  }
+
+  if (file.size > 5 * 1024 * 1024) {
+    toast.error(
+      "Profile photo must be 5MB or smaller.",
+    );
+    return;
+  }
+
+  let uploadedPath: string | null = null;
+  let profileUpdated = false;
+
+  // Extract the previous avatar's Storage path.
+  let oldPath: string | null = null;
+
+  if (profile?.avatar_url) {
     try {
-      setBusy(true);
+      const url = new URL(profile.avatar_url);
 
-      /*
-       * Delete previous avatar if it exists.
-       */
-      if (profile?.avatar_url) {
-        try {
-          const url = new URL(
-            profile.avatar_url,
-          );
+      const marker =
+        "/storage/v1/object/public/avatars/";
 
-          const marker =
-            "/storage/v1/object/public/avatars/";
+      const index = url.pathname.indexOf(marker);
 
-          const index =
-            url.pathname.indexOf(marker);
-
-          if (index !== -1) {
-            const oldPath =
-              decodeURIComponent(
-                url.pathname.substring(
-                  index + marker.length,
-                ),
-              );
-
-            await supabase.storage
-              .from("avatars")
-              .remove([oldPath]);
-          }
-        } catch {
-          /*
-           * Ignore URL parsing/deletion errors.
-           * The new avatar can still be uploaded.
-           */
-        }
+      if (index !== -1) {
+        oldPath = decodeURIComponent(
+          url.pathname.substring(index + marker.length),
+        );
       }
+    } catch {
+      // Preserve the old image if its path cannot be identified.
+    }
+  }
 
-      const ext =
-        file.name
-          .split(".")
-          .pop()
-          ?.toLowerCase() || "png";
+  try {
+    setBusy(true);
 
-      const fileName =
-        `${user.id}/avatar.${ext}`;
+    const ext = extensions[file.type];
 
-      const { error: uploadError } =
+    const fileName =
+      `${user.id}/${crypto.randomUUID()}.${ext}`;
+
+    const { error: uploadError } =
+      await supabase.storage
+        .from("avatars")
+        .upload(fileName, file, {
+          upsert: false,
+          contentType: file.type,
+        });
+
+    if (uploadError) {
+      throw uploadError;
+    }
+
+    uploadedPath = fileName;
+
+    const { data } = supabase.storage
+      .from("avatars")
+      .getPublicUrl(fileName);
+
+    const newAvatarUrl = data.publicUrl;
+
+    // Save the new avatar URL.
+    const { error: updateError } =
+      await supabase.rpc("update_my_profile", {
+        _full_name: profile?.full_name ?? "",
+        _bio: profile?.bio ?? "",
+        _phone_number: profile?.phone_number ?? "",
+        _college: profile?.college ?? "",
+        _department: profile?.department ?? "",
+        _level: profile?.level ?? "",
+        _avatar_url: newAvatarUrl,
+      });
+
+    if (updateError) {
+      throw updateError;
+    }
+
+    profileUpdated = true;
+
+    // Verify that the new URL was actually saved.
+    const { data: savedProfile, error: verifyError } =
+      await supabase
+        .from("profiles")
+        .select("avatar_url")
+        .eq("id", user.id)
+        .single();
+
+    if (verifyError) {
+      throw verifyError;
+    }
+
+    if (savedProfile.avatar_url !== newAvatarUrl) {
+      throw new Error(
+        "Profile photo could not be verified after saving.",
+      );
+    }
+
+    // Refresh the authenticated profile.
+    await refresh();
+
+    // Delete the previous avatar only after verification
+    // and profile refresh have succeeded.
+    if (oldPath && oldPath !== uploadedPath) {
+      const { error: deleteError } =
         await supabase.storage
           .from("avatars")
-          .upload(
-            fileName,
-            file,
-            {
-              upsert: true,
-              contentType: file.type,
-            },
-          );
+          .remove([oldPath]);
 
-      if (uploadError) {
-        throw uploadError;
-      }
-
-      const { data } =
-        supabase.storage
-          .from("avatars")
-          .getPublicUrl(fileName);
-
-      /*
-       * Update only the avatar URL through the
-       * SECURITY DEFINER profile-update function.
-       *
-       * The current saved profile values are supplied
-       * unchanged so uploading an avatar does not
-       * modify unsaved form values.
-       */
-      const { error: updateError } =
-        await supabase.rpc(
-          "update_my_profile",
-          {
-            _full_name:
-              profile?.full_name ?? "",
-            _bio:
-              profile?.bio ?? "",
-            _phone_number:
-              profile?.phone_number ?? "",
-            _college:
-              profile?.college ?? "",
-            _department:
-              profile?.department ?? "",
-            _level:
-              profile?.level ?? "",
-            _avatar_url:
-              data.publicUrl,
-          },
+      if (deleteError) {
+        toast.warning(
+          "Profile photo updated, but the previous image could not be removed.",
         );
-
-      if (updateError) {
-        throw updateError;
+        return;
       }
+    }
 
-      toast.success(
-        "Profile photo updated.",
-      );
+    toast.success("Profile photo updated.");
+  } catch (error) {
+    // Remove the new upload if the database update failed.
+    // Never remove it if the database update already succeeded.
+    if (uploadedPath && !profileUpdated) {
+      await supabase.storage
+        .from("avatars")
+        .remove([uploadedPath]);
+    }
 
-      await refresh();
-    } catch (error) {
-      toast.error(
-        error instanceof Error
+    toast.error(
+      profileUpdated
+        ? "The profile photo may have been saved, but verification or refresh failed. Please reload your profile."
+        : error instanceof Error
           ? error.message
           : "Unable to update profile photo.",
-      );
-    } finally {
-      setBusy(false);
-    }
-  };
+    );
+  } finally {
+    setBusy(false);
+  }
+};
 
   return (
     <div className="mx-auto w-full max-w-8xl">
@@ -871,7 +891,7 @@ function ProfilePage() {
                       )
                     }
                     className="mt-1.5 resize-none text-xs sm:text-sm"
-                    placeholder="Tell the Aneks Library community a little about yourself..."
+                    placeholder="Tell Aneks Library community a little about yourself..."
                   />
 
                   <p className="mt-1.5 text-right text-[10px] text-muted-foreground sm:text-xs">
@@ -918,6 +938,7 @@ function ProfilePage() {
                       <Input
                         id="college"
                         value={form.college}
+                        disabled={collegeLocked}
                         onChange={(e) =>
                           setField(
                             "college",
@@ -932,6 +953,7 @@ function ProfilePage() {
                         value={
                           form.college
                         }
+                        disabled={collegeLocked}
                         onValueChange={(value) => {
                           if (!value) return;
 
@@ -977,6 +999,11 @@ function ProfilePage() {
                         </SelectContent>
                       </Select>
                     )}
+                    {collegeLocked && (
+                    <p className="mt-1.5 text-[10px] text-muted-foreground sm:text-xs">
+                      Your registered institution cannot be changed here. Contact an administrator if a correction is needed.
+                    </p>
+                  )}
                   </div>
 
                   {/* Department / Research Area */}
@@ -996,6 +1023,7 @@ function ProfilePage() {
                         value={
                           form.department
                         }
+                        disabled={departmentLocked}
                         onChange={(e) =>
                           setField(
                             "department",
@@ -1016,7 +1044,7 @@ function ProfilePage() {
                           setField("department", value);
                         }}
                         disabled={
-                          !form.college
+                          !form.college || departmentLocked
                         }
                       >
                         <SelectTrigger
@@ -1066,6 +1094,11 @@ function ProfilePage() {
                           )}
                         </SelectContent>
                       </Select>
+                    )}
+                    {departmentLocked && (
+                      <p className="mt-1.5 text-[10px] text-muted-foreground sm:text-xs">
+                        Your registered department cannot be changed here. Contact an administrator if a correction is needed.
+                      </p>
                     )}
                   </div>
 
@@ -1127,20 +1160,20 @@ function ProfilePage() {
                   </span>
                 )}
               </div>
+<Button
+  type="submit"
+  variant="ghost"
+  disabled={!canSave}
+  className="h-9 w-full bg-gradient-emerald text-xs text-white shadow-soft !transition-none hover:bg-none hover:bg-accent hover:text-foreground sm:h-10 sm:w-auto sm:text-sm"
+>
+  {busy && (
+    <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin sm:mr-2 sm:h-4 sm:w-4" />
+  )}
 
-              <Button
-                type="submit"
-                disabled={!canSave}
-                className="h-9 w-full bg-gradient-emerald text-xs text-primary-foreground shadow-soft sm:h-10 sm:w-auto sm:text-sm"
-              >
-                {busy && (
-                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin sm:mr-2 sm:h-4 sm:w-4" />
-                )}
-
-                {busy
-                  ? "Saving..."
-                  : "Save changes"}
-              </Button>
+  {busy
+    ? "Saving..."
+    : "Save changes"}
+</Button>
             </div>
           </form>
         </div>
@@ -1262,7 +1295,7 @@ function ProfilePage() {
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/*"
+        accept="image/jpeg,image/png,image/webp"
         className="hidden"
         onChange={(e) => {
           const file =

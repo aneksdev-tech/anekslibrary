@@ -607,7 +607,7 @@ export function ResourceCard({
   r: ResourceRow;
   canDownload: boolean;
 }) {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const qc = useQueryClient();
 
   const [previewing, setPreviewing] = useState(false);
@@ -637,7 +637,8 @@ const semesterLabel = getResourceScopeLabel(
 
   const { data: bookmarked } = useQuery({
     queryKey: ["bookmarked", r.id, user?.id],
-    enabled: !!user,
+    enabled:
+    !!user && profile?.primary_role !== "guest",
     queryFn: async () => {
       const { data, error } = await supabase
         .from("bookmarks")
@@ -655,6 +656,9 @@ const semesterLabel = getResourceScopeLabel(
     mutationFn: async () => {
       if (!user) {
         throw new Error("Sign in required");
+      }
+       if (profile?.primary_role === "guest") {
+        throw new Error("Guests cannot bookmark resources.");
       }
 
       if (bookmarked) {
@@ -676,14 +680,19 @@ const semesterLabel = getResourceScopeLabel(
         if (error) throw error;
       }
     },
-    onSuccess: () => {
-      qc.invalidateQueries({
-        queryKey: ["bookmarked", r.id],
-      });
-      qc.invalidateQueries({
-        queryKey: ["library"],
-      });
-    },
+onSuccess: () => {
+  qc.invalidateQueries({
+    queryKey: ["bookmarked", r.id],
+  });
+
+  qc.invalidateQueries({
+    queryKey: ["library"],
+  });
+
+  qc.invalidateQueries({
+    queryKey: ["bookmarks-list", user?.id],
+  });
+},
     onError: (error) => {
       toast.error(
         error instanceof Error
@@ -806,23 +815,25 @@ const semesterLabel = getResourceScopeLabel(
           </Button>
         </div>
 
-        <Button
-          className="h-8 shrink-0 px-2 sm:h-9 bg-muted"
-          variant="outline"
-          size="sm"
-          onClick={() => toggleBookmark.mutate()}
-          disabled={toggleBookmark.isPending}
-          aria-label="Bookmark"
-        >
-          <Bookmark
-            className={`h-3.5 w-3.5 ${
-              bookmarked
-                ? "text-yellow-500"
-                : "text-muted-foreground"
-            }`}
-            fill={bookmarked ? "currentColor" : "none"}
-          />
-        </Button>
+                {profile?.primary_role !== "guest" && (
+          <Button
+            className="h-8 shrink-0 px-2 sm:h-9 bg-muted"
+            variant="outline"
+            size="sm"
+            onClick={() => toggleBookmark.mutate()}
+            disabled={toggleBookmark.isPending}
+            aria-label="Bookmark"
+          >
+            <Bookmark
+              className={`h-3.5 w-3.5 ${
+                bookmarked
+                  ? "text-yellow-500"
+                  : "text-muted-foreground"
+              }`}
+              fill={bookmarked ? "currentColor" : "none"}
+            />
+          </Button>
+        )}
       </div>
     </article>
   );
