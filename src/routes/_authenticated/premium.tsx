@@ -326,7 +326,6 @@ function PremiumPage() {
         </div>
 
         <div className="rounded-sm border bg-card p-4">
-          <div className="rounded-sm border bg-card p-4">
             <p className="text-xs leading-6 text-muted-foreground sm:text-sm">
               The Marketplace is accessible to all users for browsing available academic
               resources. However, only Premium members can upload Marketplace resources, preview
@@ -337,7 +336,6 @@ function PremiumPage() {
               Download Credits can be used to pay for them. Download Credits remain
               exclusively for downloading eligible resources outside the Marketplace.
             </p>
-          </div>
         </div>
       </section>
 
