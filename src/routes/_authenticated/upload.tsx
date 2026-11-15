@@ -1124,7 +1124,7 @@ onValueChange={(value) => {
   Save as draft
 </Button>
 
-            <Button
+<Button
   type="submit"
   variant="ghost"
   disabled={
@@ -1162,13 +1162,13 @@ onValueChange={(value) => {
           </AlertDialogHeader>
 
           <AlertDialogFooter className="gap-2 sm:gap-2">
-            <AlertDialogCancel className="h-9 text-xs sm:h-10 sm:text-sm">
+            <AlertDialogCancel className="h-9 bg-muted hover hover:bg-accent text-xs sm:h-10 sm:text-sm">
               Continue editing
             </AlertDialogCancel>
 
             <AlertDialogAction
               onClick={confirmSubmit}
-              className="h-9 bg-gradient-emerald text-xs text-primary-foreground sm:h-10 sm:text-sm"
+              className="inline-flex items-center justify-center rounded-sm border border-border bg-gradient-emerald text-xs text-white shadow-soft !transition-none hover:bg-none hover:bg-accent hover:text-foreground sm:h-10 sm:text-sm"
             >
               Submit for review
             </AlertDialogAction>

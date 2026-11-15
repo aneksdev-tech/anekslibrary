@@ -569,7 +569,7 @@ function DashboardPage() {
                                 params={{
                                   draftId: r.id,
                                 }}
-                                className="inline-flex h-9 w-16 items-center justify-center rounded-sm border border-border bg-card px-2 text-sm font-medium transition-colors hover:bg-gradient-emerald"
+                                className="inline-flex h-9 w-16 items-center justify-center rounded-sm border border-border bg-gradient-emerald text-xs text-white shadow-soft !transition-none hover:bg-none hover:bg-accent hover:text-foreground sm:h-10 sm:text-sm"
                               >
                                 Edit
                               </Link>
@@ -583,7 +583,7 @@ function DashboardPage() {
                                   })
                                 }
                                 disabled={deletingDraftId === r.id}
-                                className="inline-flex h-9 w-16 items-center justify-center rounded-sm border border-destructive/30 bg-destructive/5 px-2 text-sm font-medium text-destructive transition-colors hover:bg-destructive hover:text-muted-foreground disabled:pointer-events-none disabled:opacity-50"
+                                className="inline-flex h-9 w-16 items-center justify-center rounded-sm border border-border bg-destructive text-xs text-white shadow-soft !transition-none hover:bg-none hover:bg-accent hover:text-foreground sm:h-10 sm:text-sm"
                               >
                                 {deletingDraftId === r.id
                                   ? "Deleting…"
@@ -655,6 +655,7 @@ function DashboardPage() {
                     deletingDraftId !==
                     null
                   }
+                 className="inline-flex items-center justify-center rounded-sm border border-border bg-gradient-emerald text-xs text-white shadow-soft !transition-none hover:bg-none hover:bg-accent hover:text-foreground sm:h-10 sm:text-sm"
                 >
                   Cancel
                 </AlertDialogCancel>
@@ -668,7 +669,7 @@ function DashboardPage() {
                     deletingDraftId !==
                     null
                   }
-                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  className="bg-destructive text-xs text-white shadow-soft !transition-none hover:bg-none hover:bg-accent hover:text-foreground sm:h-10 sm:text-sm"
                 >
                   {deletingDraftId !==
                     null && (

@@ -1863,7 +1863,7 @@ const clearAnnouncementFilters = () => {
           <AlertDialogFooter className="gap-2 sm:gap-0">
             <AlertDialogCancel
               disabled={saveAnnouncement.isPending}
-              className="h-9 text-xs bg-destructive sm:h-10 sm:text-sm"
+              className="h-9 bg-destructive text-xs text-white shadow-soft !transition-none hover:bg-none hover:bg-accent hover:text-foreground sm:h-10 sm:text-sm"
             >
               Cancel
             </AlertDialogCancel>

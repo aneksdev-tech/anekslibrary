@@ -695,7 +695,7 @@ function MyUploads() {
                             params={{
                               draftId: resource.id,
                             }}
-                            className="inline-flex h-9 w-16 items-center justify-center rounded-sm border border-border bg-card px-2 text-sm font-medium transition-colors hover:bg-primary"
+                            className="inline-flex h-9 w-16 items-center justify-center rounded-sm border border-border bg-gradient-emerald text-xs text-white shadow-soft !transition-none hover:bg-none hover:bg-accent hover:text-foreground sm:h-10 sm:text-sm"
                           >
                             Edit
                           </Link>
@@ -711,7 +711,7 @@ function MyUploads() {
                             disabled={
                               deletingDraftId === resource.id
                             }
-                            className="inline-flex h-9 w-16 items-center justify-center rounded-sm border border-destructive/30 bg-destructive/5 px-2 text-sm font-medium text-destructive transition-colors hover:bg-destructive hover:text-muted-foreground disabled:pointer-events-none disabled:opacity-50"
+                            className="inline-flex h-9 w-16 items-center justify-center rounded-sm border border-border bg-destructive text-xs text-white shadow-soft !transition-none hover:bg-none hover:bg-accent hover:text-foreground sm:h-10 sm:text-sm"
                           >
                             {deletingDraftId === resource.id
                               ? "Deleting…"
@@ -739,8 +739,8 @@ function MyUploads() {
 
       {/* Pagination */}
       {!isLoading &&
-        !uploadsError &&
-        totalCount > 0 && (
+      !uploadsError &&
+        totalCount >= PAGE_SIZE && (
           <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
             <div className="justify-self-start">
               <button
@@ -809,6 +809,7 @@ function MyUploads() {
           <AlertDialogFooter className="gap-2 sm:gap-0">
             <AlertDialogCancel
               disabled={deletingDraftId !== null}
+              className="items-center justify-center rounded-sm border border-border bg-gradient-emerald text-xs text-white shadow-soft !transition-none hover:bg-none hover:bg-accent hover:text-foreground sm:h-10 sm:text-sm"
             >
               Cancel
             </AlertDialogCancel>
@@ -819,7 +820,7 @@ function MyUploads() {
                 void handleDeleteDraft();
               }}
               disabled={deletingDraftId !== null}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="items-center justify-center rounded-sm border border-border bg-destructive text-xs text-white shadow-soft !transition-none hover:bg-none hover:bg-accent hover:text-foreground sm:h-10 sm:text-sm"
             >
               {deletingDraftId !== null && (
                 <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin sm:mr-2 sm:h-4 sm:w-4" />
