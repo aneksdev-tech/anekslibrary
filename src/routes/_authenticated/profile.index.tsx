@@ -1,4 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  useBlocker,
+} from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
@@ -8,7 +11,14 @@ import {
   Mail,
   ShieldCheck,
 } from "lucide-react";
-
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useAuth } from "@/lib/auth";
 import {
   getContributorLevel,
@@ -100,6 +110,12 @@ function ProfilePage() {
 
   const fileInputRef =
     useRef<HTMLInputElement>(null);
+  
+const allowNavigationRef = useRef(false);
+
+const [exitAction, setExitAction] = useState<
+  "none" | "save"
+>("none");
 
   const [busy, setBusy] = useState(false);
 
@@ -275,6 +291,21 @@ useEffect(() => {
     form.department !== savedForm.department ||
     form.level !== savedForm.level;
 
+  const blocker = useBlocker({
+  shouldBlockFn: () =>
+    isDirty && !allowNavigationRef.current,
+  enableBeforeUnload: () => isDirty,
+  withResolver: true,
+});
+
+useEffect(() => {
+  if (blocker.status !== "blocked") {
+    return;
+  }
+
+  setExitAction("none");
+}, [blocker.status]);
+
   /*
    * Save button validation.
    *
@@ -302,18 +333,20 @@ useEffect(() => {
     academicValid;
 
   const save = async (
-    e: React.FormEvent,
-  ) => {
-    e.preventDefault();
+  e?: React.FormEvent,
+) => {
+  e?.preventDefault();
 
-    if (!user) {
-      toast.error(
-        "Unable to identify your account.",
-      );
-      return;
-    }
+if (!user) {
+  setExitAction("none");
+  toast.error(
+    "Unable to identify your account.",
+  );
+  return;
+}
 
     if (!fullNameValid) {
+      setExitAction("none");
       toast.error(
         "Full name must be at least 3 letters and contain only letters, spaces, apostrophes, or hyphens.",
       );
@@ -321,6 +354,7 @@ useEffect(() => {
     }
 
     if (!phoneValid) {
+      setExitAction("none");
       toast.error(
         "Phone number must contain 13–15 digits.",
       );
@@ -328,6 +362,7 @@ useEffect(() => {
     }
 
     if (!academicValid) {
+      setExitAction("none");
       toast.error(
         isStudent
           ? "Please select your college, department, and level."
@@ -336,9 +371,10 @@ useEffect(() => {
       return;
     }
 
-    if (!isDirty) {
-      return;
-    }
+if (!isDirty) {
+  setExitAction("none");
+  return;
+}
 
     setBusy(true);
 
@@ -368,6 +404,7 @@ useEffect(() => {
         );
 
       if (error) {
+        setExitAction("none");
         toast.error(error.message);
         return;
       }
@@ -377,24 +414,55 @@ useEffect(() => {
        * This makes the Save button disabled again and
        * prevents completion from reacting to unsaved data.
        */
-      setForm(updateData);
-      setSavedForm(updateData);
+setForm(updateData);
+setSavedForm(updateData);
 
-      toast.success(
-        "Profile updated successfully.",
-      );
+toast.success(
+  "Profile updated successfully.",
+);
 
-      await refresh();
-    } catch (error) {
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : "Unable to update profile.",
-      );
-    } finally {
-      setBusy(false);
-    }
+try {
+  await refresh();
+} catch {
+  toast.warning(
+    "Profile saved, but your profile display could not be refreshed. Reload the page to see the latest information.",
+  );
+}
+
+setExitAction("none");
+
+// Only bypass the blocker when a navigation is actually pending.
+if (blocker.status === "blocked") {
+  allowNavigationRef.current = true;
+  blocker.proceed();
+}
+
+} catch (error) {
+  setExitAction("none");
+
+  toast.error(
+    error instanceof Error
+      ? error.message
+      : "Unable to update profile.",
+  );
+} finally {
+  setBusy(false);
+}
   };
+
+const handleDiscard = () => {
+  allowNavigationRef.current = true;
+
+  if (blocker.status === "blocked") {
+    blocker.proceed();
+  }
+};
+
+const handleExitSave = () => {
+  setExitAction("save");
+
+  void save();
+};
 
 const uploadAvatar = async (file: File) => {
   if (!user) return;
@@ -1313,6 +1381,56 @@ const { error: updateError } =
           e.target.value = "";
         }}
       />
+    {blocker.status === "blocked" && (
+  <AlertDialog open>
+    <AlertDialogContent className="max-w-[calc(100%-2rem)] rounded-sm sm:max-w-lg">
+      <AlertDialogHeader>
+        <AlertDialogTitle className="text-base sm:text-lg">
+          Save your changes?
+        </AlertDialogTitle>
+
+        <AlertDialogDescription className="text-xs leading-relaxed sm:text-sm">
+          You have unsaved profile changes. Would you
+          like to save them before leaving this page?
+        </AlertDialogDescription>
+      </AlertDialogHeader>
+
+      <AlertDialogFooter className="flex-col gap-2 sm:flex-row">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={blocker.reset}
+          className="h-9 text-xs sm:h-10 sm:text-sm"
+        >
+          Continue editing
+        </Button>
+
+        <Button
+          type="button"
+          variant="destructive"
+          onClick={handleDiscard}
+          className="h-9 bg-destructive text-xs text-white shadow-soft !transition-none hover:bg-none hover:bg-accent hover:text-foreground sm:h-10 sm:text-sm"
+        >
+          Discard
+        </Button>
+
+        <Button
+          type="button"
+          variant="ghost"
+          onClick={handleExitSave}
+          disabled={busy}
+          className="h-9 bg-gradient-emerald text-xs text-white shadow-soft !transition-none hover:bg-none hover:bg-accent hover:text-foreground sm:h-10 sm:text-sm"
+        >
+          {busy && exitAction === "save" ? (
+            <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin sm:mr-2 sm:h-4 sm:w-4" />
+          ) : null}
+
+          Save changes
+        </Button>
+      </AlertDialogFooter>
+    </AlertDialogContent>
+  </AlertDialog>
+)}
     </div>
   );
 }
