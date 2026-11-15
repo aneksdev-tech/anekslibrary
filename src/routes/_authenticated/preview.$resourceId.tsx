@@ -70,31 +70,26 @@ function PreviewPage() {
     },
   });
 
-  const { data: uploader } = useQuery({
-    queryKey: [
-      "preview-uploader",
-      resource?.uploader_id,
-    ],
-    enabled: !!resource?.uploader_id,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("public_profiles")
-        .select(`
-          id,
-          full_name,
-          bio,
-          avatar_url
-        `)
-        .eq("id", resource!.uploader_id)
-        .single();
+const { data: uploader } = useQuery({
+  queryKey: [
+    "preview-uploader",
+    resource?.uploader_id,
+  ],
+  enabled: !!resource?.uploader_id,
+  queryFn: async () => {
+    const { data, error } = await supabase
+      .rpc("get_public_profile", {
+        _user_id: resource!.uploader_id,
+      })
+      .single();
 
-      if (error) {
-        throw error;
-      }
+    if (error) {
+      throw error;
+    }
 
-      return data;
-    },
-  });
+    return data;
+  },
+});
 
   const {
     data: previewUrl,

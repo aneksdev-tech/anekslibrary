@@ -47,32 +47,24 @@ function PublicProfilePage() {
   const { userId } = Route.useParams();
   const router = useRouter();
 
-  const {
-    data: profile,
-    isLoading,
-  } = useQuery({
-    queryKey: ["public-profile", userId],
-    enabled: !!userId,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("public_profiles")
-        .select(`
-          id,
-          full_name,
-          bio,
-          avatar_url,
-          primary_role,
-          reputation,
-          created_at
-        `)
-        .eq("id", userId)
-        .single();
+const {
+  data: profile,
+  isLoading,
+} = useQuery({
+  queryKey: ["public-profile", userId],
+  enabled: !!userId,
+  queryFn: async () => {
+    const { data, error } = await supabase
+      .rpc("get_public_profile", {
+        _user_id: userId,
+      })
+      .single();
 
-      if (error) throw error;
+    if (error) throw error;
 
-      return data;
-    },
-  });
+    return data;
+  },
+});
 
   const { data: resources } = useQuery({
     queryKey: ["public-profile-resources", userId],
