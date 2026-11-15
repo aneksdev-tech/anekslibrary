@@ -126,21 +126,32 @@ function ProfilePage() {
     level: "",
   });
 
-  useEffect(() => {
-    if (!profile) return;
+const profileFormValues = useMemo(() => {
+  if (!profile) return null;
 
-    const initialForm = {
-      full_name: profile.full_name ?? "",
-      bio: profile.bio ?? "",
-      phone_number: profile.phone_number ?? "",
-      college: profile.college ?? "",
-      department: profile.department ?? "",
-      level: profile.level ?? "",
-    };
+  return {
+    full_name: profile.full_name ?? "",
+    bio: profile.bio ?? "",
+    phone_number: profile.phone_number ?? "",
+    college: profile.college ?? "",
+    department: profile.department ?? "",
+    level: profile.level ?? "",
+  };
+}, [
+  profile?.full_name,
+  profile?.bio,
+  profile?.phone_number,
+  profile?.college,
+  profile?.department,
+  profile?.level,
+]);
 
-    setForm(initialForm);
-    setSavedForm(initialForm);
-  }, [profile]);
+useEffect(() => {
+  if (!profileFormValues) return;
+
+  setForm(profileFormValues);
+  setSavedForm(profileFormValues);
+}, [profileFormValues]);
 
   const setField = (
     field: keyof typeof form,
@@ -467,17 +478,11 @@ const uploadAvatar = async (file: File) => {
 
     const newAvatarUrl = data.publicUrl;
 
-    // Save the new avatar URL.
-    const { error: updateError } =
-      await supabase.rpc("update_my_profile", {
-        _full_name: profile?.full_name ?? "",
-        _bio: profile?.bio ?? "",
-        _phone_number: profile?.phone_number ?? "",
-        _college: profile?.college ?? "",
-        _department: profile?.department ?? "",
-        _level: profile?.level ?? "",
-        _avatar_url: newAvatarUrl,
-      });
+// Save only the new avatar URL.
+const { error: updateError } =
+  await supabase.rpc("update_my_avatar", {
+    _avatar_url: newAvatarUrl,
+  });
 
     if (updateError) {
       throw updateError;
