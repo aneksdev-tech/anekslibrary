@@ -202,7 +202,7 @@ function Header() {
   ];
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border/60 glass">
+    <header className="sticky top-0 z-40 w-full border-b border-border/60 bg-background">
       <div className="mx-auto flex h-16 max-w-8xl items-center justify-between px-4 sm:px-6 md:h-14 md:px-4 lg:h-16 lg:px-6">
         <Link
           to="/"
@@ -370,22 +370,22 @@ function ResourceSharePage() {
                 )}
               </div>
 
-              {/* Resource action */}
-              <div className="mt-9 flex flex-nowrap items-center gap-3">
+  {/* Resource action */}
+  <div className="mt-9 flex flex-nowrap items-center gap-3">
   <Button
     asChild
     size="lg"
-    className="shrink-0 group bg-gradient-emerald shadow-md text-white text-xs !transition-none hover:bg-none hover:bg-accent hover:text-foreground sm:h-10 sm:text-sm"
+    className="w-fit shrink-0 group bg-gradient-emerald px-3 shadow-md text-white text-xs !transition-none hover:bg-none hover:bg-accent hover:text-foreground sm:h-10 sm:px-4 sm:text-sm"
   >
     <Link
       to="/preview/$resourceId"
       params={{ resourceId: resource.id }}
     >
-      <span className="transition-colors">
+      <span className="transition-colors ml-2">
         View Resource
       </span>
 
-      <ArrowRight className="ml-2 h-4 w-4 transition-colors" />
+      <ArrowRight className="h-4 w-2 transition-colors" />
     </Link>
   </Button>
 
@@ -397,7 +397,7 @@ function ResourceSharePage() {
 >
   <Link to="/library">
     <span className="transition-colors group-hover:text-muted-foreground">
-      Explore Library
+      Library
     </span>
   </Link>
 </Button>
@@ -478,9 +478,9 @@ function ResourceSharePage() {
 function Footer() {
   return (
     <footer className="border-t border-border/60">
-      <div className="mx-auto grid max-w-7xl gap-10 px-1 py-14 sm:px-6 md:grid-cols-4 md:gap-6 md:px-4 md:py-12 lg:gap-10 lg:px-6 lg:py-14">
+      <div className="mx-auto grid max-w-7xl grid-cols-2 gap-x-6 gap-y-10 px-4 py-14 sm:px-6 md:grid-cols-4 md:gap-6 md:px-4 md:py-12 lg:gap-10 lg:px-6 lg:py-14">
         {/* Brand */}
-        <div>
+          <div className="col-span-2 md:col-span-1">
           <Link to="/" className="flex items-center gap-0.5">
             <img
               src={logo}
@@ -564,7 +564,7 @@ function Footer() {
         </div>
 
         {/* Newsletter */}
-        <div>
+        <div className="col-span-2 md:col-span-1">
           <div className="mb-3 text-sm font-medium md:mb-2 md:text-sm lg:mb-3 lg:text-sm">
             Newsletter
           </div>

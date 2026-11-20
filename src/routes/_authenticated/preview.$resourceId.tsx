@@ -443,26 +443,26 @@ function PreviewPage() {
           </div>
 
           <div className="mb-4 max-w-sm pt-1 lg:mb-5 sm:pt-2">
-            <Button
-              type="button"
-              variant="ghost"
-              className="h-9 w-52 bg-gradient-emerald text-white text-xs !transition-none hover:bg-none hover:bg-accent hover:text-foreground sm:h-10 sm:text-sm"
-              onClick={download}
-              disabled={downloading}
-            >
-              {downloading ? (
-                <>
-                  <Loader2 className="mr-1.5 h-3.5 w-3.5 shrink-0 animate-spin sm:mr-2 sm:h-4 sm:w-4" />
-                  Downloading...
-                </>
-              ) : (
-                <>
-                  <Download className="mr-1.5 h-3.5 w-3.5 shrink-0 sm:mr-2 sm:h-4 sm:w-4" />
-                  Download
-                </>
-              )}
-            </Button>
-          </div>
+  <Button
+    type="button"
+    variant="ghost"
+    className="h-9 w-full bg-gradient-emerald text-white text-xs !transition-none hover:bg-none hover:bg-accent hover:text-foreground sm:h-10 sm:w-52 sm:text-sm"
+    onClick={download}
+    disabled={downloading}
+  >
+    {downloading ? (
+      <>
+        <Loader2 className="mr-1.5 h-3.5 w-3.5 shrink-0 animate-spin sm:mr-2 sm:h-4 sm:w-4" />
+        Downloading...
+      </>
+    ) : (
+      <>
+        <Download className="mr-1.5 h-3.5 w-3.5 shrink-0 sm:mr-2 sm:h-4 sm:w-4" />
+        Download
+      </>
+    )}
+  </Button>
+</div>
         </div>
       </div>
 

@@ -260,7 +260,7 @@ function Header() {
   const [open, setOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border/60 glass">
+    <header className="sticky top-0 z-40 w-full border-b border-border/60 bg-background">
       <div className="mx-auto flex h-16 max-w-8xl items-center justify-between px-4 sm:px-6 md:h-14 md:px-4 lg:h-16 lg:px-6">
         <Link to="/" className="flex items-center gap-0.5">
           <img
@@ -802,160 +802,162 @@ function LandingPage() {
             hours.
           </p>
 
-          <div className="mt-8 flex flex-wrap justify-left gap-3 md:mt-6 md:gap-2.5 lg:mt-8 lg:gap-3">
-            <Button
-              asChild
-              size="lg"
-              className="group bg-gradient-emerald text-white !transition-none hover:bg-none hover:bg-accent hover:text-foreground hover:shadow-md md:h-10 md:px-3.5 md:text-sm lg:h-11 lg:px-4 lg:text-sm"
-            >
-              <a href="mailto:aneksdev@gmail.com">
-                <Mail className="mr-2 h-4 w-4 transition-colors md:mr-1.5 md:h-3.5 md:w-3.5 lg:mr-2 lg:h-4 lg:w-4" />
-                <span className="transition-colors">
-                  Email us
-                </span>
-              </a>
-            </Button>
+          <div className="mt-8 flex flex-nowrap items-center gap-3 md:mt-6 md:gap-2.5 lg:mt-8 lg:gap-3">
+  <Button
+    asChild
+    size="lg"
+    className="w-fit shrink-0 group bg-gradient-emerald px-3 text-white !transition-none hover:bg-none hover:bg-accent hover:text-foreground hover:shadow-md md:h-10 md:px-3.5 md:text-sm lg:h-11 lg:px-4 lg:text-sm"
+  >
+    <a href="mailto:aneksdev@gmail.com">
+      <Mail className="mr-2 h-4 w-4 transition-colors md:mr-1.5 md:h-3.5 md:w-3.5 lg:mr-2 lg:h-4 lg:w-4" />
+      <span className="transition-colors">Email us</span>
+    </a>
+  </Button>
 
-            <Button
-              asChild
-              size="lg"
-              variant="outline"
-              className="bg-muted shadow-elegant transition-all hover:bg-none hover:bg-accent hover:shadow-md md:h-10 md:px-3.5 md:text-sm lg:h-11 lg:px-4 lg:text-sm"
-            >
-              <a
-                href="https://wa.me/2349067627242"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <MessageCircle className="mr-2 h-4 w-4 md:mr-1.5 md:h-3.5 md:w-3.5 lg:mr-2 lg:h-4 lg:w-4" />
-                WhatsApp
-              </a>
-            </Button>
-          </div>
+  <Button
+    asChild
+    size="lg"
+    variant="outline"
+    className="w-fit shrink-0 bg-muted shadow-elegant transition-all hover:bg-none hover:bg-accent hover:shadow-md md:h-10 md:px-3.5 md:text-sm lg:h-11 lg:px-4 lg:text-sm"
+  >
+    <a
+      href="https://wa.me/2349067627242"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      <MessageCircle className="mr-2 h-4 w-4 md:mr-1.5 md:h-3.5 md:w-3.5 lg:mr-2 lg:h-4 lg:w-4" />
+      WhatsApp
+    </a>
+  </Button>
+</div>
         </div>
       </section>
 
       {/* FOOTER */}
-      <footer className="border-t border-border/60">
-        <div className="mx-auto grid max-w-7xl gap-10 px-1 py-14 sm:px-6 md:grid-cols-4 md:gap-6 md:px-4 md:py-12 lg:gap-10 lg:px-6 lg:py-14">
-          <div>
-            <div className="flex items-center gap-0.5">
-              <img
-                src={logo}
-                alt="Aneks Library"
-                className="h-9 w-9 rounded-sm object-contain md:h-8 md:w-8 lg:h-9 lg:w-9"
-              />
+<footer className="border-t border-border/60">
+  <div className="mx-auto grid max-w-7xl grid-cols-2 gap-x-6 gap-y-10 px-4 py-14 sm:px-6 md:grid-cols-4 md:gap-6 md:px-4 md:py-12 lg:gap-10 lg:px-6 lg:py-14">
+    {/* Brand */}
+    <div className="col-span-2 md:col-span-1">
+      <div className="flex items-center gap-0.5">
+        <img
+          src={logo}
+          alt="Aneks Library"
+          className="h-9 w-9 rounded-sm object-contain md:h-8 md:w-8 lg:h-9 lg:w-9"
+        />
 
-              <span className="-ml-1 font-display text-lg font-semibold md:text-base lg:text-lg">
-                <span className="text-gold">neks</span> Library
-              </span>
-            </div>
+        <span className="-ml-1 font-display text-lg font-semibold md:text-base lg:text-lg">
+          <span className="text-gold">neks</span> Library
+        </span>
+      </div>
 
-            <p className="mt-3 text-sm text-muted-foreground md:mt-2 md:text-sm lg:mt-3 lg:text-sm">
-              The official digital academic library built for Michael Okpara
-              University of Agriculture, Umudike (MOUAU). Helping students
-              study smarter.
-            </p>
-          </div>
+      <p className="mt-3 text-sm text-muted-foreground md:mt-2 md:text-sm lg:mt-3 lg:text-sm">
+        The official digital academic library built for Michael Okpara
+        University of Agriculture, Umudike (MOUAU). Helping students
+        study smarter.
+      </p>
+    </div>
 
-          <div>
-            <div className="mb-3 text-sm font-medium md:mb-2 md:text-sm lg:mb-3 lg:text-sm">
-              Company
-            </div>
+    {/* Company */}
+    <div>
+      <div className="mb-3 text-sm font-medium md:mb-2 md:text-sm lg:mb-3 lg:text-sm">
+        Company
+      </div>
 
-            <ul className="space-y-2 text-sm text-muted-foreground md:space-y-1.5 md:text-sm lg:space-y-2 lg:text-sm">
-              <li>
-                <a href="#" className="hover:text-foreground">
-                  Privacy Policy
-                </a>
-              </li>
+      <ul className="space-y-2 text-sm text-muted-foreground md:space-y-1.5 md:text-sm lg:space-y-2 lg:text-sm">
+        <li>
+          <a href="#" className="hover:text-foreground">
+            Privacy Policy
+          </a>
+        </li>
 
-              <li>
-                <a href="#" className="hover:text-foreground">
-                  Terms of Service
-                </a>
-              </li>
+        <li>
+          <a href="#" className="hover:text-foreground">
+            Terms of Service
+          </a>
+        </li>
 
-              <li>
-                <a
-                  href="mailto:hello@anekslibrary.com"
-                  className="hover:text-foreground"
-                >
-                  Contact
-                </a>
-              </li>
-            </ul>
-          </div>
+        <li>
+          <a
+            href="mailto:hello@anekslibrary.com"
+            className="hover:text-foreground"
+          >
+            Contact
+          </a>
+        </li>
+      </ul>
+    </div>
 
-          <div>
-            <div className="mb-3 text-sm font-medium md:mb-2 md:text-sm lg:mb-3 lg:text-sm">
-              Product
-            </div>
+    {/* Product */}
+    <div>
+      <div className="mb-3 text-sm font-medium md:mb-2 md:text-sm lg:mb-3 lg:text-sm">
+        Product
+      </div>
 
-            <ul className="space-y-2 text-sm text-muted-foreground md:space-y-1.5 md:text-sm lg:space-y-2 lg:text-sm">
-              <li>
-                <Link to="/library" className="hover:text-foreground">
-                  Library
-                </Link>
-              </li>
+      <ul className="space-y-2 text-sm text-muted-foreground md:space-y-1.5 md:text-sm lg:space-y-2 lg:text-sm">
+        <li>
+          <Link to="/library" className="hover:text-foreground">
+            Library
+          </Link>
+        </li>
 
-              <li>
-                <a href="#about" className="hover:text-foreground">
-                  About
-                </a>
-              </li>
+        <li>
+          <a href="#about" className="hover:text-foreground">
+            About
+          </a>
+        </li>
 
-              <li>
-                <a href="#features" className="hover:text-foreground">
-                  Features
-                </a>
-              </li>
+        <li>
+          <a href="#features" className="hover:text-foreground">
+            Features
+          </a>
+        </li>
 
-              <li>
-                <a href="#categories" className="hover:text-foreground">
-                  Categories
-                </a>
-              </li>
+        <li>
+          <a href="#categories" className="hover:text-foreground">
+            Categories
+          </a>
+        </li>
 
-              {/* <li>
-                <Link to="/pricing" className="hover:text-foreground">
-                  Pricing
-                </Link>
-              </li> */}
-            </ul>
-          </div>
+        {/* <li>
+          <Link to="/pricing" className="hover:text-foreground">
+            Pricing
+          </Link>
+        </li> */}
+      </ul>
+    </div>
 
-          <div>
-            <div className="mb-3 text-sm font-medium md:mb-2 md:text-sm lg:mb-3 lg:text-sm">
-              Newsletter
-            </div>
+    {/* Newsletter */}
+    <div className="col-span-2 md:col-span-1">
+      <div className="mb-3 text-sm font-medium md:mb-2 md:text-sm lg:mb-3 lg:text-sm">
+        Newsletter
+      </div>
 
-            <p className="text-sm text-muted-foreground md:text-sm lg:text-sm">
-              Occasional updates on new categories and improvements.
-            </p>
+      <p className="text-sm text-muted-foreground md:text-sm lg:text-sm">
+        Occasional updates on new categories and improvements.
+      </p>
 
-            <form
-              className="mt-3 flex flex-col gap-2 xl:flex-row md:mt-2 lg:mt-3"
-              onSubmit={(e) => e.preventDefault()}
-            >
-              <input
-                type="email"
-                required
-                placeholder="you@university.edu"
-                className="min-w-0 flex-1 rounded-sm border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring md:px-2.5 md:py-1.5 md:text-sm lg:px-3 lg:py-2 lg:text-sm"
-              />
+      <form
+        className="mt-3 flex flex-col gap-2 xl:flex-row md:mt-2 lg:mt-3"
+        onSubmit={(e) => e.preventDefault()}
+      >
+        <input
+          type="email"
+          required
+          placeholder="you@university.edu"
+          className="min-w-0 flex-1 rounded-sm border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring md:px-2.5 md:py-1.5 md:text-sm lg:px-3 lg:py-2 lg:text-sm"
+        />
 
-              <Button
-                type="submit"
-                className="group w-full shrink-0 bg-gradient-emerald text-white !transition-none hover:bg-none hover:bg-accent hover:text-foreground hover:shadow-md md:h-9 md:text-sm lg:h-9 lg:text-sm xl:w-auto"
-              >
-                <span className="transition-colors">
-                  Join
-                </span>
-              </Button>
-            </form>
-          </div>
-        </div>
+        <Button
+          type="submit"
+          className="group w-full shrink-0 bg-gradient-emerald text-white !transition-none hover:bg-none hover:bg-accent hover:text-foreground hover:shadow-md md:h-9 md:text-sm lg:h-9 lg:text-sm xl:w-auto"
+        >
+          <span className="transition-colors">
+            Join
+          </span>
+        </Button>
+      </form>
+    </div>
+  </div>
 
         <div className="border-t border-border/60">
           <div className="mx-auto flex max-w-8xl flex-col items-center justify-between gap-2 px-4 py-6 text-xs text-muted-foreground sm:flex-row sm:px-6 md:px-4 md:py-5 lg:px-6 lg:py-6">
