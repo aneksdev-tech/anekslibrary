@@ -422,13 +422,11 @@ function DashboardPage() {
 
           <Button
             asChild
-            className="group cursor-pointer border border-primary bg-gradient-emerald text-primary-foreground shadow-soft transition-all hover:border-border hover:bg-none hover:bg-accent hover:text-primary hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            className="group cursor-pointer bg-gradient-emerald text-white text-xs !transition-none hover:bg-none hover:bg-accent hover:text-foreground sm:h-10 sm:text-sm"
           >
             <Link to="/library">
-              <span className="transition-colors group-hover:text-primary">
-                Browse Library
-              </span>
-              <ArrowUpRight className="ml-1 h-4 w-4 transition-colors group-hover:text-primary" />
+              Browse Library
+            <ArrowUpRight className="h-4 w-4" />
             </Link>
           </Button>
         </div>

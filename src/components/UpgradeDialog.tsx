@@ -72,7 +72,7 @@ export function UpgradeDialog({
         <DialogFooter className="flex-col gap-2 pt-1 sm:flex-row sm:gap-3">
           <Button
             variant="outline"
-            className="h-9 w-full bg-destructive text-xs sm:h-10 sm:text-sm"
+            className="h-9 w-full bg-destructive text-white text-xs sm:h-10 sm:text-sm"
             onClick={() => onOpenChange(false)}
           >
             Cancel
@@ -80,7 +80,7 @@ export function UpgradeDialog({
 
           <Button
             variant="ghost"
-            className="h-9 w-full bg-gold text-black text-xs !transition-none hover:bg-none hover:bg-accent hover:text-foreground sm:h-10 sm:text-sm"
+            className="h-9 w-full bg-gradient-emerald text-white text-xs !transition-none hover:bg-none hover:bg-accent hover:text-foreground sm:h-10 sm:text-sm"
             onClick={() => {
               // Flutterwave checkout will be added here.
             }}

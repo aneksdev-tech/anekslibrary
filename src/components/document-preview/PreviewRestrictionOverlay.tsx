@@ -29,11 +29,9 @@ export function PreviewRestrictionOverlay({
         <button
           type="button"
           onClick={onUpgradeClick}
-          className="group mt-5 inline-flex min-h-10 w-50 items-center justify-center rounded-sm bg-gradient-emerald px-5 py-2 text-sm font-medium text-primary-foreground shadow-elegant transition-all hover:bg-none hover:bg-accent hover:shadow-md"
+          className="group mt-5 inline-flex min-h-10 w-50 items-center justify-center rounded-sm bg-gradient-emerald text-white text-xs !transition-none hover:bg-none hover:bg-accent hover:text-foreground sm:h-10 sm:text-sm"
         >
-          <span className="transition-colors group-hover:text-primary">
-            Upgrade to Premium
-          </span>
+          Upgrade to Premium
         </button>
       )}
     </div>
