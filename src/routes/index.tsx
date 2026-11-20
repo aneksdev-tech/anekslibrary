@@ -42,7 +42,7 @@ import { useAuth } from "@/lib/auth";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Aneks Library | Built for Academic Exellence" },
+      { title: "Aneks Library | Built for Academic Excellence" },
       {
         name: "description",
         content:
@@ -54,7 +54,7 @@ export const Route = createFileRoute("/")({
       },
       {
         property: "og:description",
-        content: "Built for Academic Exellence",
+        content: "Built for Academic Excellence",
       },
     ],
   }),

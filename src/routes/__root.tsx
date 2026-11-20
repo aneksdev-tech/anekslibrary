@@ -154,6 +154,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         content: "https://anekslibrary.vercel.app/Live.png",
       },
       {
+        property: "og:image:alt",
+        content: "Aneks Library - Digital Academic Resource Platform",
+      },
+      {
         property: "og:image:type",
         content: "image/png",
       },
