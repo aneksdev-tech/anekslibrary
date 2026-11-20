@@ -347,7 +347,7 @@ function ResourceSharePage() {
                 {resource.category_name || "Academic Resource"}
               </div>
 
-              <h1 className="mt-5 max-w-4xl font-display text-3xl font-semibold leading-tight tracking-tight sm:text-4xl md:text-5xl">
+              <h1 className="mt-5 max-w-4xl font-display text-2xl font-semibold leading-tight tracking-tight sm:text-3xl md:text-4xl">
                 {resource.title}
               </h1>
 
@@ -397,7 +397,7 @@ function ResourceSharePage() {
 >
   <Link to="/library">
     <span className="transition-colors group-hover:text-muted-foreground">
-      Library
+      Explore Library
     </span>
   </Link>
 </Button>

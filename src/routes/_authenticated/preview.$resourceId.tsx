@@ -176,7 +176,6 @@ function PreviewPage() {
 
     const shareData = {
       title: resource.title,
-      text: `Check out this academic resource on Aneks Library: ${resource.title}`,
       url: shareUrl,
     };
 
@@ -273,7 +272,7 @@ function PreviewPage() {
 
   return (
     <>
-      <div className="mx-3 max-w-6xl space-y-4 sm:space-y-4">
+      <div className="mx-3 max-w-7xl space-y-4 sm:space-y-4">
         <div className="flex items-center justify-between">
           <Button
             type="button"
