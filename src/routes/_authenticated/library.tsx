@@ -9,6 +9,12 @@ import { Bookmark, ChevronLeft, BookOpen, Building2, GraduationCap, School, Cale
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { toast } from "sonner";
 import { EmptyState } from "./dashboard";
 import { ResourceTypeBadge } from "@/components/ResourceTypeBadge";
@@ -26,12 +32,42 @@ export const Route = createFileRoute("/_authenticated/library")({
 
 const PAGE_SIZE = 24;
 
+function parseDateValue(value: string): Date | undefined {
+  if (!value) return undefined;
+
+  const [year, month, day] = value.split("-").map(Number);
+
+  if (!year || !month || !day) return undefined;
+
+  return new Date(year, month - 1, day);
+}
+
+function formatDateDisplay(value: string): string {
+  const date = parseDateValue(value);
+
+  if (!date) return "DD/MM/YYYY";
+
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const year = date.getFullYear();
+
+  return `${day}/${month}/${year}`;
+}
+
+function formatDateValue(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
 function LibraryPage() {
   const [q, setQ] = useState("");
   const [category, setCategory] = useState<string>(ALL_OPTION);
   const [sort, setSort] = useState<
-  "newest" | "oldest" | "downloads" | "bookmarks"
->("newest");
+    "newest" | "oldest" | "downloads" | "bookmarks"
+  >("newest");
 
   const [college, setCollege] = useState(ALL_OPTION);
   const [department, setDepartment] = useState(ALL_OPTION);
@@ -51,7 +87,7 @@ function LibraryPage() {
   const { canDownload } = useAccess();
 
   // Reset pagination whenever a filter or sort option changes.
-    useEffect(() => {
+  useEffect(() => {
     setPage(1);
   }, [
     q,
@@ -148,30 +184,30 @@ function LibraryPage() {
     pendingScrollRef.current = true;
   }, [page]);
 
- // Scroll to Find resources after the requested page loads.
-useEffect(() => {
-  if (
-    !pendingScrollRef.current ||
-    isLoading ||
-    isError ||
-    !libraryResult
-  ) {
-    return;
-  }
+  // Scroll to Find resources after the requested page loads.
+  useEffect(() => {
+    if (
+      !pendingScrollRef.current ||
+      isLoading ||
+      isError ||
+      !libraryResult
+    ) {
+      return;
+    }
 
-  const target = findResourcesRef.current;
+    const target = findResourcesRef.current;
 
-  if (!target) return;
+    if (!target) return;
 
-  pendingScrollRef.current = false;
+    pendingScrollRef.current = false;
 
-  target.scrollIntoView({
-    behavior: "smooth",
-    block: "start",
-  });
-}, [page, isLoading, isError, libraryResult]);
+    target.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  }, [page, isLoading, isError, libraryResult]);
 
-    const hasActiveFilters =
+  const hasActiveFilters =
     q.trim() !== "" ||
     category !== ALL_OPTION ||
     college !== ALL_OPTION ||
@@ -182,7 +218,7 @@ useEffect(() => {
     dateTo !== "" ||
     sort !== "newest";
 
-    const clearFilters = () => {
+  const clearFilters = () => {
     setQ("");
     setCategory(ALL_OPTION);
     setCollege(ALL_OPTION);
@@ -366,83 +402,144 @@ useEffect(() => {
                 </SelectTrigger>
 
                 <SelectContent>
-  <SelectItem value={ALL_OPTION}>
-    Both Semesters
-  </SelectItem>
+                  <SelectItem value={ALL_OPTION}>
+                    Both Semesters
+                  </SelectItem>
 
-  {semesters.map((item) => (
-    <SelectItem key={item} value={item}>
-      {item}
-    </SelectItem>
-  ))}
-</SelectContent>
+                  {semesters.map((item) => (
+                    <SelectItem key={item} value={item}>
+                      {item}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
               </Select>
             </div>
           </div>
 
-          
-{/* Sort and date range */}
-<div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3">
+          {/* Sort and date range */}
+          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3">
 
-  {/* Sort */}
-  <div className="col-span-2 min-w-0 sm:col-span-1">
-    <Select
-      value={sort}
-      onValueChange={(value) =>
-        setSort(value as typeof sort)
-      }
-    >
-      <SelectTrigger
-        id="library-sort"
-        className="h-10 w-full min-w-0 px-3 text-xs sm:text-sm"
-      >
-        <SelectValue />
-      </SelectTrigger>
+            {/* Sort */}
+            <div className="col-span-2 min-w-0 sm:col-span-1">
+              <Select
+                value={sort}
+                onValueChange={(value) =>
+                  setSort(value as typeof sort)
+                }
+              >
+                <SelectTrigger
+                  id="library-sort"
+                  className="h-10 w-full min-w-0 px-3 text-xs sm:text-sm"
+                >
+                  <SelectValue />
+                </SelectTrigger>
 
-      <SelectContent>
-        <SelectItem value="newest">Newest</SelectItem>
-        <SelectItem value="oldest">Oldest</SelectItem>
-        <SelectItem value="downloads">
-          Most downloaded
-        </SelectItem>
-        <SelectItem value="bookmarks">
-          Most bookmarked
-        </SelectItem>
-      </SelectContent>
-    </Select>
-  </div>
+                <SelectContent>
+                  <SelectItem value="newest">Newest</SelectItem>
+                  <SelectItem value="oldest">Oldest</SelectItem>
+                  <SelectItem value="downloads">
+                    Most downloaded
+                  </SelectItem>
+                  <SelectItem value="bookmarks">
+                    Most bookmarked
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-  {/* Date from */}
-  <div className="min-w-0">
-    <input
-      id="library-date-from"
-      type="date"
-      value={dateFrom}
-      max={dateTo || undefined}
-      onChange={(event) =>
-        setDateFrom(event.target.value)
-      }
-      aria-label="Filter resources from this date"
-      className="block h-10 w-full min-w-0 rounded-md border border-input bg-card px-1 text-xs text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 sm:px-2 sm:text-sm"
-    />
-  </div>
+            {/* Date from */}
+            <div className="min-w-0">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-10 w-full min-w-0 justify-between px-2 text-xs font-normal sm:text-sm"
+                  >
+                    <span
+                      className={
+                        dateFrom
+                          ? "text-foreground"
+                          : "text-muted-foreground"
+                      }
+                    >
+                      {formatDateDisplay(dateFrom)}
+                    </span>
 
-  {/* Date to */}
-  <div className="min-w-0">
-    <input
-      id="library-date-to"
-      type="date"
-      value={dateTo}
-      min={dateFrom || undefined}
-      onChange={(event) =>
-        setDateTo(event.target.value)
-      }
-      aria-label="Filter resources up to this date"
-      className="block h-10 w-full min-w-0 rounded-md border border-input bg-card px-1 text-xs text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 sm:px-2 sm:text-sm"
-    />
-  </div>
-</div>
-</div>
+                    <CalendarDays className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  </Button>
+                </PopoverTrigger>
+
+                <PopoverContent
+                  className="w-auto p-0"
+                  align="start"
+                >
+                  <Calendar
+                    mode="single"
+                    selected={parseDateValue(dateFrom)}
+                    onSelect={(date) => {
+                      if (date) {
+                        setDateFrom(formatDateValue(date));
+                      }
+                    }}
+                    disabled={
+                      dateTo
+                        ? { after: parseDateValue(dateTo)! }
+                        : undefined
+                    }
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            {/* Date to */}
+            <div className="min-w-0">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-10 w-full min-w-0 justify-between px-2 text-xs font-normal sm:text-sm"
+                  >
+                    <span
+                      className={
+                        dateTo
+                          ? "text-foreground"
+                          : "text-muted-foreground"
+                      }
+                    >
+                      {formatDateDisplay(dateTo)}
+                    </span>
+
+                    <CalendarDays className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  </Button>
+                </PopoverTrigger>
+
+                <PopoverContent
+                  className="w-auto p-0"
+                  align="end"
+                >
+                  <Calendar
+                    mode="single"
+                    selected={parseDateValue(dateTo)}
+                    onSelect={(date) => {
+                      if (date) {
+                        setDateTo(formatDateValue(date));
+                      }
+                    }}
+                    disabled={
+                      dateFrom
+                        ? { before: parseDateValue(dateFrom)! }
+                        : undefined
+                    }
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+          </div>
+        </div>
 
         {/* Result count and clear filters */}
         <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3">
@@ -613,32 +710,32 @@ export function ResourceCard({
   const [previewing, setPreviewing] = useState(false);
 
   const collegeLabel = getResourceScopeLabel(
-  r.college,
-  "college",
-);
+    r.college,
+    "college",
+  );
 
-const collegeShort =
-collegeLabel.match(/\((.*?)\)/)?.[1] ?? collegeLabel;
+  const collegeShort =
+    collegeLabel.match(/\((.*?)\)/)?.[1] ?? collegeLabel;
 
-const departmentLabel = getResourceScopeLabel(
-  r.department,
-  "department",
-);
+  const departmentLabel = getResourceScopeLabel(
+    r.department,
+    "department",
+  );
 
-const levelLabel = getResourceScopeLabel(
-  r.level,
-  "level",
-);
+  const levelLabel = getResourceScopeLabel(
+    r.level,
+    "level",
+  );
 
-const semesterLabel = getResourceScopeLabel(
-  r.semester,
-  "semester",
-);
+  const semesterLabel = getResourceScopeLabel(
+    r.semester,
+    "semester",
+  );
 
   const { data: bookmarked } = useQuery({
     queryKey: ["bookmarked", r.id, user?.id],
     enabled:
-    !!user && profile?.primary_role !== "guest",
+      !!user && profile?.primary_role !== "guest",
     queryFn: async () => {
       const { data, error } = await supabase
         .from("bookmarks")
@@ -657,7 +754,8 @@ const semesterLabel = getResourceScopeLabel(
       if (!user) {
         throw new Error("Sign in required");
       }
-       if (profile?.primary_role === "guest") {
+
+      if (profile?.primary_role === "guest") {
         throw new Error("Guests cannot bookmark resources.");
       }
 
@@ -680,19 +778,19 @@ const semesterLabel = getResourceScopeLabel(
         if (error) throw error;
       }
     },
-onSuccess: () => {
-  qc.invalidateQueries({
-    queryKey: ["bookmarked", r.id],
-  });
+    onSuccess: () => {
+      qc.invalidateQueries({
+        queryKey: ["bookmarked", r.id],
+      });
 
-  qc.invalidateQueries({
-    queryKey: ["library"],
-  });
+      qc.invalidateQueries({
+        queryKey: ["library"],
+      });
 
-  qc.invalidateQueries({
-    queryKey: ["bookmarks-list", user?.id],
-  });
-},
+      qc.invalidateQueries({
+        queryKey: ["bookmarks-list", user?.id],
+      });
+    },
     onError: (error) => {
       toast.error(
         error instanceof Error
@@ -717,6 +815,7 @@ onSuccess: () => {
           />
         </div>
       </div>
+
       <h3 className="line-clamp-2 font-display text-[13px] font-semibold leading-snug sm:text-lg">
         {r.title}
       </h3>
@@ -728,41 +827,41 @@ onSuccess: () => {
       )}
 
       <div className="mt-2.5 space-y-1.5 text-xs sm:mt-3 sm:space-y-2 sm:text-sm">
-  {r.course_code && (
-    <div className="flex items-center gap-2.5 text-muted-foreground sm:gap-3">
-      <BookOpen className="h-3.5 w-3.5 shrink-0 text-muted-foreground sm:h-4 sm:w-4" />
-      <span>{r.course_code}</span>
-    </div>
-  )}
+        {r.course_code && (
+          <div className="flex items-center gap-2.5 text-muted-foreground sm:gap-3">
+            <BookOpen className="h-3.5 w-3.5 shrink-0 text-muted-foreground sm:h-4 sm:w-4" />
+            <span>{r.course_code}</span>
+          </div>
+        )}
 
-  {r.college && (
-    <div className="flex items-center gap-2.5 text-muted-foreground sm:gap-3">
-      <School className="h-3.5 w-3.5 shrink-0 text-muted-foreground sm:h-4 sm:w-4" />
-      <span>{collegeShort}</span>
-    </div>
-  )}
+        {r.college && (
+          <div className="flex items-center gap-2.5 text-muted-foreground sm:gap-3">
+            <School className="h-3.5 w-3.5 shrink-0 text-muted-foreground sm:h-4 sm:w-4" />
+            <span>{collegeShort}</span>
+          </div>
+        )}
 
-  {r.department && (
-    <div className="flex items-center gap-2.5 text-muted-foreground sm:gap-3">
-      <Building2 className="h-3.5 w-3.5 shrink-0 text-muted-foreground sm:h-4 sm:w-4" />
-      <span>{departmentLabel}</span>
-    </div>
-  )}
+        {r.department && (
+          <div className="flex items-center gap-2.5 text-muted-foreground sm:gap-3">
+            <Building2 className="h-3.5 w-3.5 shrink-0 text-muted-foreground sm:h-4 sm:w-4" />
+            <span>{departmentLabel}</span>
+          </div>
+        )}
 
-  {r.level && (
-    <div className="flex items-center gap-2.5 text-muted-foreground sm:gap-3">
-      <GraduationCap className="h-3.5 w-3.5 shrink-0 text-muted-foreground sm:h-4 sm:w-4" />
-      <span>{levelLabel}</span>
-    </div>
-  )}
+        {r.level && (
+          <div className="flex items-center gap-2.5 text-muted-foreground sm:gap-3">
+            <GraduationCap className="h-3.5 w-3.5 shrink-0 text-muted-foreground sm:h-4 sm:w-4" />
+            <span>{levelLabel}</span>
+          </div>
+        )}
 
-  {r.semester && (
-    <div className="flex items-center gap-2.5 text-muted-foreground sm:gap-3">
-      <CalendarDays className="h-3.5 w-3.5 shrink-0 text-muted-foreground sm:h-4 sm:w-4" />
-      <span>{semesterLabel}</span>
-    </div>
-  )}
-</div>
+        {r.semester && (
+          <div className="flex items-center gap-2.5 text-muted-foreground sm:gap-3">
+            <CalendarDays className="h-3.5 w-3.5 shrink-0 text-muted-foreground sm:h-4 sm:w-4" />
+            <span>{semesterLabel}</span>
+          </div>
+        )}
+      </div>
 
       <div className="mt-auto flex items-center justify-between pt-4 text-[10px] text-muted-foreground sm:pt-5 sm:text-xs">
         <span>
@@ -815,7 +914,7 @@ onSuccess: () => {
           </Button>
         </div>
 
-                {profile?.primary_role !== "guest" && (
+        {profile?.primary_role !== "guest" && (
           <Button
             className="h-8 shrink-0 px-2 sm:h-9 bg-muted"
             variant="outline"
