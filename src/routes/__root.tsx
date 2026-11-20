@@ -133,36 +133,42 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           "Discover, share and download past questions, project reports, seminar papers, lecture notes, research and e-books on Aneks Library.",
       },
       {
-        property: "og:title",
-        content: "Aneks Library | Built for Academic Excellence",
-      },
-      {
-        property: "og:description",
-        content:
-          "A modern academic digital repository for students, lecturers and researchers. Upload, discover and download quality resources.",
-      },
-      { property: "og:type", content: "website" },
-      {
-        property: "og:url",
-        content: "https://www.anekslibrary.vercel.app",
-      },
-      {
-        property: "og:image",
-        content: "https://www.anekslibrary.vercel.app/Live.png",
-      },
-      {
-        property: "og:image:width",
-        content: "1200",
-      },
-      {
-        property: "og:image:height",
-        content: "630",
-      },
-      { name: "twitter:card", content: "summary_large_image" },
-      {
-        name: "twitter:image",
-        content: "https://www.anekslibrary.vercel.app/Live.png",
-      },
+  property: "og:title",
+  content: "Aneks Library | Built for Academic Excellence",
+},
+{
+  property: "og:description",
+  content:
+    "A modern academic digital repository for students, lecturers and researchers. Upload, discover and download quality resources.",
+},
+{
+  property: "og:type",
+  content: "website",
+},
+{
+  property: "og:url",
+  content: "https://anekslibrary.vercel.app",
+},
+{
+  property: "og:image",
+  content: "https://anekslibrary.vercel.app/Live.png",
+},
+{
+  property: "og:image:width",
+  content: "1200",
+},
+{
+  property: "og:image:height",
+  content: "630",
+},
+{
+  name: "twitter:card",
+  content: "summary_large_image",
+},
+{
+  name: "twitter:image",
+  content: "https://anekslibrary.vercel.app/Live.png",
+},
       { name: "theme-color", content: "#064e3b" },
     ],
     links: [
