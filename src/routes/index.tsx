@@ -326,14 +326,14 @@ function Header() {
            <Button
   asChild
   size="sm"
-  className="group bg-gradient-emerald text-primary-foreground shadow-soft transition-all hover:bg-none hover:bg-accent hover:shadow-md md:h-8 md:px-2.5 md:text-xs lg:h-9 lg:px-3 lg:text-sm"
+  className="bg-gradient-emerald text-white text-xs !transition-none hover:bg-none hover:bg-accent hover:text-foreground hover:shadow-md md:px-2.5 md:text-xs lg:px-3 lg:text-sm"
 >
   <Link to="/dashboard">
-    <span className="hidden transition-colors group-hover:text-primary sm:inline">
+    <span className="hidden sm:inline">
       Open Dashboard
     </span>
 
-    <span className="transition-colors group-hover:text-primary sm:hidden">
+    <span className="transition-colors sm:hidden">
       Dashboard
     </span>
   </Link>
@@ -342,10 +342,10 @@ function Header() {
 <Button
   asChild
   size="sm"
-  className="group bg-gradient-emerald text-primary-foreground shadow-soft transition-all hover:bg-none hover:bg-accent hover:shadow-md md:h-8 md:px-2.5 md:text-xs lg:h-9 lg:px-3 lg:text-sm"
+  className="group bg-gradient-emerald text-white text-xs !transition-none hover:bg-none hover:bg-accent hover:text-foreground hover:shadow-md md:px-2.5 md:text-xs lg:px-3 lg:text-sm"
 >
   <Link to="/auth" search={{ mode: "register" }}>
-    <span className="hidden transition-colors group-hover:text-primary sm:inline">
+    <span className="hidden transition-colors sm:inline">
       Get Started
     </span>
 
@@ -462,13 +462,13 @@ function LandingPage() {
               <Button
   asChild
   size="lg"
-  className="group bg-gradient-emerald text-primary-foreground shadow-elegant transition-all hover:bg-none hover:bg-accent hover:shadow-md md:h-10 md:px-3.5 md:text-sm lg:h-11 lg:px-4 lg:text-sm"
+  className="group bg-gradient-emerald text-white text-xs !transition-none hover:bg-none hover:bg-accent hover:text-foreground hover:shadow-md md:h-10 md:px-3.5 md:text-sm lg:h-11 lg:px-4 lg:text-sm"
 >
   <Link to="/auth" search={{ mode: "register" }}>
-    <span className="transition-colors group-hover:text-primary">
+    <span className="transition-colors">
       Get started
     </span>
-    <ArrowRight className="ml-1 h-4 w-4 transition-colors group-hover:text-primary md:h-3.5 md:w-3.5 lg:h-4 lg:w-4" />
+    <ArrowRight className="ml-1 h-4 w-4 transition-colors md:h-3.5 md:w-3.5 lg:h-4 lg:w-4" />
   </Link>
 </Button>
 
@@ -806,11 +806,11 @@ function LandingPage() {
             <Button
               asChild
               size="lg"
-              className="group bg-gradient-emerald text-primary-foreground shadow-elegant transition-all hover:bg-none hover:bg-accent hover:shadow-md md:h-10 md:px-3.5 md:text-sm lg:h-11 lg:px-4 lg:text-sm"
+              className="group bg-gradient-emerald text-white !transition-none hover:bg-none hover:bg-accent hover:text-foreground hover:shadow-md md:h-10 md:px-3.5 md:text-sm lg:h-11 lg:px-4 lg:text-sm"
             >
               <a href="mailto:aneksdev@gmail.com">
-                <Mail className="mr-2 h-4 w-4 transition-colors group-hover:text-primary md:mr-1.5 md:h-3.5 md:w-3.5 lg:mr-2 lg:h-4 lg:w-4" />
-                <span className="transition-colors group-hover:text-primary">
+                <Mail className="mr-2 h-4 w-4 transition-colors md:mr-1.5 md:h-3.5 md:w-3.5 lg:mr-2 lg:h-4 lg:w-4" />
+                <span className="transition-colors">
                   Email us
                 </span>
               </a>
@@ -820,7 +820,7 @@ function LandingPage() {
               asChild
               size="lg"
               variant="outline"
-              className="md:h-10 md:px-3.5 md:text-sm lg:h-11 lg:px-4 lg:text-sm"
+              className="bg-muted shadow-elegant transition-all hover:bg-none hover:bg-accent hover:shadow-md md:h-10 md:px-3.5 md:text-sm lg:h-11 lg:px-4 lg:text-sm"
             >
               <a
                 href="https://wa.me/2349067627242"
@@ -947,9 +947,9 @@ function LandingPage() {
 
               <Button
                 type="submit"
-                className="group w-full shrink-0 bg-gradient-emerald text-primary-foreground transition-all hover:bg-none hover:bg-accent hover:shadow-md md:h-9 md:text-sm lg:h-9 lg:text-sm xl:w-auto"
+                className="group w-full shrink-0 bg-gradient-emerald text-white !transition-none hover:bg-none hover:bg-accent hover:text-foreground hover:shadow-md md:h-9 md:text-sm lg:h-9 lg:text-sm xl:w-auto"
               >
-                <span className="transition-colors group-hover:text-primary">
+                <span className="transition-colors">
                   Join
                 </span>
               </Button>

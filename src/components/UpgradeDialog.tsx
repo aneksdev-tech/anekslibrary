@@ -26,18 +26,19 @@ export function UpgradeDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="
-          w-[calc(100%-24px)]
-          max-w-[360px]
-          max-h-[85dvh]
-          overflow-y-auto
-          rounded-lg
-          p-4
-          sm:max-w-sm
-          sm:rounded-xl
-          sm:p-6
-        "
-      >
+  className="
+    w-[calc(100%-24px)]
+    max-w-[360px]
+    max-h-[85dvh]
+    overflow-y-auto
+    rounded-lg
+    p-4
+    sm:max-w-[520px]
+    sm:rounded-xl
+    sm:p-6
+    lg:max-w-[560px]
+  "
+>
         <DialogHeader className="space-y-2 text-left sm:space-y-3">
           <Crown className="h-5 w-5 text-yellow-500 sm:h-7 sm:w-7" />
 

@@ -1,5 +1,5 @@
-import {createFileRoute, Link,} from "@tanstack/react-router";
-import {useQuery, useQueryClient, } from "@tanstack/react-query";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
@@ -16,6 +16,7 @@ import {
   Download,
   Loader2,
   ArrowLeft,
+  Share2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -170,6 +171,37 @@ function PreviewPage() {
       ? resource.category.name.trim()
       : "Uncategorized";
 
+  const shareResource = async () => {
+  const shareUrl = `https://anekslibrary.vercel.app/s/${resource.id}`;
+
+    const shareData = {
+      title: resource.title,
+      text: `Check out this academic resource on Aneks Library: ${resource.title}`,
+      url: shareUrl,
+    };
+
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+      } else {
+        await navigator.clipboard.writeText(
+          shareData.url,
+        );
+
+        toast.success("Resource link copied!");
+      }
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        error.name === "AbortError"
+      ) {
+        return;
+      }
+
+      toast.error("Unable to share resource.");
+    }
+  };
+
   const download = () => {
     if (downloading) return;
 
@@ -242,7 +274,7 @@ function PreviewPage() {
   return (
     <>
       <div className="mx-3 max-w-6xl space-y-4 sm:space-y-4">
-        <div>
+        <div className="flex items-center justify-between">
           <Button
             type="button"
             variant="ghost"
@@ -251,6 +283,17 @@ function PreviewPage() {
           >
             <ArrowLeft className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             Back
+          </Button>
+
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={shareResource}
+            className="h-8 gap-1.5 px-2 text-xs transition-colors hover:bg-transparent hover:text-muted-foreground sm:h-9 sm:gap-2 sm:text-sm"
+            aria-label="Share resource"
+          >
+            <Share2 className="h-4 w-4 sm:h-[18px] sm:w-[18px]" />
+            Share
           </Button>
         </div>
 
@@ -323,7 +366,7 @@ function PreviewPage() {
                   params={{
                     userId: uploader.id,
                   }}
-                  className="group block rounded-xl p-2.5 transition-colors sm:p-3"
+                  className="group block rounded-xl pt-1 pb-1 transition-colors"
                   aria-label={`View ${
                     uploader.full_name ?? "uploader"
                   }'s public profile`}
