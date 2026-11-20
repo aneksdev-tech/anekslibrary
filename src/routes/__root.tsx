@@ -150,33 +150,29 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         content: "https://anekslibrary.vercel.app",
       },
       {
-        property: "og:image",
-        content: "https://anekslibrary.vercel.app/Live.png",
-      },
-      {
-        property: "og:image:alt",
-        content: "Aneks Library - Digital Academic Resource Platform",
-      },
-      {
-        property: "og:image:type",
-        content: "image/png",
-      },
-      {
-        property: "og:image:width",
-        content: "1254",
-      },
-      {
-        property: "og:image:height",
-        content: "1254",
-      },
-      {
-        name: "twitter:card",
-        content: "summary_large_image",
-      },
-      {
-        name: "twitter:image",
-        content: "https://anekslibrary.vercel.app/Live.png",
-      },
+  property: "og:image",
+  content: "https://anekslibrary.vercel.app/aneks-library-share.png",
+},
+{
+  property: "og:image:type",
+  content: "image/png",
+},
+{
+  property: "og:image:width",
+  content: "627",
+},
+{
+  property: "og:image:height",
+  content: "627",
+},
+{
+  property: "og:image:alt",
+  content: "Aneks Library - Digital Academic Resource Platform",
+},
+{
+  name: "twitter:image",
+  content: "https://anekslibrary.vercel.app/aneks-library-share.png",
+},
       { name: "theme-color", content: "#064e3b" },
     ],
     links: [
