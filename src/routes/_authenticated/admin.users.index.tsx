@@ -17,6 +17,7 @@ import {
   useState,
 } from "react";
 import {
+  CalendarDays,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
@@ -40,6 +41,12 @@ import {
 import type { Database } from "@/integrations/supabase/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -64,10 +71,10 @@ export const Route = createFileRoute(
 )({
   beforeLoad: async () => {
     const {
-  data: { session },
-} = await supabase.auth.getSession();
+      data: { session },
+    } = await supabase.auth.getSession();
 
-if (!session?.user) {
+    if (!session?.user) {
       throw redirect({
         to: "/auth",
         search: {
@@ -100,6 +107,36 @@ if (!session?.user) {
 });
 
 const PAGE_SIZE = 20;
+
+function parseDateValue(value: string): Date | undefined {
+  if (!value) return undefined;
+
+  const [year, month, day] = value.split("-").map(Number);
+
+  if (!year || !month || !day) return undefined;
+
+  return new Date(year, month - 1, day);
+}
+
+function formatDateDisplay(value: string): string {
+  const date = parseDateValue(value);
+
+  if (!date) return "DD/MM/YYYY";
+
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const year = date.getFullYear();
+
+  return `${day}/${month}/${year}`;
+}
+
+function formatDateValue(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
 
 const STATUSES: AccountStatus[] = [
   "active",
@@ -412,7 +449,7 @@ function UsersPage() {
     roles,
   } = useAuth();
 
-    /*
+  /*
    * Online presence is visible only to admins
    * and co-admins on the Users page.
    */
@@ -426,7 +463,7 @@ function UsersPage() {
   const [statusFilter, setStatusFilter] =
     useState("all");
 
-    const [roleFilter, setRoleFilter] =
+  const [roleFilter, setRoleFilter] =
     useState("all");
 
   const [presenceFilter, setPresenceFilter] =
@@ -569,8 +606,8 @@ function UsersPage() {
       !!currentUser &&
       !isLoading &&
       !isError,
-      refetchInterval: 5_000,
-      refetchIntervalInBackground: false,
+    refetchInterval: 5_000,
+    refetchIntervalInBackground: false,
   });
 
   const onlineUserIds = useMemo(
@@ -584,7 +621,7 @@ function UsersPage() {
   const {
     data: auditLogs,
     isLoading: auditLogsLoading,
-    } = useQuery<UserAuditLog[]>({
+  } = useQuery<UserAuditLog[]>({
     queryKey: ["admin-user-audits"],
     staleTime: 60_000,
 
@@ -926,7 +963,7 @@ function UsersPage() {
             },
           );
 
-       case "newest":
+        case "newest":
         default:
           return (
             new Date(b.created_at).getTime() -
@@ -936,7 +973,7 @@ function UsersPage() {
     });
 
     return filtered;
-    }, [
+  }, [
     data,
     search,
     statusFilter,
@@ -952,7 +989,7 @@ function UsersPage() {
    * Reset pagination when search, filters,
    * or sort order changes.
    */
-    useEffect(() => {
+  useEffect(() => {
     setPage(1);
   }, [
     search,
@@ -1136,7 +1173,7 @@ function UsersPage() {
     );
   };
 
-    const hasActiveFilters =
+  const hasActiveFilters =
     search.trim() !== "" ||
     statusFilter !== "all" ||
     roleFilter !== "all" ||
@@ -1253,79 +1290,143 @@ function UsersPage() {
                 ))}
               </SelectContent>
             </Select>
-{/* Presence */}
-{canViewUserPresence && (
-  <Select
-    value={presenceFilter}
-    onValueChange={(value) =>
-      setPresenceFilter(value as typeof presenceFilter)
-    }
-  >
-    <SelectTrigger className="h-9 w-full min-w-0 text-xs sm:h-10 sm:text-sm">
-      <SelectValue placeholder="All presence" />
-    </SelectTrigger>
 
-    <SelectContent>
-      <SelectItem value="all">All users</SelectItem>
-      <SelectItem value="online">Online</SelectItem>
-      <SelectItem value="offline">Offline</SelectItem>
-    </SelectContent>
-  </Select>
-)}
+            {/* Presence */}
+            {canViewUserPresence && (
+              <Select
+                value={presenceFilter}
+                onValueChange={(value) =>
+                  setPresenceFilter(value as typeof presenceFilter)
+                }
+              >
+                <SelectTrigger className="h-9 w-full min-w-0 text-xs sm:h-10 sm:text-sm">
+                  <SelectValue placeholder="All presence" />
+                </SelectTrigger>
 
-{/* Sort */}
-<div className="min-w-0">
-  <Select
-    value={sort}
-    onValueChange={(value) =>
-      setSort(value as typeof sort)
-    }
-  >
-    <SelectTrigger
-      id="users-sort"
-      className="h-9 w-full min-w-0 px-3 text-xs sm:h-10 sm:text-sm"
-    >
-      <SelectValue placeholder="Sort users" />
-    </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All users</SelectItem>
+                  <SelectItem value="online">Online</SelectItem>
+                  <SelectItem value="offline">Offline</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
 
-    <SelectContent>
-      <SelectItem value="newest">Newest</SelectItem>
-      <SelectItem value="oldest">Oldest</SelectItem>
-      <SelectItem value="alphabetical">Alphabetically</SelectItem>
-    </SelectContent>
-  </Select>
-</div>
+            {/* Sort */}
+            <div className="min-w-0">
+              <Select
+                value={sort}
+                onValueChange={(value) =>
+                  setSort(value as typeof sort)
+                }
+              >
+                <SelectTrigger
+                  id="users-sort"
+                  className="h-9 w-full min-w-0 px-3 text-xs sm:h-10 sm:text-sm"
+                >
+                  <SelectValue placeholder="Sort users" />
+                </SelectTrigger>
 
-  {/* Date from */}
-  <div className="min-w-0">
-    <input
-      id="users-date-from"
-      type="date"
-      value={dateFrom}
-      max={dateTo || undefined}
-      onChange={(event) =>
-        setDateFrom(event.target.value)
-      }
-      aria-label="Filter users registered from this date"
-      className="block h-10 w-full min-w-0 appearance-none rounded-md border border-input bg-card px-1 text-xs text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 sm:px-2 sm:text-sm"
-    />
-  </div>
+                <SelectContent>
+                  <SelectItem value="newest">Newest</SelectItem>
+                  <SelectItem value="oldest">Oldest</SelectItem>
+                  <SelectItem value="alphabetical">Alphabetically</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-  {/* Date to */}
-  <div className="min-w-0">
-    <input
-      id="users-date-to"
-      type="date"
-      value={dateTo}
-      min={dateFrom || undefined}
-      onChange={(event) =>
-        setDateTo(event.target.value)
-      }
-      aria-label="Filter users registered up to this date"
-      className="block h-10 w-full min-w-0 appearance-none rounded-md border border-input bg-card px-1 text-xs text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 sm:px-2 sm:text-sm"
-    />
-  </div>
-</div>
+            {/* Date from */}
+            <div className="min-w-0">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-10 w-full min-w-0 bg-muted justify-between px-2 text-xs font-normal sm:text-sm"
+                  >
+                    <span
+                      className={
+                        dateFrom
+                          ? "text-foreground"
+                          : "text-muted-foreground"
+                      }
+                    >
+                      {formatDateDisplay(dateFrom)}
+                    </span>
+
+                    <CalendarDays className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  </Button>
+                </PopoverTrigger>
+
+                <PopoverContent
+                  className="w-auto p-0"
+                  align="start"
+                >
+                  <Calendar
+                    mode="single"
+                    selected={parseDateValue(dateFrom)}
+                    onSelect={(date) => {
+                      if (date) {
+                        setDateFrom(formatDateValue(date));
+                      }
+                    }}
+                    disabled={
+                      dateTo
+                        ? { after: parseDateValue(dateTo)! }
+                        : undefined
+                    }
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            {/* Date to */}
+            <div className="min-w-0">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-10 w-full min-w-0 bg-muted justify-between px-2 text-xs font-normal sm:text-sm"
+                  >
+                    <span
+                      className={
+                        dateTo
+                          ? "text-foreground"
+                          : "text-muted-foreground"
+                      }
+                    >
+                      {formatDateDisplay(dateTo)}
+                    </span>
+
+                    <CalendarDays className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  </Button>
+                </PopoverTrigger>
+
+                <PopoverContent
+                  className="w-auto p-0"
+                  align="end"
+                >
+                  <Calendar
+                    mode="single"
+                    selected={parseDateValue(dateTo)}
+                    onSelect={(date) => {
+                      if (date) {
+                        setDateTo(formatDateValue(date));
+                      }
+                    }}
+                    disabled={
+                      dateFrom
+                        ? { before: parseDateValue(dateFrom)! }
+                        : undefined
+                    }
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+          </div>
+
           {/* Result count, online count, and clear filters */}
           <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3">
             <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
@@ -1372,59 +1473,64 @@ function UsersPage() {
             )}
           </div>
         </div>
-              {canViewUserPresence &&
-                !isLoading &&
-                !isError && (
-                  <p
-                    className="mb-3 ml-5 flex items-center gap-1.5 text-xs text-muted-foreground sm:text-sm"
-                    aria-live="polite"
-                  >
-                    <span>
-                      <span className="font-semibold text-muted-foreground">
-                        {onlineUserIds.size}
-                      </span>{" "}
-                      of{" "}
-                      <span className="font-semibold text-muted-foreground">
-                        {(data ?? []).filter(
-                          (user) => user.status === "active",
-                        ).length}
-                      </span>{" "}
-                      active users online
-                    </span>
 
-                    <span
-                    className="h-3 w-3 shrink-0 rounded-full bg-green-500 animate-pulse"
-                    aria-label="Online"
-                    title="Online"
-                  />
-                  </p>
-                )}
+        {canViewUserPresence &&
+          !isLoading &&
+          !isError && (
+            <p
+              className="mb-3 ml-5 flex items-center gap-1.5 text-xs text-muted-foreground sm:text-sm"
+              aria-live="polite"
+            >
+              <span>
+                <span className="font-semibold text-muted-foreground">
+                  {onlineUserIds.size}
+                </span>{" "}
+                of{" "}
+                <span className="font-semibold text-muted-foreground">
+                  {(data ?? []).filter(
+                    (user) => user.status === "active",
+                  ).length}
+                </span>{" "}
+                active users online
+              </span>
 
-{/* User table */}
-<div className="rounded-1xl border border-border bg-card shadow-soft">
-  <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-background scrollbar-track-background">
-    <table className="w-full min-w-[850px] text-xs sm:text-sm">
-      <thead className="border-b border-border text-left text-[9px] uppercase tracking-wider text-muted-foreground sm:text-xs">
-        <tr>
-          <th className="p-3 !pl-5 font-medium sm:p-4 sm:!pl-5">
-  User
-</th>
+              <span
+                className="h-3 w-3 shrink-0 rounded-full bg-green-500 animate-pulse"
+                aria-label="Online"
+                title="Online"
+              />
+            </p>
+          )}
 
-<th className="p-3 !pl-5.5 font-medium sm:p-4 sm:!pl-5.5">
-  Role
-</th>
+        {/* User table */}
+        <div className="rounded-1xl border border-border bg-card shadow-soft">
+          <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-background scrollbar-track-background">
+            <table className="w-full min-w-[900px] text-xs sm:text-sm">
+              <thead className="border-b border-border text-left text-[9px] uppercase tracking-wider text-muted-foreground sm:text-xs">
+                <tr>
+                  <th className="w-10 p-3 text-center font-medium sm:p-4">
+                    #
+                  </th>
 
-<th className="p-3 !pl-5.5 font-medium sm:p-4 sm:!pl-5.5">
-  Status
-</th>
+                  <th className="p-3 !pl-5 font-medium sm:p-4 sm:!pl-5">
+                    User
+                  </th>
 
-<th className="p-3 !pl-5.5 font-medium sm:p-4 sm:!pl-5.5">
-  Registered
-</th>
+                  <th className="p-3 !pl-5.5 font-medium sm:p-4 sm:!pl-5.5">
+                    Role
+                  </th>
 
-<th className="p-none !pl-43 text-center font-medium sm:p-4 sm:!pl-43">
-  Actions
-</th>
+                  <th className="p-3 !pl-5.5 font-medium sm:p-4 sm:!pl-5.5">
+                    Status
+                  </th>
+
+                  <th className="p-3 !pl-5.5 font-medium sm:p-4 sm:!pl-5.5">
+                    Registered
+                  </th>
+
+                  <th className="p-none !pl-43 text-center font-medium sm:p-4 sm:!pl-43">
+                    Actions
+                  </th>
                 </tr>
               </thead>
 
@@ -1432,7 +1538,7 @@ function UsersPage() {
                 {isLoading && (
                   <tr>
                     <td
-                      colSpan={5}
+                      colSpan={6}
                       className="p-8 text-center text-xs text-muted-foreground sm:p-10 sm:text-sm"
                     >
                       <div className="flex items-center justify-center gap-1.5 sm:gap-2">
@@ -1446,7 +1552,7 @@ function UsersPage() {
                 {isError && !isLoading && (
                   <tr>
                     <td
-                      colSpan={5}
+                      colSpan={6}
                       className="p-8 text-center text-xs text-destructive sm:p-10 sm:text-sm"
                     >
                       Failed to load users.
@@ -1459,7 +1565,7 @@ function UsersPage() {
                   filteredUsers.length === 0 && (
                     <tr>
                       <td
-                        colSpan={5}
+                        colSpan={6}
                         className="p-8 text-center text-xs text-muted-foreground sm:p-10 sm:text-sm"
                       >
                         {data?.length
@@ -1471,7 +1577,10 @@ function UsersPage() {
 
                 {!isLoading &&
                   !isError &&
-                  paginatedUsers.map((user) => {
+                  paginatedUsers.map((user, index) => {
+                    const serialNumber =
+                      (page - 1) * PAGE_SIZE + index + 1;
+
                     const isSelf =
                       currentUser?.id === user.id;
 
@@ -1490,6 +1599,10 @@ function UsersPage() {
                     return (
                       <Fragment key={user.id}>
                         <tr className="transition-colors hover:bg-muted/30">
+                          <td className="p-3 text-center text-[10px] font-medium text-muted-foreground sm:p-4 sm:text-xs">
+                            {serialNumber}
+                          </td>
+
                           <td className="p-3 sm:p-4">
                             <div className="flex items-center gap-2.5 sm:gap-3">
                               <div className="relative h-8 w-8 shrink-0 sm:h-9 sm:w-9">
@@ -1605,28 +1718,24 @@ function UsersPage() {
                                 setStatus.isPending
                               }
                             >
+                              <SelectTrigger
+                                className={`h-8 w-[135px] text-[10px] sm:h-9 sm:w-[150px] sm:text-xs ${getStatusTextColor(user.status)}`}
+                              >
+                                <SelectValue />
+                              </SelectTrigger>
 
-<SelectTrigger
-  className={`h-8 w-[135px] text-[10px] sm:h-9 sm:w-[150px] sm:text-xs ${getStatusTextColor(user.status)}`}
->
-  <SelectValue />
-</SelectTrigger>
-
-
-
-<SelectContent>
-  {STATUSES.map((status) => (
-    <SelectItem
-      key={status}
-      value={status}
-    >
-      <span className={getStatusTextColor(status)}>
-        {formatLabel(status)}
-      </span>
-    </SelectItem>
-  ))}
-</SelectContent>
-
+                              <SelectContent>
+                                {STATUSES.map((status) => (
+                                  <SelectItem
+                                    key={status}
+                                    value={status}
+                                  >
+                                    <span className={getStatusTextColor(status)}>
+                                      {formatLabel(status)}
+                                    </span>
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
                             </Select>
                           </td>
 
@@ -1683,7 +1792,7 @@ function UsersPage() {
                         {historyOpen && (
                           <tr className="bg-muted/10">
                             <td
-                              colSpan={5}
+                              colSpan={6}
                               className="p-0"
                             >
                               <div className="border-t border-border px-3.5 py-3.5 sm:px-6 sm:py-4">
