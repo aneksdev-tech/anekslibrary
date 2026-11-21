@@ -45,6 +45,7 @@ export interface Profile {
   created_at: string;
 
   subscription_plan: "free" | "premium";
+  subscription_status: string;
   subscription_started_at: string | null;
   subscription_expires_at: string | null;
 }
@@ -121,6 +122,7 @@ export function AuthProvider({
           "reputation",
           "created_at",
           "subscription_plan",
+          "subscription_status",
           "subscription_started_at",
           "subscription_expires_at",
         ].join(", "),

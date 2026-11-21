@@ -584,10 +584,10 @@ function SidebarNav({
             key={item.to}
             to={item.to}
             onClick={onNavigate}
-            className={`relative isolate flex items-center justify-start gap-3 rounded-lg px-3 py-2 text-sm transition-colors md:gap-3.5 md:px-3.5 md:py-3 lg:px-4 ${
+            className={`relative isolate flex items-center justify-start gap-3 rounded-sm px-3 py-2 text-sm transition-colors md:gap-3.5 md:px-3.5 md:py-3 lg:px-4 ${
           active
-            ? "text-sidebar-accent-foreground font-medium before:absolute before:inset-y-1 before:inset-x-0 before:-z-10 before:rounded-lg before:bg-sidebar-accent"
-            : "text-muted-foreground hover:text-sidebar-accent-foreground before:absolute before:inset-y-1 before:inset-x-0 before:-z-10 before:rounded-lg before:transition-colors hover:before:bg-sidebar-accent/60"
+            ? "text-sidebar-accent-foreground font-medium before:absolute before:inset-y-1 before:inset-x-0 before:-z-10 before:rounded-sm before:bg-sidebar-accent"
+            : "text-muted-foreground hover:text-sidebar-accent-foreground before:absolute before:inset-y-1 before:inset-x-0 before:-z-10 before:rounded-sm before:transition-colors hover:before:bg-sidebar-accent/60"
           }`}
             aria-label={item.label}
           >

@@ -1123,7 +1123,7 @@ function UserDetailsPage() {
     </p>
 
     <h1 className="mt-1 font-display text-xl font-semibold sm:text-3xl">
-      {user.full_name || "Unnamed user"}
+      User Details
     </h1>
 
     <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
@@ -1396,7 +1396,7 @@ function UserDetailsPage() {
                       <span
                         className={`font-semibold ${
                           isPremium
-                            ? "text-gold"
+                            ? "text-muted-foreground"
                             : "text-green-600 dark:text-green-400"
                         }`}
                       >
@@ -1606,14 +1606,14 @@ function UserDetailsPage() {
                   </div>
                 ) : (
                   <div className="mt-4 flex items-center gap-2 bg-muted/20">
-                    <History className="h-4 w-4 shrink-0 text-gold" />
+  <History className="h-4 w-4 shrink-0 text-muted-foreground" />
 
-                    <p className="text-xs text-gold">
-                      {auditHistory.length} administrative{" "}
-                      {auditHistory.length === 1 ? "change" : "changes"}{" "}
-                      recorded for this account.
-                    </p>
-                  </div>
+  <p className="text-xs text-muted-foreground">
+    {auditHistory.length} administrative{" "}
+    {auditHistory.length === 1 ? "change" : "changes"}{" "}
+    recorded for this account.
+  </p>
+</div>
                 )
               ) : (
                 <div className="mt-4 border border-dashed border-border px-4 py-7 text-center">
@@ -1638,7 +1638,7 @@ function UserDetailsPage() {
               <div className="flex items-center gap-2.5 border-b border-border p-4 sm:p-5">
 
                 <div>
-                  <h2 className="text-sm font-semibold sm:text-base">
+                  <h2 className="text-sm uppercase font-semibold sm:text-gold">
                     Account Management
                   </h2>
 
@@ -1689,7 +1689,7 @@ function UserDetailsPage() {
                   </Select>
 
                   {!currentUserIsAdmin && (
-                    <p className="mt-2 text-[10px] leading-4 text-gold">
+                    <p className="mt-2 text-[10px] leading-4 text-muted-foreground">
                       Co-admins cannot assign the administrator role.
                     </p>
                   )}
@@ -1741,7 +1741,7 @@ function UserDetailsPage() {
 
                 {!canModifyUser && (
                   
-                    <p className="text-[10px] leading-5 text-gold sm:text-xs">
+                    <p className="text-[10px] leading-5 text-muted-foreground sm:text-xs">
                       {currentUser?.id === user.id
                         ? "You cannot modify your own account from this page."
                         : "Restricted by your current administrator permissions."}
@@ -1972,7 +1972,7 @@ function SubscriptionPlanBadge({
       {isPremium ? (
         <Crown className="h-3.5 w-3.5" />
       ) : (
-        <Shield className="h-3.5 w-3.5" />
+        <GraduationCap className="h-3.5 w-3.5" />
       )}
     </span>
   );
@@ -1987,7 +1987,7 @@ function SectionHeading({
 }) {
   return (
     <div>
-      <h2 className="text-sm font-semibold sm:text-base">
+      <h2 className="text-[10px] font-semibold uppercase tracking-[0.18em] text-gold sm:text-xs">
         {title}
       </h2>
 
