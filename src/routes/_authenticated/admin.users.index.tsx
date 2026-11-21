@@ -5,9 +5,7 @@ import {
   useNavigate,
 } from "@tanstack/react-router";
 import {
-  useMutation,
   useQuery,
-  useQueryClient,
 } from "@tanstack/react-query";
 import {
   Fragment,
@@ -27,7 +25,6 @@ import {
   Loader2,
   Search,
   Shield,
-  UserCog,
   UserRound,
   X,
 } from "lucide-react";
@@ -54,17 +51,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-
 
 export const Route = createFileRoute(
   "/_authenticated/admin/users/",
@@ -203,18 +189,10 @@ type UserProfile = {
   subscription_expires_at: string | null;
 };
 
-type PendingAction =
-  | {
-      type: "status";
-      user: UserProfile;
-      value: AccountStatus;
-    }
-  | {
-      type: "role";
-      user: UserProfile;
-      value: AppRole;
-    }
-  | null;
+type UserPresence = {
+  user_id: string;
+  last_seen_at: string;
+};
 
 type UserAuditLog = {
   id: string;
@@ -267,8 +245,6 @@ function formatLabel(value: string) {
     );
 }
 
-
-
 function getStatusTextColor(status: AccountStatus) {
   switch (status) {
     case "active":
@@ -288,7 +264,6 @@ function getStatusTextColor(status: AccountStatus) {
       return "text-muted-foreground";
   }
 }
-
 
 function formatDate(
   value: string | null | undefined,
@@ -336,6 +311,54 @@ function formatDateTime(
       minute: "2-digit",
     },
   );
+}
+
+function formatLastActivity(
+  value: string | null | undefined,
+) {
+  if (!value) {
+    return "Never active";
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "Never active";
+  }
+
+  const elapsed = Math.max(
+    0,
+    Date.now() - date.getTime(),
+  );
+
+  const seconds = Math.floor(elapsed / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
+
+  if (seconds < 60) {
+    return "Just now";
+  }
+
+  if (minutes < 60) {
+    return `${minutes} ${
+      minutes === 1 ? "minute" : "minutes"
+    } ago`;
+  }
+
+  if (hours < 24) {
+    return `${hours} ${
+      hours === 1 ? "hour" : "hours"
+    } ago`;
+  }
+
+  if (days < 7) {
+    return `${days} ${
+      days === 1 ? "day" : "days"
+    } ago`;
+  }
+
+  return formatDate(value);
 }
 
 function getInitials(
@@ -441,7 +464,6 @@ function getAuditActionLabel(
 }
 
 function UsersPage() {
-  const qc = useQueryClient();
   const navigate = useNavigate();
 
   const {
@@ -488,14 +510,6 @@ function UsersPage() {
 
   const previousPageRef = useRef(page);
   const pendingScrollRef = useRef(false);
-
-  const [
-    pendingAction,
-    setPendingAction,
-  ] = useState<PendingAction>(null);
-
-  const [actionReason, setActionReason] =
-    useState("");
 
   const [
     expandedHistoryUserId,
@@ -583,13 +597,14 @@ function UsersPage() {
   });
 
   /*
-   * Retrieve online users through the secured RPC.
+   * Retrieve online users through the existing secured RPC.
    * The database authorizes access to admins and co-admins.
    */
   const {
     data: onlineUsers = [],
-  } = useQuery({
+  } = useQuery<UserPresence[]>({
     queryKey: ["admin-online-users"],
+
     queryFn: async () => {
       const { data, error } = await supabase.rpc(
         "get_library_online_users",
@@ -599,13 +614,47 @@ function UsersPage() {
         throw error;
       }
 
-      return data ?? [];
+      return (data ?? []) as UserPresence[];
     },
+
     enabled:
       canViewUserPresence &&
       !!currentUser &&
       !isLoading &&
       !isError,
+
+    refetchInterval: 5_000,
+    refetchIntervalInBackground: false,
+  });
+
+  /*
+   * Retrieve the latest presence timestamp for all users.
+   * This uses the separate secured RPC and does not
+   * access the private.user_presence table directly.
+   */
+  const {
+    data: userPresence = [],
+  } = useQuery<UserPresence[]>({
+    queryKey: ["admin-user-presence"],
+
+    queryFn: async () => {
+      const { data, error } = await (
+        supabase as any
+      ).rpc("get_library_user_presence");
+
+      if (error) {
+        throw error;
+      }
+
+      return (data ?? []) as UserPresence[];
+    },
+
+    enabled:
+      canViewUserPresence &&
+      !!currentUser &&
+      !isLoading &&
+      !isError,
+
     refetchInterval: 5_000,
     refetchIntervalInBackground: false,
   });
@@ -613,10 +662,25 @@ function UsersPage() {
   const onlineUserIds = useMemo(
     () =>
       new Set(
-        onlineUsers.map((presence) => presence.user_id),
+        onlineUsers.map(
+          (presence) => presence.user_id,
+        ),
       ),
     [onlineUsers],
   );
+
+  const lastSeenByUser = useMemo(() => {
+    const map = new Map<string, string>();
+
+    for (const presence of userPresence) {
+      map.set(
+        presence.user_id,
+        presence.last_seen_at,
+      );
+    }
+
+    return map;
+  }, [userPresence]);
 
   const {
     data: auditLogs,
@@ -734,148 +798,6 @@ function UsersPage() {
 
     return map;
   }, [auditLogs]);
-
-  const setStatus = useMutation({
-    mutationFn: async ({
-      id,
-      status,
-      reason,
-    }: {
-      id: string;
-      status: AccountStatus;
-      reason: string;
-    }) => {
-      const trimmedReason =
-        reason.trim();
-
-      if (!trimmedReason) {
-        throw new Error(
-          "A reason is required.",
-        );
-      }
-
-      const { data, error } =
-        await supabase.rpc(
-          "admin_set_user_status",
-          {
-            _target_user_id: id,
-            _new_status: status,
-            _reason: trimmedReason,
-          },
-        );
-
-      if (error) {
-        throw error;
-      }
-
-      return data;
-    },
-
-    onSuccess: (
-      changed,
-      variables,
-    ) => {
-      if (!changed) {
-        toast.success(
-          "No changes were made.",
-        );
-      } else {
-        toast.success(
-          `Status changed to ${formatLabel(
-            variables.status,
-          )} and audit history recorded.`,
-        );
-      }
-
-      qc.invalidateQueries({
-        queryKey: ["admin-users"],
-      });
-
-      qc.invalidateQueries({
-        queryKey: ["admin-user-audits"],
-      });
-
-      setPendingAction(null);
-      setActionReason("");
-    },
-
-    onError: (error: Error) => {
-      toast.error(error.message);
-      setPendingAction(null);
-      setActionReason("");
-    },
-  });
-
-  const setRole = useMutation({
-    mutationFn: async ({
-      id,
-      role,
-      reason,
-    }: {
-      id: string;
-      role: AppRole;
-      reason: string;
-    }) => {
-      const trimmedReason =
-        reason.trim();
-
-      if (!trimmedReason) {
-        throw new Error(
-          "A reason is required.",
-        );
-      }
-
-      const { data, error } =
-        await supabase.rpc(
-          "admin_set_user_role",
-          {
-            _target_user_id: id,
-            _new_role: role,
-            _reason: trimmedReason,
-          },
-        );
-
-      if (error) {
-        throw error;
-      }
-
-      return data;
-    },
-
-    onSuccess: (
-      changed,
-      variables,
-    ) => {
-      if (!changed) {
-        toast.success(
-          "No changes were made.",
-        );
-      } else {
-        toast.success(
-          `Role changed to ${formatLabel(
-            variables.role,
-          )} and audit history recorded.`,
-        );
-      }
-
-      qc.invalidateQueries({
-        queryKey: ["admin-users"],
-      });
-
-      qc.invalidateQueries({
-        queryKey: ["admin-user-audits"],
-      });
-
-      setPendingAction(null);
-      setActionReason("");
-    },
-
-    onError: (error: Error) => {
-      toast.error(error.message);
-      setPendingAction(null);
-      setActionReason("");
-    },
-  });
 
   const filteredUsers = useMemo(() => {
     const users = data ?? [];
@@ -1067,100 +989,6 @@ function UsersPage() {
 
     return true;
   };
-
-  const requestStatusChange = (
-    target: UserProfile,
-    status: AccountStatus,
-  ) => {
-    if (!canModifyUser(target)) {
-      toast.error(
-        "You do not have permission to modify this user.",
-      );
-      return;
-    }
-
-    if (status === target.status) {
-      return;
-    }
-
-    setActionReason("");
-
-    setPendingAction({
-      type: "status",
-      user: target,
-      value: status,
-    });
-  };
-
-  const requestRoleChange = (
-    target: UserProfile,
-    role: AppRole,
-  ) => {
-    if (!canModifyUser(target)) {
-      toast.error(
-        "You do not have permission to modify this user.",
-      );
-      return;
-    }
-
-    if (role === target.primary_role) {
-      return;
-    }
-
-    if (
-      !currentUserIsAdmin &&
-      role === "admin"
-    ) {
-      toast.error(
-        "Co-admins cannot promote users to administrator.",
-      );
-      return;
-    }
-
-    setActionReason("");
-
-    setPendingAction({
-      type: "role",
-      user: target,
-      value: role,
-    });
-  };
-
-  const confirmAction = () => {
-    if (!pendingAction) {
-      return;
-    }
-
-    const trimmedReason =
-      actionReason.trim();
-
-    if (!trimmedReason) {
-      toast.error(
-        "A reason is required before confirming this change.",
-      );
-      return;
-    }
-
-    if (pendingAction.type === "status") {
-      setStatus.mutate({
-        id: pendingAction.user.id,
-        status: pendingAction.value,
-        reason: trimmedReason,
-      });
-
-      return;
-    }
-
-    setRole.mutate({
-      id: pendingAction.user.id,
-      role: pendingAction.value,
-      reason: trimmedReason,
-    });
-  };
-
-  const actionLoading =
-    setStatus.isPending ||
-    setRole.isPending;
 
   const toggleHistory = (
     userId: string,
@@ -1427,7 +1255,7 @@ function UsersPage() {
             </div>
           </div>
 
-          {/* Result count, online count, and clear filters */}
+          {/* Result count and clear filters */}
           <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3">
             <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
               <p className="pl-1 text-xs text-gold sm:text-sm">
@@ -1505,7 +1333,7 @@ function UsersPage() {
         {/* User table */}
         <div className="rounded-1xl border border-border bg-card shadow-soft">
           <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-background scrollbar-track-background">
-            <table className="w-full min-w-[900px] text-xs sm:text-sm">
+            <table className="w-full min-w-[1100px] text-xs sm:text-sm">
               <thead className="border-b border-border text-left text-[9px] uppercase tracking-wider text-muted-foreground sm:text-xs">
                 <tr>
                   <th className="w-10 p-3 text-center font-medium sm:p-4">
@@ -1525,11 +1353,19 @@ function UsersPage() {
                   </th>
 
                   <th className="p-3 !pl-5.5 font-medium sm:p-4 sm:!pl-5.5">
-                    Registered
+                    Plan
                   </th>
 
-                  <th className="p-none !pl-43 text-center font-medium sm:p-4 sm:!pl-43">
-                    Actions
+                  <th className="p-3 !pl-5.5 font-medium sm:p-4 sm:!pl-5.5">
+                    Joined
+                  </th>
+
+                  <th className="p-3 !pl-5.5 font-medium sm:p-4 sm:!pl-5.5">
+                    Last Activity
+                  </th>
+
+                  <th className="p-3 text-center font-medium sm:p-4">
+                    History
                   </th>
                 </tr>
               </thead>
@@ -1538,7 +1374,7 @@ function UsersPage() {
                 {isLoading && (
                   <tr>
                     <td
-                      colSpan={6}
+                      colSpan={8}
                       className="p-8 text-center text-xs text-muted-foreground sm:p-10 sm:text-sm"
                     >
                       <div className="flex items-center justify-center gap-1.5 sm:gap-2">
@@ -1552,7 +1388,7 @@ function UsersPage() {
                 {isError && !isLoading && (
                   <tr>
                     <td
-                      colSpan={6}
+                      colSpan={8}
                       className="p-8 text-center text-xs text-destructive sm:p-10 sm:text-sm"
                     >
                       Failed to load users.
@@ -1565,7 +1401,7 @@ function UsersPage() {
                   filteredUsers.length === 0 && (
                     <tr>
                       <td
-                        colSpan={6}
+                        colSpan={8}
                         className="p-8 text-center text-xs text-muted-foreground sm:p-10 sm:text-sm"
                       >
                         {data?.length
@@ -1587,8 +1423,17 @@ function UsersPage() {
                     const canModify =
                       canModifyUser(user);
 
+                    const canOpenDetails =
+                      canModify;
+
                     const RoleIcon =
                       getRoleIcon(user.primary_role);
+
+                    const isOnline =
+                      onlineUserIds.has(user.id);
+
+                    const lastSeenAt =
+                      lastSeenByUser.get(user.id);
 
                     const userHistory =
                       auditByUser.get(user.id) ?? [];
@@ -1604,147 +1449,199 @@ function UsersPage() {
                           </td>
 
                           <td className="p-3 sm:p-4">
-                            <div className="flex items-center gap-2.5 sm:gap-3">
-                              <div className="relative h-8 w-8 shrink-0 sm:h-9 sm:w-9">
-                                {user.avatar_url ? (
-                                  <img
-                                    src={user.avatar_url}
-                                    alt={user.full_name}
-                                    className="h-full w-full rounded-full border border-border object-cover"
-                                  />
-                                ) : (
-                                  <div className="flex h-full w-full items-center justify-center rounded-full bg-muted text-[10px] font-semibold sm:text-xs">
-                                    {getInitials(
-                                      user.full_name || "User",
-                                    )}
-                                  </div>
-                                )}
+                            {canOpenDetails ? (
+                              <Link
+                                to="/admin/users/$userId"
+                                params={{
+                                  userId: user.id,
+                                }}
+                                className="group flex items-center gap-2.5 rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:gap-3"
+                              >
+                                <div className="relative h-8 w-8 shrink-0 sm:h-9 sm:w-9">
+                                  {user.avatar_url ? (
+                                    <img
+                                      src={user.avatar_url}
+                                      alt={user.full_name}
+                                      className="h-full w-full rounded-full border border-border object-cover"
+                                    />
+                                  ) : (
+                                    <div className="flex h-full w-full items-center justify-center rounded-full bg-muted text-[10px] font-semibold sm:text-xs">
+                                      {getInitials(
+                                        user.full_name || "User",
+                                      )}
+                                    </div>
+                                  )}
 
-                                {canViewUserPresence && (
-                                  <span
-                                    role="img"
-                                    aria-label={
-                                      onlineUserIds.has(user.id)
-                                        ? "Online"
-                                        : "Offline"
-                                    }
-                                    title={
-                                      onlineUserIds.has(user.id)
-                                        ? "Online"
-                                        : "Offline"
-                                    }
-                                    className={`absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-card sm:h-3 sm:w-3 ${
-                                      onlineUserIds.has(user.id)
-                                        ? "bg-green-500"
-                                        : "bg-gray-400"
-                                    }`}
-                                  />
-                                )}
-                              </div>
-
-                              <div className="min-w-0">
-                                <div className="font-medium">
-                                  {user.full_name ||
-                                    "Unnamed user"}
-
-                                  {isSelf && (
-                                    <span className="ml-1.5 text-[10px] font-normal text-muted-foreground sm:ml-2 sm:text-xs">
-                                      (You)
-                                    </span>
+                                  {canViewUserPresence && (
+                                    <span
+                                      role="img"
+                                      aria-label={
+                                        isOnline
+                                          ? "Online"
+                                          : "Offline"
+                                      }
+                                      title={
+                                        isOnline
+                                          ? "Online"
+                                          : "Offline"
+                                      }
+                                      className={`absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-card sm:h-3 sm:w-3 ${
+                                        isOnline
+                                          ? "bg-green-500"
+                                          : "bg-gray-400"
+                                      }`}
+                                    />
                                   )}
                                 </div>
 
-                                <div className="max-w-[220px] truncate text-[10px] text-muted-foreground sm:max-w-none sm:text-xs">
-                                  {user.email || "—"}
+                                <div className="min-w-0">
+                                  <div className="font-medium transition-colors group-hover:text-muted-foreground">
+                                    {user.full_name ||
+                                      "Unnamed user"}
+
+                                    {isSelf && (
+                                      <span className="ml-1.5 text-[10px] font-normal text-muted-foreground sm:ml-2 sm:text-xs">
+                                        (You)
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  <div className="max-w-[220px] truncate text-[10px] text-muted-foreground sm:max-w-none sm:text-xs">
+                                    {user.email || "—"}
+                                  </div>
+                                </div>
+                              </Link>
+                            ) : (
+                              <div className="flex items-center gap-2.5 sm:gap-3">
+                                <div className="relative h-8 w-8 shrink-0 sm:h-9 sm:w-9">
+                                  {user.avatar_url ? (
+                                    <img
+                                      src={user.avatar_url}
+                                      alt={user.full_name}
+                                      className="h-full w-full rounded-full border border-border object-cover"
+                                    />
+                                  ) : (
+                                    <div className="flex h-full w-full items-center justify-center rounded-full bg-muted text-[10px] font-semibold sm:text-xs">
+                                      {getInitials(
+                                        user.full_name || "User",
+                                      )}
+                                    </div>
+                                  )}
+
+                                  {canViewUserPresence && (
+                                    <span
+                                      role="img"
+                                      aria-label={
+                                        isOnline
+                                          ? "Online"
+                                          : "Offline"
+                                      }
+                                      title={
+                                        isOnline
+                                          ? "Online"
+                                          : "Offline"
+                                      }
+                                      className={`absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-card sm:h-3 sm:w-3 ${
+                                        isOnline
+                                          ? "bg-green-500"
+                                          : "bg-gray-400"
+                                      }`}
+                                    />
+                                  )}
+                                </div>
+
+                                <div className="min-w-0">
+                                  <div className="font-medium">
+                                    {user.full_name ||
+                                      "Unnamed user"}
+
+                                    {isSelf && (
+                                      <span className="ml-1.5 text-[10px] font-normal text-muted-foreground sm:ml-2 sm:text-xs">
+                                        (You)
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  <div className="max-w-[220px] truncate text-[10px] text-muted-foreground sm:max-w-none sm:text-xs">
+                                    {user.email || "—"}
+                                  </div>
                                 </div>
                               </div>
+                            )}
+                          </td>
+
+                          {/* Read-only Role */}
+                          <td className="p-3 sm:p-4">
+                            <div className="flex items-center gap-1.5 whitespace-nowrap text-xs sm:gap-2 sm:text-sm">
+                              <RoleIcon className="h-3 w-3 shrink-0 text-muted-foreground sm:h-3.5 sm:w-3.5" />
+
+                              <span>
+                                {formatLabel(user.primary_role)}
+                              </span>
                             </div>
                           </td>
 
+                          {/* Read-only Status */}
                           <td className="p-3 sm:p-4">
-                            <Select
-                              value={user.primary_role}
-                              onValueChange={(value) =>
-                                requestRoleChange(
-                                  user,
-                                  value as AppRole,
-                                )
-                              }
-                              disabled={
-                                !canModify ||
-                                setRole.isPending
-                              }
+                            <span
+                              className={`whitespace-nowrap text-xs font-medium sm:text-sm ${getStatusTextColor(
+                                user.status,
+                              )}`}
                             >
-                              <SelectTrigger className="h-8 w-[145px] text-[10px] sm:h-9 sm:w-[160px] sm:text-xs">
-                                <div className="flex items-center gap-1.5 sm:gap-2">
-                                  <RoleIcon className="h-3 w-3 text-muted-foreground sm:h-3.5 sm:w-3.5" />
-                                  <SelectValue />
-                                </div>
-                              </SelectTrigger>
-
-                              <SelectContent>
-                                {ROLES.map((role) => {
-                                  const blockedForCoAdmin =
-                                    !currentUserIsAdmin &&
-                                    role === "admin";
-
-                                  return (
-                                    <SelectItem
-                                      key={role}
-                                      value={role}
-                                      disabled={
-                                        blockedForCoAdmin
-                                      }
-                                    >
-                                      {formatLabel(role)}
-                                    </SelectItem>
-                                  );
-                                })}
-                              </SelectContent>
-                            </Select>
+                              {formatLabel(user.status)}
+                            </span>
                           </td>
 
+                          {/* Subscription Plan */}
                           <td className="p-3 sm:p-4">
-                            <Select
-                              value={user.status}
-                              onValueChange={(value) =>
-                                requestStatusChange(
-                                  user,
-                                  value as AccountStatus,
-                                )
-                              }
-                              disabled={
-                                !canModify ||
-                                setStatus.isPending
-                              }
+                            <span
+                              className={`whitespace-nowrap text-xs font-medium sm:text-sm ${
+                                user.subscription_plan === "premium"
+                                  ? "text-gold"
+                                  : "text-muted-foreground"
+                              }`}
                             >
-                              <SelectTrigger
-                                className={`h-8 w-[135px] text-[10px] sm:h-9 sm:w-[150px] sm:text-xs ${getStatusTextColor(user.status)}`}
-                              >
-                                <SelectValue />
-                              </SelectTrigger>
-
-                              <SelectContent>
-                                {STATUSES.map((status) => (
-                                  <SelectItem
-                                    key={status}
-                                    value={status}
-                                  >
-                                    <span className={getStatusTextColor(status)}>
-                                      {formatLabel(status)}
-                                    </span>
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
+                              {formatLabel(
+                                user.subscription_plan,
+                              )}
+                            </span>
                           </td>
 
+                          {/* Joined */}
                           <td className="whitespace-nowrap p-3 text-muted-foreground sm:p-4">
                             {formatDate(user.created_at)}
                           </td>
 
+                          {/* Last Activity */}
                           <td className="p-3 sm:p-4">
-                            <div className="flex items-center justify-start gap-2">
+                            {canViewUserPresence ? (
+                              isOnline ? (
+                                <span className="flex items-center gap-1.5 whitespace-nowrap text-xs font-medium text-green-600 dark:text-green-400 sm:text-sm">
+                                  <span className="h-2 w-2 shrink-0 rounded-full bg-green-500" />
+                                  Online
+                                </span>
+                              ) : (
+                                <span
+                                  className="whitespace-nowrap text-xs text-muted-foreground sm:text-sm"
+                                  title={
+                                    lastSeenAt
+                                      ? formatDateTime(lastSeenAt)
+                                      : undefined
+                                  }
+                                >
+                                  {formatLastActivity(lastSeenAt)}
+                                </span>
+                              )
+                            ) : (
+                              <span className="text-xs text-muted-foreground sm:text-sm">
+                                —
+                              </span>
+                            )}
+                          </td>
+
+                          {/* History */}
+                          <td className="p-3 text-center sm:p-4">
+                            <div className="flex items-center justify-center">
                               <Button
                                 type="button"
                                 variant="ghost"
@@ -1754,7 +1651,7 @@ function UsersPage() {
                                   toggleHistory(user.id)
                                 }
                               >
-                                <History className="mr-1 h-3 w-3 sm:mr-1.5 sm:h-3.5 sm:w-3.5 text-muted-foreground" />
+                                <History className="mr-1 h-3 w-3 text-muted-foreground sm:mr-1.5 sm:h-3.5 sm:w-3.5" />
 
                                 {historyOpen ? (
                                   <>
@@ -1768,23 +1665,6 @@ function UsersPage() {
                                   </>
                                 )}
                               </Button>
-
-                              {isSelf ? (
-                                <span className="px-2 pl-4 text-[10px] text-muted-foreground sm:text-xs">
-                                  You
-                                </span>
-                              ) : (
-                                <Link
-                                  to="/admin/users/$userId"
-                                  params={{
-                                    userId: user.id,
-                                  }}
-                                  className="inline-flex h-8 items-center justify-center rounded-sm px-2.5 text-[10px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground sm:h-9 sm:px-3 sm:text-xs"
-                                >
-                                  <UserCog className="mr-1 h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                                  Details
-                                </Link>
-                              )}
                             </div>
                           </td>
                         </tr>
@@ -1792,7 +1672,7 @@ function UsersPage() {
                         {historyOpen && (
                           <tr className="bg-muted/10">
                             <td
-                              colSpan={6}
+                              colSpan={8}
                               className="p-0"
                             >
                               <div className="border-t border-border px-3.5 py-3.5 sm:px-6 sm:py-4">
@@ -1934,119 +1814,6 @@ function UsersPage() {
             </div>
           )}
       </div>
-
-      {/* Confirmation dialog for table-level changes */}
-      <AlertDialog
-        open={pendingAction !== null}
-        onOpenChange={(open) => {
-          if (!open && !actionLoading) {
-            setPendingAction(null);
-            setActionReason("");
-          }
-        }}
-      >
-        <AlertDialogContent className="max-w-[calc(100%-2rem)] rounded-sm sm:max-w-lg">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="text-base sm:text-lg">
-              Confirm account change
-            </AlertDialogTitle>
-
-            <AlertDialogDescription className="text-xs leading-5 sm:text-sm sm:leading-normal">
-              {pendingAction?.type === "status" && (
-                <>
-                  Change{" "}
-                  <strong>
-                    {pendingAction.user.full_name}
-                  </strong>{" "}
-                  from{" "}
-                  <strong>
-                    {formatLabel(
-                      pendingAction.user.status,
-                    )}
-                  </strong>{" "}
-                  to{" "}
-                  <strong>
-                    {formatLabel(pendingAction.value)}
-                  </strong>
-                  ?
-                </>
-              )}
-
-              {pendingAction?.type === "role" && (
-                <>
-                  Change{" "}
-                  <strong>
-                    {pendingAction.user.full_name}
-                  </strong>
-                  's role from{" "}
-                  <strong>
-                    {formatLabel(
-                      pendingAction.user.primary_role,
-                    )}
-                  </strong>{" "}
-                  to{" "}
-                  <strong>
-                    {formatLabel(pendingAction.value)}
-                  </strong>
-                  ?
-                </>
-              )}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-
-          <div className="space-y-1.5 sm:space-y-2">
-            <label
-              htmlFor="user-change-reason"
-              className="text-xs font-medium sm:text-sm"
-            >
-              Reason
-            </label>
-
-            <Input
-              id="user-change-reason"
-              value={actionReason}
-              onChange={(event) =>
-                setActionReason(event.target.value)
-              }
-              placeholder="Enter a reason for this change..."
-              disabled={actionLoading}
-              autoComplete="off"
-              className="h-9 text-xs sm:h-10 sm:text-sm"
-            />
-
-            <p className="text-[10px] leading-4 text-muted-foreground sm:text-xs sm:leading-5">
-              This reason will be saved in the user audit history.
-            </p>
-          </div>
-
-          <AlertDialogFooter className="gap-2">
-            <AlertDialogCancel
-              disabled={actionLoading}
-              className="h-9 bg-destructive text-xs text-white shadow-soft !transition-none hover:bg-none hover:bg-accent hover:text-foreground sm:h-10 sm:text-sm"
-            >
-              Cancel
-            </AlertDialogCancel>
-
-            <AlertDialogAction
-              onClick={(event) => {
-                event.preventDefault();
-                confirmAction();
-              }}
-              disabled={
-                actionLoading ||
-                !actionReason.trim()
-              }
-              className="h-9 bg-gradient-emerald text-xs text-white shadow-soft !transition-none hover:bg-none hover:bg-accent hover:text-foreground sm:h-10 sm:text-sm"
-            >
-              {actionLoading && (
-                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin sm:mr-2 sm:h-4 sm:w-4" />
-              )}
-
-              Confirm change
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </>
   );
 }

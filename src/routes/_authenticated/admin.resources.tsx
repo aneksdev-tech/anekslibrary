@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect,  useMemo,  useRef,  useState  } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CheckCircle2, Clock3, Download, X, Edit3, Eye, Filter, FileText, History, Loader2, Search, Trash2, XCircle, ChevronLeft, ChevronRight, } from "lucide-react";
+import { CheckCircle2, Clock3, Download, X, Edit3, Eye, Filter, FileText, History, Loader2, Search, Trash2, XCircle, ChevronLeft, ChevronRight, CalendarDays } from "lucide-react";
 import { toast } from "sonner";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -12,6 +12,8 @@ import { downloadResource } from "@/lib/download";
 import { colleges, levels, semesters, years, getDepartments, ALL_OPTION } from "@/lib/academicData";
 import { getResourceScopeLabel } from "@/lib/resource-scope-labels";
 import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -152,6 +154,36 @@ const STATUS_OPTIONS: Array<{
 ];
 
 const UNCATEGORIZED_FILTER = "__uncategorized__";
+
+function parseDateValue(value: string): Date | undefined {
+  if (!value) return undefined;
+
+  const [year, month, day] = value.split("-").map(Number);
+
+  if (!year || !month || !day) return undefined;
+
+  return new Date(year, month - 1, day);
+}
+
+function formatDateDisplay(value: string): string {
+  const date = parseDateValue(value);
+
+  if (!date) return "DD/MM/YYYY";
+
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const year = date.getFullYear();
+
+  return `${day}/${month}/${year}`;
+}
+
+function formatDateValue(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
 
 function createEmptyEditForm(): EditResourceForm {
   return {
@@ -1477,36 +1509,86 @@ const availableDepartments =
   </div>
 
   {/* Date from */}
-  <div className="min-w-0">
-    <input
-      id="library-date-from"
-      type="date"
-      value={dateFrom}
-      max={dateTo || undefined}
-      onChange={(event) => {
-        setDateFrom(event.target.value);
-        setPage(1);
-      }}
-      aria-label="Filter resources from this date"
-      className="block box-border h-9 w-full min-w-0 rounded-md border border-input bg-card px-1.5 text-[10px] text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 sm:h-10 sm:px-2 sm:text-sm"
-    />
-  </div>
+<div className="min-w-0">
+  <Popover>
+    <PopoverTrigger asChild>
+      <Button
+        type="button"
+        variant="outline"
+        className="h-9 w-full min-w-0 justify-between bg-card px-2 text-[10px] font-normal sm:h-10 sm:text-sm"
+        aria-label="Filter resources from this date"
+      >
+        <span className="truncate">
+          {formatDateDisplay(dateFrom)}
+        </span>
+        <CalendarDays className="h-4 w-4 shrink-0 text-muted-foreground" />
+      </Button>
+    </PopoverTrigger>
+
+    <PopoverContent
+      className="w-auto p-0"
+      align="start"
+    >
+      <Calendar
+        mode="single"
+        selected={parseDateValue(dateFrom)}
+        onSelect={(date) => {
+          if (date) {
+            setDateFrom(formatDateValue(date));
+            setPage(1);
+          }
+        }}
+        disabled={
+          dateTo
+            ? { after: parseDateValue(dateTo)! }
+            : undefined
+        }
+        initialFocus
+      />
+    </PopoverContent>
+  </Popover>
+</div>
 
   {/* Date to */}
-  <div className="min-w-0">
-    <input
-      id="library-date-to"
-      type="date"
-      value={dateTo}
-      min={dateFrom || undefined}
-      onChange={(event) => {
-        setDateTo(event.target.value);
-        setPage(1);
-      }}
-      aria-label="Filter resources up to this date"
-      className="block box-border h-9 w-full min-w-0 rounded-md border border-input bg-card px-1.5 text-[10px] text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 sm:h-10 sm:px-2 sm:text-sm"
-    />
-  </div>
+<div className="min-w-0">
+  <Popover>
+    <PopoverTrigger asChild>
+      <Button
+        type="button"
+        variant="outline"
+        className="h-9 w-full min-w-0 justify-between bg-card px-2 text-[10px] font-normal sm:h-10 sm:text-sm"
+        aria-label="Filter resources up to this date"
+      >
+        <span className="truncate">
+          {formatDateDisplay(dateTo)}
+        </span>
+        <CalendarDays className="h-4 w-4 shrink-0 text-muted-foreground" />
+      </Button>
+    </PopoverTrigger>
+
+    <PopoverContent
+      className="w-auto p-0"
+      align="end"
+    >
+      <Calendar
+        mode="single"
+        selected={parseDateValue(dateTo)}
+        onSelect={(date) => {
+          if (date) {
+            setDateTo(formatDateValue(date));
+            setPage(1);
+          }
+        }}
+        disabled={
+          dateFrom
+            ? { before: parseDateValue(dateFrom)! }
+            : undefined
+        }
+        initialFocus
+      />
+    </PopoverContent>
+  </Popover>
+</div>
 </div>
 </div>
 

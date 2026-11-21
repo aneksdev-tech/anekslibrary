@@ -38,7 +38,7 @@ function RejectedPage() {
         <div className="mt-6 flex justify-center sm:mt-8">
           <Button
             variant="outline"
-            className="h-9 px-4 text-xs sm:h-10 sm:px-5 sm:text-sm"
+            className="h-9 px-4 bg-muted text-xs sm:h-10 sm:px-5 sm:text-sm"
             onClick={() => signOut()}
           >
             Sign Out

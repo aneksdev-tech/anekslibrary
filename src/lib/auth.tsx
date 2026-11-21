@@ -133,9 +133,9 @@ export function AuthProvider({
     }
 
     const nextProfile =
-  (prof as unknown as Profile) ?? null;
+      (prof as unknown as Profile) ?? null;
 
-setProfile(nextProfile);
+    setProfile(nextProfile);
 
     setRoles(
       nextProfile?.primary_role
@@ -431,31 +431,31 @@ setProfile(nextProfile);
       profile.primary_role === "admin" ||
       profile.primary_role === "co-admin" ||
       profile.primary_role === "staff";
-    
+
     const canAccessAcademicArea =
       profile.primary_role === "lecturer";
 
     if (
-  currentPath.startsWith("/admin") &&
-  !canAccessAdminArea
-) {
-  window.location.replace(
-    "/dashboard",
-  );
+      currentPath.startsWith("/admin") &&
+      !canAccessAdminArea
+    ) {
+      window.location.replace(
+        "/dashboard",
+      );
 
-  return;
-}
+      return;
+    }
 
-if (
-  currentPath.startsWith("/academic") &&
-  !canAccessAcademicArea
-) {
-  window.location.replace(
-    "/dashboard",
-  );
+    if (
+      currentPath.startsWith("/academic") &&
+      !canAccessAcademicArea
+    ) {
+      window.location.replace(
+        "/dashboard",
+      );
 
-  return;
-}
+      return;
+    }
 
     /*
      * Active accounts should not remain on
@@ -526,25 +526,23 @@ if (
           roles.includes("admin"),
 
         refresh,
+
         signOut: async () => {
-  try {
-    const { error } = await supabase.rpc(
-      "clear_user_presence",
-    );
+          const { error } =
+            await supabase.auth.signOut();
 
-    if (error) {
-      console.error(
-        "Unable to clear online presence:",
-        error.message,
-      );
-    }
-  } finally {
-    await supabase.auth.signOut();
+          if (error) {
+            console.error(
+              "Unable to sign out:",
+              error.message,
+            );
 
-    window.location.href =
-      "/auth?mode=login";
-  }
-},
+            return;
+          }
+
+          window.location.href =
+            "/auth?mode=login";
+        },
       }}
     >
       {children}
