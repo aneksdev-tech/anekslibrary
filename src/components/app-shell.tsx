@@ -584,11 +584,11 @@ function SidebarNav({
             key={item.to}
             to={item.to}
             onClick={onNavigate}
-            className={`relative flex items-center justify-start gap-3 rounded-lg px-3 py-2 text-sm transition-colors md:gap-3.5 md:px-3.5 md:py-3 lg:px-4 ${
-              active
-                ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-                : "text-muted-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground"
-            }`}
+            className={`relative isolate flex items-center justify-start gap-3 rounded-lg px-3 py-2 text-sm transition-colors md:gap-3.5 md:px-3.5 md:py-3 lg:px-4 ${
+          active
+            ? "text-sidebar-accent-foreground font-medium before:absolute before:inset-y-1 before:inset-x-0 before:-z-10 before:rounded-lg before:bg-sidebar-accent"
+            : "text-muted-foreground hover:text-sidebar-accent-foreground before:absolute before:inset-y-1 before:inset-x-0 before:-z-10 before:rounded-lg before:transition-colors hover:before:bg-sidebar-accent/60"
+          }`}
             aria-label={item.label}
           >
             <item.icon className="h-4 w-4 shrink-0 md:h-5 md:w-5" />

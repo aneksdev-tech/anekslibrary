@@ -65,7 +65,12 @@ export const Route = createFileRoute("/_authenticated/admin")({
 
 function AdminLayout() {
   const pathname = useRouterState({
-    select: (r) => r.location.pathname,
+    select: (router) => router.location.pathname,
+  });
+
+  const activeRouteIds = useRouterState({
+    select: (router) =>
+      router.matches.map((match) => match.routeId),
   });
 
   const navigate = useNavigate();
@@ -83,6 +88,13 @@ function AdminLayout() {
     roles.includes("co-admin") ||
     roles.includes("staff");
 
+  // Identify the actual user-detail route from the active route matches.
+  // This avoids relying only on a pathname check during navigation.
+  const isUserDetailRoute = activeRouteIds.some(
+    (routeId) =>
+      routeId === "/_authenticated/admin/users/$userId",
+  );
+
   const {
     data: approvalCount = 0,
   } = useQuery({
@@ -91,7 +103,7 @@ function AdminLayout() {
       user?.id,
       roles,
     ],
-    enabled: !!user,
+    enabled: !!user && !isUserDetailRoute,
     queryFn: async () => {
       const {
         data,
@@ -120,47 +132,6 @@ function AdminLayout() {
     }
   }, [user, hasAdminWorkspaceAccess, navigate]);
 
-const tabs = [
-  {
-    to: "/admin",
-    label: "Overview",
-    icon: LayoutDashboard,
-  },
-  {
-    to: "/admin/approvals",
-    label: "Approvals",
-    icon: ClipboardCheck,
-  },
-  ...(canManageAnnouncementAccess
-    ? [
-        {
-          to: "/admin/announcements",
-          label: "Announcements",
-          icon: Megaphone,
-        },
-      ]
-    : []),
-  ...(canManagePlatform
-    ? [
-        {
-          to: "/admin/categories",
-          label: "Categories",
-          icon: Tags,
-        },
-        {
-          to: "/admin/resources",
-          label: "Resources",
-          icon: Files,
-        },
-        {
-          to: "/admin/users",
-          label: "Users",
-          icon: Users,
-        },
-      ]
-    : []),
-];
-
   if (user && !hasAdminWorkspaceAccess) {
     return (
       <div className="flex min-h-[40vh] items-center justify-center">
@@ -171,6 +142,57 @@ const tabs = [
       </div>
     );
   }
+
+  // Render user profiles without the Control Room shell.
+  // The parent route's beforeLoad authorization remains active.
+  if (isUserDetailRoute) {
+    return (
+      <div className="min-w-0 w-full">
+        <Outlet />
+      </div>
+    );
+  }
+
+  const tabs = [
+    {
+      to: "/admin",
+      label: "Overview",
+      icon: LayoutDashboard,
+    },
+    {
+      to: "/admin/approvals",
+      label: "Approvals",
+      icon: ClipboardCheck,
+    },
+    ...(canManageAnnouncementAccess
+      ? [
+          {
+            to: "/admin/announcements",
+            label: "Announcements",
+            icon: Megaphone,
+          },
+        ]
+      : []),
+    ...(canManagePlatform
+      ? [
+          {
+            to: "/admin/categories",
+            label: "Categories",
+            icon: Tags,
+          },
+          {
+            to: "/admin/resources",
+            label: "Resources",
+            icon: Files,
+          },
+          {
+            to: "/admin/users",
+            label: "Users",
+            icon: Users,
+          },
+        ]
+      : []),
+  ];
 
   return (
     <div className="space-y-5 sm:space-y-6">
@@ -218,46 +240,45 @@ const tabs = [
             const Icon = tab.icon;
 
             return (
-            <Link
-  key={tab.to}
-  to={tab.to}
-  preload={false}
-  className={`group relative flex min-h-9 min-w-0 items-center justify-start gap-1 rounded-sm px-1.5 py-1.5 pb-2 text-[9px] font-medium transition-colors duration-200 sm:min-h-11 sm:flex-1 sm:gap-2 sm:px-4 sm:py-2.5 sm:pb-3 sm:text-sm ${
-    active
-      ? "text-gold"
-      : "text-muted-foreground hover:bg-muted/40 hover:text-foreground"
-  }`}
->
-  <Icon
-    className={`h-3 w-3 shrink-0 transition-transform duration-200 sm:h-4 sm:w-4 ${
-      active ? "" : "group-hover:scale-105"
-    }`}
-  />
+              <Link
+                key={tab.to}
+                to={tab.to}
+                preload={false}
+                className={`group relative flex min-h-9 min-w-0 items-center justify-start gap-1 rounded-sm px-1.5 py-1.5 pb-2 text-[9px] font-medium transition-colors duration-200 sm:min-h-11 sm:flex-1 sm:gap-2 sm:px-4 sm:py-2.5 sm:pb-3 sm:text-sm ${
+                  active
+                    ? "text-gold"
+                    : "text-muted-foreground hover:bg-muted/40 hover:text-foreground"
+                }`}
+              >
+                <Icon
+                  className={`h-3 w-3 shrink-0 transition-transform duration-200 sm:h-4 sm:w-4 ${
+                    active ? "" : "group-hover:scale-105"
+                  }`}
+                />
 
-  <span className="min-w-0 truncate">
-    {tab.label}
-  </span>
+                <span className="min-w-0 truncate">
+                  {tab.label}
+                </span>
 
-  {tab.to === "/admin/approvals" &&
-  approvalCount > 0 ? (
-    <span
-  className="ml-0.5 grid h-4 min-w-4 shrink-0 place-items-center rounded-full bg-gold px-1 text-[8px] font-semibold !text-black sm:ml-0 sm:h-5 sm:min-w-5 sm:text-[10px]"
-  aria-label={`${approvalCount} pending approval items`}
->
-  {approvalCount > 99 ? "99+" : approvalCount}
-</span>
-  ) : null}
+                {tab.to === "/admin/approvals" &&
+                approvalCount > 0 ? (
+                  <span
+                    className="ml-0.5 grid h-4 min-w-4 shrink-0 place-items-center rounded-full bg-gold px-1 text-[8px] font-semibold !text-black sm:ml-0 sm:h-5 sm:min-w-5 sm:text-[10px]"
+                    aria-label={`${approvalCount} pending approval items`}
+                  >
+                    {approvalCount > 99 ? "99+" : approvalCount}
+                  </span>
+                ) : null}
 
-  {/* Gold active indicator */}
-  <span
-    aria-hidden="true"
-    className={`absolute inset-x-2 bottom-0 h-0.5 origin-left rounded-full bg-gold transition-all duration-2000 ease-in-out ${
-  active
-    ? "scale-x-100 opacity-100"
-    : "scale-x-0 opacity-0"
-}`}
-  />
-</Link>
+                <span
+                  aria-hidden="true"
+                  className={`absolute inset-x-2 bottom-0 h-0.5 origin-left rounded-full bg-gold transition-all duration-200 ease-in-out ${
+                    active
+                      ? "scale-x-100 opacity-100"
+                      : "scale-x-0 opacity-0"
+                  }`}
+                />
+              </Link>
             );
           })}
         </div>

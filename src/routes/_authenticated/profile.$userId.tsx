@@ -1,7 +1,6 @@
 import {
   createFileRoute,
   Link,
-  useRouter,
 } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -45,28 +44,31 @@ const roleIcons: Record<string, typeof UserRound> = {
 
 function PublicProfilePage() {
   const { userId } = Route.useParams();
-  const router = useRouter();
 
-const {
-  data: profile,
-  isLoading,
-} = useQuery({
-  queryKey: ["public-profile", userId],
-  enabled: !!userId,
-  queryFn: async () => {
-    const { data, error } = await supabase
-      .rpc("get_public_profile", {
-        _user_id: userId,
-      })
-      .single();
+  const {
+    data: profile,
+    isLoading,
+  } = useQuery({
+    queryKey: ["public-profile", userId],
+    enabled: !!userId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .rpc("get_public_profile", {
+          _user_id: userId,
+        })
+        .single();
 
-    if (error) throw error;
+      if (error) throw error;
 
-    return data;
-  },
-});
+      return data;
+    },
+  });
 
-  const { data: resources } = useQuery({
+  const {
+    data: resources,
+    isLoading: resourcesLoading,
+    isError: resourcesError,
+  } = useQuery({
     queryKey: ["public-profile-resources", userId],
     enabled: !!userId,
     queryFn: async () => {
@@ -154,18 +156,18 @@ const {
   })();
 
   return (
-    <div className="mx-auto max-w-6xl space-y-4 sm:space-y-4">
-    <div>
-      <Button
-      type="button"
-      variant="ghost"
-      onClick={() => window.history.back()}
-      className="-ml-2 h-8 gap-1.5 px-2 text-xs transition-colors hover:bg-transparent hover:text-muted-foreground sm:h-9 sm:gap-2 sm:text-sm"
-    >
-      <ArrowLeft className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-        Back
-      </Button>
-    </div>
+    <div className="mx-auto max-w-8xl space-y-4 sm:space-y-4">
+      <div>
+        <Button
+          type="button"
+          variant="ghost"
+          onClick={() => window.history.back()}
+          className="-ml-2 h-8 gap-1.5 px-2 text-xs transition-colors hover:bg-transparent hover:text-muted-foreground sm:h-9 sm:gap-2 sm:text-sm"
+        >
+          <ArrowLeft className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+          Back
+        </Button>
+      </div>
 
       <div>
         <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-gold sm:text-xs">
@@ -183,7 +185,7 @@ const {
 
       <div className="grid gap-4 sm:gap-6 lg:grid-cols-[1fr_340px]">
         <main className="min-w-0 space-y-4 sm:space-y-6">
-          <section className="overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
+          <section className="overflow-hidden rounded-md border border-border bg-card shadow-soft">
             <div className="border-b border-border bg-muted/20 p-4 sm:p-8">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-6">
                 <div className="shrink-0">
@@ -194,10 +196,10 @@ const {
                         profile.full_name ??
                         "Profile"
                       }
-                      className="h-28 w-24 rounded-2xl border-2 border-primary/30 object-cover shadow-xl sm:h-40 sm:w-32"
+                      className="h-28 w-24 rounded-md border-2 border-primary/30 object-cover shadow-xl sm:h-40 sm:w-32"
                     />
                   ) : (
-                    <div className="flex h-28 w-24 items-center justify-center rounded-2xl border-2 border-primary/30 bg-muted text-3xl font-semibold shadow-lg sm:h-40 sm:w-32 sm:text-4xl">
+                    <div className="flex h-28 w-24 items-center justify-center rounded-md border-2 border-primary/30 bg-muted text-3xl font-semibold shadow-lg sm:h-40 sm:w-32 sm:text-4xl">
                       {initials}
                     </div>
                   )}
@@ -247,7 +249,11 @@ const {
               <div className="grid grid-cols-3 text-center">
                 <div className="min-w-0 px-1.5 sm:px-2">
                   <div className="text-xl font-semibold sm:text-2xl">
-                    {resources?.length ?? 0}
+                    {resourcesLoading
+                      ? "—"
+                      : resourcesError
+                        ? "—"
+                        : resources?.length ?? 0}
                   </div>
 
                   <div className="mt-0.5 text-[10px] text-muted-foreground sm:mt-1 sm:text-sm">
@@ -257,7 +263,9 @@ const {
 
                 <div className="min-w-0 border-x px-1.5 sm:px-2">
                   <div className="text-xl font-semibold sm:text-2xl">
-                    {totalDownloads}
+                    {resourcesLoading || resourcesError
+                      ? "—"
+                      : totalDownloads}
                   </div>
 
                   <div className="mt-0.5 text-[10px] text-muted-foreground sm:mt-1 sm:text-sm">
@@ -267,7 +275,7 @@ const {
 
                 <div className="min-w-0 px-1.5 sm:px-2">
                   <div className="text-xl font-semibold sm:text-2xl">
-                    {profile.reputation}
+                    {profile.reputation ?? 0}
                   </div>
 
                   <div className="mt-0.5 text-[10px] text-muted-foreground sm:mt-1 sm:text-sm">
@@ -277,11 +285,17 @@ const {
               </div>
             </div>
           </section>
-          
-          <section className="rounded-2xl border border-border bg-card p-3.5 shadow-soft sm:p-6">
-            
 
-            {resources && resources.length > 0 ? (
+          <section className="rounded-md border border-border bg-card p-3.5 shadow-soft sm:p-6">
+            {resourcesLoading ? (
+              <div className="py-7 text-center text-sm text-muted-foreground">
+                Loading resources...
+              </div>
+            ) : resourcesError ? (
+              <div className="py-7 text-center text-sm text-muted-foreground">
+                Unable to load resources. Please try again.
+              </div>
+            ) : resources && resources.length > 0 ? (
               <ul className="divide-y divide-border border-y border-border">
                 {resources.map((resource) => {
                   const categoryName =
@@ -316,7 +330,7 @@ const {
 
                               <span className="inline-flex items-center gap-1">
                                 <Download className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                                {resource.download_count}{" "}
+                                {resource.download_count ?? 0}{" "}
                                 downloads
                               </span>
 
@@ -350,43 +364,30 @@ const {
         </main>
 
         <aside className="space-y-4 sm:space-y-6">
-          <section className="rounded-2xl border border-border bg-card p-4 shadow-soft sm:p-6">
-            <div className="flex items-center gap-2.5 sm:gap-3">
-              <div>
-                <h2 className="text-sm font-semibold sm:text-base">
-                  Contribution
-                </h2>
+          <section className="rounded-md border border-border bg-card p-4 shadow-soft sm:p-6">
+            <div>
+              <h2 className="text-sm font-semibold sm:text-base">
+                Contribution
+              </h2>
 
-                <p className="text-xs text-muted-foreground sm:text-sm">
-                  Public reputation
-                </p>
-              </div>
+              <p className="text-xs text-muted-foreground sm:text-sm">
+                Contributor recognition
+              </p>
             </div>
 
-            <div className="mt-4 border-t border-border pt-4 sm:mt-5 sm:pt-5">
-              <div className="flex items-center justify-between gap-4">
-                <span className="text-xs text-muted-foreground sm:text-sm">
-                  Reputation
-                </span>
-
-                <span className="text-sm font-semibold sm:text-base">
-                  {profile.reputation}
-                </span>
-              </div>
-
-              <div className="mt-3 flex items-center justify-between gap-4">
-                <span className="text-xs text-muted-foreground sm:text-sm">
-                  Contributor level
-                </span>
-
-                <span className="text-right text-xs font-medium text-gold sm:text-sm">
+            <div className="mt-4 flex items-center gap-3 border-t border-border pt-4 sm:mt-5 sm:pt-5">              <div className="min-w-0">
+                <p className="text-sm font-semibold text-gold sm:text-base">
                   {contributor.name}
-                </span>
+                </p>
+
+                <p className="text-xs text-muted-foreground">
+                  Contributor level
+                </p>
               </div>
             </div>
           </section>
 
-          <section className="rounded-2xl border border-border bg-card p-4 shadow-soft sm:p-6">
+          <section className="rounded-md border border-border bg-card p-4 shadow-soft sm:p-6">
             <div className="flex items-center gap-2.5 sm:gap-3">
               <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary sm:h-10 sm:w-10">
                 <UserRound className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -430,7 +431,11 @@ const {
                 </span>
 
                 <span className="text-right text-xs font-medium sm:text-sm">
-                  {resources?.length ?? 0}
+                  {resourcesLoading
+                    ? "—"
+                    : resourcesError
+                      ? "—"
+                      : resources?.length ?? 0}
                 </span>
               </div>
 
@@ -440,7 +445,9 @@ const {
                 </span>
 
                 <span className="text-right text-xs font-medium sm:text-sm">
-                  {totalDownloads}
+                  {resourcesLoading || resourcesError
+                    ? "—"
+                    : totalDownloads}
                 </span>
               </div>
             </div>

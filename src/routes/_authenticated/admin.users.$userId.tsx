@@ -1,14 +1,69 @@
-import { createFileRoute, Link, redirect, useNavigate } from "@tanstack/react-router";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, CalendarDays, Download, FileText, GraduationCap, History, Loader2, Mail, Phone, Shield, UserCog, UserRound, Upload } from "lucide-react";
+import {
+  createFileRoute,
+  redirect,
+  useNavigate,
+} from "@tanstack/react-router";
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
+import {
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+import {
+  ArrowLeft,
+  CalendarDays,
+  Clock3,
+  Download,
+  FileText,
+  GraduationCap,
+  History,
+  Loader2,
+  Mail,
+  Phone,
+  Shield,
+  UserCog,
+  UserRound,
+  Upload,
+  RefreshCw,
+  Building2,
+  Activity,
+  CircleCheck,
+  CircleX,
+  Ban,
+  Crown,
+  ShieldCheck,
+} from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth, type AccountStatus, type AppRole } from "@/lib/auth";
+import {
+  useAuth,
+  type AccountStatus,
+  type AppRole,
+} from "@/lib/auth";
 import type { Database } from "@/integrations/supabase/types";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { getContributorLevel } from "@/lib/reputation";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 
 export const Route = createFileRoute(
@@ -16,11 +71,11 @@ export const Route = createFileRoute(
 )({
   beforeLoad: async () => {
     const {
-  data: { session },
-  error: authError,
-} = await supabase.auth.getSession();
+      data: { session },
+      error: authError,
+    } = await supabase.auth.getSession();
 
-if (authError || !session?.user) {
+    if (authError || !session?.user) {
       throw redirect({
         to: "/auth",
         search: {
@@ -121,7 +176,6 @@ type ProfileQueryRow = {
   subscription_status: string;
   subscription_started_at: string | null;
   subscription_expires_at: string | null;
-  last_activity: string | null;
 };
 
 type UserProfile = {
@@ -143,7 +197,6 @@ type UserProfile = {
   subscription_status: string;
   subscription_started_at: string | null;
   subscription_expires_at: string | null;
-  last_activity: string | null;
 };
 
 type ResourceRow = {
@@ -152,13 +205,13 @@ type ResourceRow = {
   description: string | null;
   file_name: string | null;
   file_size: number | null;
+  download_count: number | null;
   created_at: string;
   status: string | null;
 };
 
 type ActivityItem = {
   id: string;
-  type: string;
   title: string;
   description: string;
   created_at: string;
@@ -174,6 +227,11 @@ type UserAuditLog = {
   new_data: Record<string, unknown>;
   created_at: string;
   actor_name?: string;
+};
+
+type UserPresence = {
+  user_id: string;
+  last_seen_at: string;
 };
 
 type PendingAction =
@@ -200,39 +258,28 @@ function mapUserProfile(
     college: row.college,
     department: row.department,
     level: row.level,
-    primary_role:
-      row.primary_role as AppRole,
+    primary_role: row.primary_role as AppRole,
     status: row.status,
     reputation: row.reputation,
     created_at: row.created_at,
     updated_at: row.updated_at,
-    subscription_plan:
-      row.subscription_plan,
-    subscription_status:
-      row.subscription_status,
-    subscription_started_at:
-      row.subscription_started_at,
-    subscription_expires_at:
-      row.subscription_expires_at,
-    last_activity:
-      row.last_activity,
+    subscription_plan: row.subscription_plan,
+    subscription_status: row.subscription_status,
+    subscription_started_at: row.subscription_started_at,
+    subscription_expires_at: row.subscription_expires_at,
   };
 }
 
 function formatLabel(value: string) {
   return value
     .replace(/-/g, " ")
-    .replace(/\b\w/g, (char) =>
-      char.toUpperCase(),
-    );
+    .replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
 function formatDate(
   value: string | null | undefined,
 ) {
-  if (!value) {
-    return "—";
-  }
+  if (!value) return "—";
 
   const date = new Date(value);
 
@@ -240,22 +287,17 @@ function formatDate(
     return "—";
   }
 
-  return date.toLocaleDateString(
-    undefined,
-    {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    },
-  );
+  return date.toLocaleDateString(undefined, {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
 }
 
 function formatDateTime(
   value: string | null | undefined,
 ) {
-  if (!value) {
-    return "—";
-  }
+  if (!value) return "Never recorded";
 
   const date = new Date(value);
 
@@ -270,6 +312,40 @@ function formatDateTime(
     hour: "numeric",
     minute: "2-digit",
   });
+}
+
+function formatLastActivity(
+  value: string | null | undefined,
+) {
+  if (!value) return "Never active";
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "Never active";
+  }
+
+  const elapsed = Math.max(0, Date.now() - date.getTime());
+  const seconds = Math.floor(elapsed / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
+
+  if (seconds < 60) return "Just now";
+
+  if (minutes < 60) {
+    return `${minutes} ${minutes === 1 ? "minute" : "minutes"} ago`;
+  }
+
+  if (hours < 24) {
+    return `${hours} ${hours === 1 ? "hour" : "hours"} ago`;
+  }
+
+  if (days < 7) {
+    return `${days} ${days === 1 ? "day" : "days"} ago`;
+  }
+
+  return formatDate(value);
 }
 
 function formatFileSize(
@@ -288,50 +364,32 @@ function formatFileSize(
   }
 
   if (value < 1024 * 1024) {
-    return `${(
-      value / 1024
-    ).toFixed(1)} KB`;
+    return `${(value / 1024).toFixed(1)} KB`;
   }
 
   if (value < 1024 * 1024 * 1024) {
-    return `${(
-      value /
-      (1024 * 1024)
-    ).toFixed(1)} MB`;
+    return `${(value / (1024 * 1024)).toFixed(1)} MB`;
   }
 
-  return `${(
-    value /
-    (1024 * 1024 * 1024)
-  ).toFixed(1)} GB`;
+  return `${(value / (1024 * 1024 * 1024)).toFixed(1)} GB`;
 }
 
-function getInitials(
-  fullName: string,
-) {
+function getInitials(fullName: string) {
   const parts = fullName
     .trim()
     .split(/\s+/)
     .filter(Boolean);
 
-  if (parts.length === 0) {
-    return "U";
-  }
+  if (parts.length === 0) return "U";
 
   if (parts.length === 1) {
-    return parts[0]
-      .slice(0, 2)
-      .toUpperCase();
+    return parts[0].slice(0, 2).toUpperCase();
   }
 
-  return `${parts[0][0]}${
-    parts[parts.length - 1][0]
-  }`.toUpperCase();
+  return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
 }
 
-function getRoleIcon(
-  role: AppRole,
-) {
+function getRoleIcon(role: AppRole) {
   if (
     role === "student" ||
     role === "lecturer" ||
@@ -351,18 +409,53 @@ function getRoleIcon(
   return UserRound;
 }
 
-function getAuditChange(
-  log: UserAuditLog,
-) {
+function getUserStatusStyles(status: string) {
+  switch (status) {
+    case "active":
+      return "text-green-500";
+
+    case "suspended":
+      return "bg-amber-500/10 text-amber-600 dark:text-amber-400";
+
+    case "rejected":
+      return "bg-destructive/10 text-destructive";
+
+    case "inactive":
+      return "bg-muted-foreground/10 text-muted-foreground";
+
+    default:
+      return "bg-muted/50 text-muted-foreground";
+  }
+}
+
+function getResourceStatusStyles(status: string) {
+  switch (status) {
+    case "approved":
+      return "text-green-600 dark:text-green-400";
+
+    case "pending":
+      return "text-amber-600 dark:text-amber-400";
+
+    case "draft":
+      return "text-muted-foreground";
+
+    case "rejected":
+    case "deleted":
+      return "text-destructive";
+
+    default:
+      return "text-muted-foreground";
+  }
+}
+
+function getAuditChange(log: UserAuditLog) {
   let oldValue: unknown;
   let newValue: unknown;
 
   if (log.action === "role_changed") {
     oldValue = log.old_data?.primary_role;
     newValue = log.new_data?.primary_role;
-  } else if (
-    log.action === "status_changed"
-  ) {
+  } else if (log.action === "status_changed") {
     oldValue = log.old_data?.status;
     newValue = log.new_data?.status;
   }
@@ -371,17 +464,13 @@ function getAuditChange(
     typeof oldValue === "string" &&
     typeof newValue === "string"
   ) {
-    return `${formatLabel(
-      oldValue,
-    )} → ${formatLabel(newValue)}`;
+    return `${formatLabel(oldValue)} → ${formatLabel(newValue)}`;
   }
 
   return "Change recorded";
 }
 
-function getAuditActionLabel(
-  action: string,
-) {
+function getAuditActionLabel(action: string) {
   switch (action) {
     case "role_changed":
       return "Role changed";
@@ -403,8 +492,7 @@ function UserDetailsPage() {
     roles,
   } = useAuth();
 
-  const { userId } =
-    Route.useParams();
+  const { userId } = Route.useParams();
 
   const [pendingAction, setPendingAction] =
     useState<PendingAction>(null);
@@ -414,24 +502,21 @@ function UserDetailsPage() {
 
   const [showHistory, setShowHistory] =
     useState(false);
+  
+  const [showAllResources, setShowAllResources] =
+  useState(false);
 
   const currentUserIsAdmin =
-    roles?.includes("admin");
+    roles?.includes("admin") ?? false;
 
   const hasAdminAccess =
     Boolean(
       roles?.includes("admin") ||
-        roles?.includes("co-admin"),
+      roles?.includes("co-admin"),
     );
 
   useEffect(() => {
-    if (!currentUser) {
-      return;
-    }
-
-    if (!roles) {
-      return;
-    }
+    if (!currentUser || !roles) return;
 
     if (
       !roles.includes("admin") &&
@@ -442,118 +527,140 @@ function UserDetailsPage() {
         replace: true,
       });
     }
-  }, [
-    currentUser,
-    roles,
-    navigate,
-  ]);
+  }, [currentUser, roles, navigate]);
 
   const {
     data: user,
     isLoading: userLoading,
     isError: userError,
+    refetch: refetchUser,
   } = useQuery<UserProfile | null>({
-    queryKey: [
-      "admin-user-details",
-      userId,
-    ],
+    queryKey: ["admin-user-details", userId],
 
     queryFn: async () => {
-      const { data, error } =
-        await supabase
-          .from("private_profiles")
-          .select(
-            [
-              "id",
-              "full_name",
-              "email",
-              "avatar_url",
-              "bio",
-              "phone_number",
-              "college",
-              "department",
-              "level",
-              "primary_role",
-              "status",
-              "reputation",
-              "created_at",
-              "updated_at",
-              "subscription_plan",
-              "subscription_status",
-              "subscription_started_at",
-              "subscription_expires_at",
-              "last_activity",
-            ].join(", "),
-          )
-          .eq("id", userId)
-          .maybeSingle();
+      const { data, error } = await supabase
+        .from("private_profiles")
+        .select(
+          [
+            "id",
+            "full_name",
+            "email",
+            "avatar_url",
+            "bio",
+            "phone_number",
+            "college",
+            "department",
+            "level",
+            "primary_role",
+            "status",
+            "reputation",
+            "created_at",
+            "updated_at",
+            "subscription_plan",
+            "subscription_status",
+            "subscription_started_at",
+            "subscription_expires_at",
+          ].join(", "),
+        )
+        .eq("id", userId)
+        .maybeSingle();
 
-      if (error) {
-        throw error;
-      }
-
-      if (!data) {
-        return null;
-      }
+      if (error) throw error;
+      if (!data) return null;
 
       return mapUserProfile(
         data as unknown as ProfileQueryRow,
       );
     },
+    enabled: hasAdminAccess,
+  });
+
+  // Uses the same online-presence RPC and cache key as the Admin Users page.
+  const {
+    data: onlineUsers = [],
+    isLoading: onlineUsersLoading,
+  } = useQuery<UserPresence[]>({
+    queryKey: ["admin-online-users"],
+
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc(
+        "get_library_online_users",
+      );
+
+      if (error) throw error;
+
+      return (data ?? []) as UserPresence[];
+    },
+
+    enabled: hasAdminAccess && !!userId,
+    refetchInterval: 5_000,
+    refetchIntervalInBackground: false,
+  });
+
+  // Uses the same last-seen RPC and cache key as the Admin Users page.
+  const {
+    data: userPresence = [],
+    isLoading: userPresenceLoading,
+  } = useQuery<UserPresence[]>({
+    queryKey: ["admin-user-presence"],
+
+    queryFn: async () => {
+      const { data, error } = await (
+        supabase as any
+      ).rpc("get_library_user_presence");
+
+      if (error) throw error;
+
+      return (data ?? []) as UserPresence[];
+    },
+
+    enabled: hasAdminAccess && !!userId,
+    refetchInterval: 5_000,
+    refetchIntervalInBackground: false,
   });
 
   const {
     data: resources,
     isLoading: resourcesLoading,
   } = useQuery<ResourceRow[]>({
-    queryKey: [
-      "admin-user-resources",
-      userId,
-    ],
+    queryKey: ["admin-user-resources", userId],
 
     queryFn: async () => {
-      const { data, error } =
-        await supabase
-          .from("resources")
-          .select(
-            [
-              "id",
-              "title",
-              "description",
-              "file_name",
-              "file_size",
-              "created_at",
-              "status",
-            ].join(", "),
-          )
-          .eq("uploader_id", userId)
-          .order("created_at", {
-            ascending: false,
-          });
+      const { data, error } = await supabase
+        .from("resources")
+        .select(
+          [
+            "id",
+            "title",
+            "description",
+            "file_name",
+            "file_size",
+            "download_count",
+            "created_at",
+            "status",
+          ].join(", "),
+        )
+        .eq("uploader_id", userId)
+        .order("created_at", {
+          ascending: false,
+        });
 
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
 
-      return (data ??
-        []) as unknown as ResourceRow[];
+      return (data ?? []) as unknown as ResourceRow[];
     },
+
+    enabled: hasAdminAccess && !!userId,
   });
 
   const {
     data: auditHistory,
     isLoading: auditHistoryLoading,
   } = useQuery<UserAuditLog[]>({
-    queryKey: [
-      "admin-user-audits",
-      userId,
-    ],
+    queryKey: ["admin-user-audits", userId],
 
     queryFn: async () => {
-      const {
-        data,
-        error,
-      } = await supabase
+      const { data, error } = await supabase
         .from("user_audit_logs")
         .select(
           [
@@ -572,24 +679,14 @@ function UserDetailsPage() {
           ascending: false,
         });
 
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
 
-      const logs =
-        (data ??
-          []) as unknown as UserAuditLog[];
+      const logs = (data ?? []) as unknown as UserAuditLog[];
 
-      if (logs.length === 0) {
-        return [];
-      }
+      if (logs.length === 0) return [];
 
       const actorIds = Array.from(
-        new Set(
-          logs.map(
-            (log) => log.performed_by,
-          ),
-        ),
+        new Set(logs.map((log) => log.performed_by)),
       );
 
       const {
@@ -600,137 +697,126 @@ function UserDetailsPage() {
         .select("id, full_name")
         .in("id", actorIds);
 
-      if (actorsError) {
-        throw actorsError;
-      }
+      if (actorsError) throw actorsError;
 
-      const actorMap = new Map<
-        string,
-        string
-      >();
+      const actorMap = new Map<string, string>();
 
       for (
-        const actor of
-          (actors ?? []).filter(
-            (
-              actor,
-            ): actor is {
-              id: string;
-              full_name: string | null;
-            } => Boolean(actor.id),
-          )
+        const actor of (actors ?? []).filter(
+          (
+            actor,
+          ): actor is {
+            id: string;
+            full_name: string | null;
+          } => Boolean(actor.id),
+        )
       ) {
         actorMap.set(
           actor.id,
-          actor.full_name ??
-            "Unknown user",
+          actor.full_name ?? "Unknown user",
         );
       }
 
       return logs.map((log) => ({
         ...log,
         actor_name:
-          actorMap.get(
-            log.performed_by,
-          ) ?? "Unknown user",
+          actorMap.get(log.performed_by) ?? "Unknown user",
       }));
     },
+
+    enabled: hasAdminAccess && !!userId,
   });
+
+  const isOnline = onlineUsers.some(
+    (presence) => presence.user_id === userId,
+  );
+
+  const lastSeenAt =
+    userPresence.find(
+      (presence) => presence.user_id === userId,
+    )?.last_seen_at ?? null;
+
+  const presenceLoading =
+    onlineUsersLoading || userPresenceLoading;
+
+  const lastActivityText = presenceLoading
+    ? "Checking activity..."
+    : isOnline
+      ? "Online"
+      : formatLastActivity(lastSeenAt);
+
+  const lastActivityDate = isOnline
+    ? "Currently active"
+    : lastSeenAt
+      ? formatDateTime(lastSeenAt)
+      : "No recorded activity for this account";
 
   const approvedResources = useMemo(
     () =>
       (resources ?? []).filter(
-        (resource) =>
-          resource.status ===
-          "approved",
+        (resource) => resource.status === "approved",
       ),
     [resources],
   );
 
-  const recentActivity =
-    useMemo<ActivityItem[]>(
-      () => {
-        const items: ActivityItem[] =
-          [];
+  const contributor = getContributorLevel(
+  user?.reputation ?? 0,
+);
 
-        if (user?.created_at) {
-          items.push({
-            id: "registration",
-            type: "account",
-            title: "Account registered",
-            description:
-              "User account was created.",
-            created_at:
-              user.created_at,
-          });
-        }
+  const totalDownloads = useMemo(
+    () =>
+      (resources ?? []).reduce(
+        (sum, resource) =>
+          sum + (resource.download_count ?? 0),
+        0,
+      ),
+    [resources],
+  );
 
-        if (
-          user?.subscription_started_at
-        ) {
-          items.push({
-            id: "subscription-start",
-            type: "subscription",
-            title:
-              "Subscription started",
-            description: `${formatLabel(
-              user.subscription_plan,
-            )} plan started.`,
-            created_at:
-              user.subscription_started_at,
-          });
-        }
+  const recentActivity = useMemo<ActivityItem[]>(() => {
+    const items: ActivityItem[] = [];
 
-        if (user?.last_activity) {
-          items.push({
-            id: "last-activity",
-            type: "activity",
-            title: "Last activity",
-            description:
-              "Most recent recorded account activity.",
-            created_at:
-              user.last_activity,
-          });
-        }
+    if (user?.created_at) {
+      items.push({
+        id: "registration",
+        title: "Account registered",
+        description: "User account was created.",
+        created_at: user.created_at,
+      });
+    }
 
-        for (
-          const resource of
-            resources ?? []
-        ) {
-          items.push({
-            id: `resource-${resource.id}`,
-            type: "upload",
-            title:
-              resource.title ??
-              resource.file_name ??
-              "Resource uploaded",
-            description:
-              resource.status ===
-              "approved"
-                ? "Resource approved."
-                : "Resource submitted.",
-            created_at:
-              resource.created_at,
-          });
-        }
+    if (user?.subscription_started_at) {
+      items.push({
+        id: "subscription-start",
+        title: "Subscription started",
+        description: `${formatLabel(user.subscription_plan)} plan started.`,
+        created_at: user.subscription_started_at,
+      });
+    }
 
-        return items
-          .sort(
-            (a, b) =>
-              new Date(
-                b.created_at,
-              ).getTime() -
-              new Date(
-                a.created_at,
-              ).getTime(),
-          )
-          .slice(0, 8);
-      },
-      [
-        user,
-        resources,
-      ],
-    );
+    for (const resource of resources ?? []) {
+      items.push({
+        id: `resource-${resource.id}`,
+        title:
+          resource.title ??
+          resource.file_name ??
+          "Resource uploaded",
+        description:
+          resource.status === "approved"
+            ? "Resource approved."
+            : "Resource submitted.",
+        created_at: resource.created_at,
+      });
+    }
+
+    return items
+      .sort(
+        (a, b) =>
+          new Date(b.created_at).getTime() -
+          new Date(a.created_at).getTime(),
+      )
+      .slice(0, 8);
+  }, [user, resources]);
 
   const setStatus = useMutation({
     mutationFn: async ({
@@ -740,33 +826,25 @@ function UserDetailsPage() {
       status: AccountStatus;
       reason: string;
     }) => {
-      const { error } =
-        await supabase.rpc(
-          "admin_set_user_status",
-          {
-            _target_user_id: userId,
-            _new_status: status,
-            _reason: reason,
-          },
-        );
+      const { error } = await supabase.rpc(
+        "admin_set_user_status",
+        {
+          _target_user_id: userId,
+          _new_status: status,
+          _reason: reason,
+        },
+      );
 
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
     },
 
     onSuccess: (_, variables) => {
       toast.success(
-        `Status changed to ${formatLabel(
-          variables.status,
-        )}.`,
+        `Status changed to ${formatLabel(variables.status)}.`,
       );
 
       qc.invalidateQueries({
-        queryKey: [
-          "admin-user-details",
-          userId,
-        ],
+        queryKey: ["admin-user-details", userId],
       });
 
       qc.invalidateQueries({
@@ -774,10 +852,7 @@ function UserDetailsPage() {
       });
 
       qc.invalidateQueries({
-        queryKey: [
-          "admin-user-audits",
-          userId,
-        ],
+        queryKey: ["admin-user-audits", userId],
       });
 
       setActionReason("");
@@ -798,33 +873,25 @@ function UserDetailsPage() {
       role: AppRole;
       reason: string;
     }) => {
-      const { error } =
-        await supabase.rpc(
-          "admin_set_user_role",
-          {
-            _target_user_id: userId,
-            _new_role: role,
-            _reason: reason,
-          },
-        );
+      const { error } = await supabase.rpc(
+        "admin_set_user_role",
+        {
+          _target_user_id: userId,
+          _new_role: role,
+          _reason: reason,
+        },
+      );
 
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
     },
 
     onSuccess: (_, variables) => {
       toast.success(
-        `Role changed to ${formatLabel(
-          variables.role,
-        )}.`,
+        `Role changed to ${formatLabel(variables.role)}.`,
       );
 
       qc.invalidateQueries({
-        queryKey: [
-          "admin-user-details",
-          userId,
-        ],
+        queryKey: ["admin-user-details", userId],
       });
 
       qc.invalidateQueries({
@@ -832,10 +899,7 @@ function UserDetailsPage() {
       });
 
       qc.invalidateQueries({
-        queryKey: [
-          "admin-user-audits",
-          userId,
-        ],
+        queryKey: ["admin-user-audits", userId],
       });
 
       setActionReason("");
@@ -848,22 +912,15 @@ function UserDetailsPage() {
     },
   });
 
-  const canModifyUser =
-    Boolean(
-      currentUser &&
-        user &&
-        currentUser.id !== user.id &&
-        (currentUserIsAdmin ||
-          user.primary_role !==
-            "admin"),
-    );
+  const canModifyUser = Boolean(
+    currentUser &&
+    user &&
+    currentUser.id !== user.id &&
+    (currentUserIsAdmin || user.primary_role !== "admin"),
+  );
 
-  const requestStatusChange = (
-    status: AccountStatus,
-  ) => {
-    if (!user) {
-      return;
-    }
+  const requestStatusChange = (status: AccountStatus) => {
+    if (!user) return;
 
     if (!canModifyUser) {
       toast.error(
@@ -872,9 +929,7 @@ function UserDetailsPage() {
       return;
     }
 
-    if (status === user.status) {
-      return;
-    }
+    if (status === user.status) return;
 
     setActionReason("");
 
@@ -884,12 +939,8 @@ function UserDetailsPage() {
     });
   };
 
-  const requestRoleChange = (
-    role: AppRole,
-  ) => {
-    if (!user) {
-      return;
-    }
+  const requestRoleChange = (role: AppRole) => {
+    if (!user) return;
 
     if (!canModifyUser) {
       toast.error(
@@ -898,14 +949,9 @@ function UserDetailsPage() {
       return;
     }
 
-    if (role === user.primary_role) {
-      return;
-    }
+    if (role === user.primary_role) return;
 
-    if (
-      !currentUserIsAdmin &&
-      role === "admin"
-    ) {
+    if (!currentUserIsAdmin && role === "admin") {
       toast.error(
         "Co-admins cannot promote users to administrator.",
       );
@@ -921,12 +967,9 @@ function UserDetailsPage() {
   };
 
   const confirmAction = () => {
-    if (!pendingAction) {
-      return;
-    }
+    if (!pendingAction) return;
 
-    const trimmedReason =
-      actionReason.trim();
+    const trimmedReason = actionReason.trim();
 
     if (!trimmedReason) {
       toast.error(
@@ -935,10 +978,7 @@ function UserDetailsPage() {
       return;
     }
 
-    if (
-      pendingAction.type ===
-      "status"
-    ) {
+    if (pendingAction.type === "status") {
       setStatus.mutate({
         status: pendingAction.value,
         reason: trimmedReason,
@@ -954,8 +994,7 @@ function UserDetailsPage() {
   };
 
   const actionLoading =
-    setStatus.isPending ||
-    setRole.isPending;
+    setStatus.isPending || setRole.isPending;
 
   if (
     currentUser &&
@@ -963,9 +1002,9 @@ function UserDetailsPage() {
     !hasAdminAccess
   ) {
     return (
-      <div className="flex min-h-[320px] items-center justify-center sm:min-h-[400px]">
-        <div className="flex items-center gap-1.5 text-xs text-muted-foreground sm:gap-2 sm:text-sm">
-          <Loader2 className="h-3.5 w-3.5 animate-spin sm:h-4 sm:w-4" />
+      <div className="flex min-h-[320px] items-center justify-center">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" />
           Redirecting...
         </div>
       </div>
@@ -974,10 +1013,10 @@ function UserDetailsPage() {
 
   if (userLoading) {
     return (
-      <div className="flex min-h-[320px] items-center justify-center sm:min-h-[400px]">
-        <div className="flex items-center gap-1.5 text-xs text-muted-foreground sm:gap-2 sm:text-sm">
-          <Loader2 className="h-3.5 w-3.5 animate-spin sm:h-4 sm:w-4" />
-          Loading user details...
+      <div className="flex min-h-[60vh] items-center justify-center px-4">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Loading user profile...
         </div>
       </div>
     );
@@ -985,23 +1024,38 @@ function UserDetailsPage() {
 
   if (userError) {
     return (
-      <div className="mx-auto max-w-6xl space-y-4 sm:space-y-4">
+      <div className="mx-auto max-w-8xl space-y-5 px-1">
         <Button
           variant="ghost"
-          className="-ml-2 h-8 gap-1.5 px-2 mb-4 text-xs transition-colors hover:bg-transparent hover:text-muted-foreground sm:h-9 sm:gap-2 sm:text-sm"
+          className="-ml-2 h-9 gap-2 px-2"
           onClick={() =>
-            navigate({
-              to: "/admin/users",
-            })
+            navigate({ to: "/admin/users" })
           }
         >
-          <ArrowLeft className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              Back
-            </Button>
+          <ArrowLeft className="h-4 w-4" />
+          Back to Users
+        </Button>
 
-        <div className="border border-border bg-card p-5 text-center text-xs text-destructive sm:p-8 sm:text-sm">
-          Failed to load user
-          details.
+        <div className="rounded-2xl border border-border bg-card p-8 text-center shadow-soft">
+          <CircleX className="mx-auto h-8 w-8 text-destructive" />
+
+          <h2 className="mt-3 text-sm font-semibold">
+            Unable to load user profile
+          </h2>
+
+          <p className="mt-1 text-xs text-muted-foreground">
+            An error occurred while retrieving this account.
+          </p>
+
+          <Button
+            variant="outline"
+            size="sm"
+            className="mt-4"
+            onClick={() => void refetchUser()}
+          >
+            <RefreshCw className="mr-2 h-3.5 w-3.5" />
+            Try again
+          </Button>
         </div>
       </div>
     );
@@ -1009,872 +1063,806 @@ function UserDetailsPage() {
 
   if (!user) {
     return (
-      <div className="mx-auto max-w-6xl space-y-4 sm:space-y-4">
+      <div className="mx-auto max-w-8xl space-y-5 px-1">
         <Button
           variant="ghost"
-          className="-ml-2 h-8 gap-1.5 px-2 mb-4 text-xs transition-colors hover:bg-transparent hover:text-muted-foreground sm:h-9 sm:gap-2 sm:text-sm"
+          className="-ml-2 h-9 gap-2 px-2"
           onClick={() =>
-            navigate({
-              to: "/admin/users",
-            })
+            navigate({ to: "/admin/users" })
           }
         >
-          <ArrowLeft className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              Back
-            </Button>
+          <ArrowLeft className="h-4 w-4" />
+          Back to Users
+        </Button>
 
-        <div className="border border-border bg-card p-5 text-center text-xs text-muted-foreground sm:p-8 sm:text-sm">
-          User not found.
+        <div className="rounded-2xl border border-border bg-card p-8 text-center shadow-soft">
+          <UserRound className="mx-auto h-8 w-8 text-muted-foreground" />
+
+          <h2 className="mt-3 text-sm font-semibold">
+            User not found
+          </h2>
+
+          <p className="mt-1 text-xs text-muted-foreground">
+            This account may have been removed or is no longer available.
+          </p>
         </div>
       </div>
     );
   }
 
-  const RoleIcon = getRoleIcon(
-    user.primary_role,
-  );
+  const RoleIcon = getRoleIcon(user.primary_role);
 
   const subscriptionActive =
-    user.subscription_status
-      .toLowerCase() === "active";
+    user.subscription_status.toLowerCase() === "active";
+
+  const isPremium =
+    user.subscription_plan === "premium";
 
   return (
     <>
-      <div className="w-full space-y-5 sm:space-y-6">
-        {/* Header */}
-        <div className="mx-auto max-w-6xl space-y-4 sm:space-y-4">
-        <div>
-          <Button
-          variant="ghost"
-          className="-ml-2 h-8 gap-1.5 px-2 mb-4 text-xs transition-colors hover:bg-transparent hover:text-muted-foreground sm:h-9 sm:gap-2 sm:text-sm"
-          onClick={() =>
-            navigate({
-              to: "/admin/users",
-            })
-          }
-        >
-          <ArrowLeft className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              Back
-            </Button>
+      <main className="mx-auto w-full max-w-8xl space-y-4 pb-8 sm:space-y-6">
+        {/* Page heading */}
+<div>
+  <div>
+    <Button
+      variant="ghost"
+      className="-ml-2 h-8 gap-1.5 px-2 text-xs transition-colors hover:bg-transparent hover:text-muted-foreground sm:h-9 sm:gap-2 sm:text-sm"
+      onClick={() =>
+        navigate({ to: "/admin/users" })
+      }
+    >
+      <ArrowLeft className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+      Back
+    </Button>
+  </div>
 
-            <h1 className="text-lg font-semibold tracking-tight sm:text-2xl">
-              User Details
-            </h1>
+  <div className="mt-3">
+    <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-gold sm:text-xs">
+      Administration
+    </p>
 
-            <p className="mt-1 text-xs leading-5 text-muted-foreground sm:text-sm sm:leading-normal">
-              Manage this account and
-              review its activity.
-            </p>
-          </div>
+    <h1 className="mt-1 font-display text-xl font-semibold sm:text-3xl">
+      {user.full_name || "Unnamed user"}
+    </h1>
 
-          <Link
-            to="/admin/users"
-            className="inline-flex h-9 w-full items-center justify-center rounded-sm border border-border px-3 text-xs font-medium transition-colors hover:bg-muted sm:w-auto sm:text-sm"
-          >
-            <Upload className="mr-1.5 h-3.5 w-3.5 sm:mr-2 sm:h-4 sm:w-4" />
-            View Uploads
-          </Link>
-        </div>
+    <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
+      Account details, activity, and contribution history.
+    </p>
+  </div>
+</div>
 
-        {/* Main content */}
-        <div className="grid grid-cols-1 gap-4 sm:gap-5 lg:grid-cols-[2fr_1fr]">
-          {/* Left column */}
-          <div className="space-y-4 sm:space-y-5">
-            {/* Profile */}
-            <section className="border border-border bg-card p-3.5 shadow-soft sm:p-5">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-5">
+        {/* Profile identity */}
+        <section className="overflow-hidden rounded-md border border-border bg-card shadow-soft">
+          <div className="border-b border-border bg-muted/20 p-4 sm:p-8">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-6">
+              <div className="shrink-0">
                 {user.avatar_url ? (
                   <img
                     src={user.avatar_url}
-                    alt={user.full_name}
-                    className="h-16 w-16 shrink-0 rounded-full border border-border object-cover sm:h-20 sm:w-20"
+                    alt={user.full_name || "User profile"}
+                    className="h-36 w-32 rounded-md border-2 border-primary/30 object-cover shadow-xl sm:h-48 sm:w-40"
                   />
                 ) : (
-                  <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-muted text-base font-semibold sm:h-20 sm:w-20 sm:text-lg">
-                    {getInitials(
-                      user.full_name ||
-                        "User",
-                    )}
+                  <div className="flex h-36 w-32 items-center justify-center rounded-md border-2 border-primary/30 bg-muted text-3xl font-semibold shadow-lg sm:h-48 sm:w-40 sm:text-4xl">
+                    {getInitials(user.full_name || "User")}
                   </div>
                 )}
+              </div>
 
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="min-w-0">
-                      <h2 className="text-base font-semibold sm:text-xl">
-                        {user.full_name ||
-                          "Unnamed user"}
-                      </h2>
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-gold/10 px-2 py-0.5 text-[10px] font-medium text-gold sm:gap-1.5 sm:px-3 sm:py-1 sm:text-xs">
+                    <RoleIcon className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                    {formatLabel(user.primary_role)}
+                  </span>
 
-                      <div className="mt-1 flex items-start gap-1.5 text-xs text-muted-foreground sm:items-center sm:gap-2 sm:text-sm">
-                        <Mail className="mt-0.5 h-3.5 w-3.5 shrink-0 sm:mt-0 sm:h-4 sm:w-4" />
-                        <span className="break-all">
-                          {user.email ||
-                            "No email"}
-                        </span>
-                      </div>
-                    </div>
+                  <span className="inline-flex items-center gap-1 rounded-full bg-gold/10 px-2 py-0.5 text-[10px] font-medium text-gold sm:gap-1.5 sm:px-3 sm:py-1 sm:text-xs">
+                    {contributor.emoji}
+                    {contributor.name}
+                </span>
 
-                    <div className="flex items-center gap-1.5 text-xs text-gold sm:gap-2 sm:text-sm">
-                      <RoleIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                      {formatLabel(
-                        user.primary_role,
-                      )}
-                    </div>
-                  </div>
+                  <SubscriptionPlanBadge
+                    plan={user.subscription_plan}
+                  />
+                </div>
 
-                  {user.bio && (
-                    <p className="mt-3 max-w-2xl text-xs leading-5 text-muted-foreground sm:mt-4 sm:text-sm sm:leading-6">
-                      {user.bio}
-                    </p>
-                  )}
+                <h1 className="mt-3 break-words font-display text-xl font-semibold sm:mt-4 sm:text-3xl">
+                  {user.full_name || "Unnamed user"}
+                </h1>
+
+                <div className="mt-1.5 flex min-w-0 items-start gap-1.5 text-xs text-muted-foreground sm:mt-2 sm:text-sm">
+                  <Mail className="mt-0.5 h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" />
+                  <span className="break-all">
+                    {user.email || "No email address"}
+                  </span>
+                </div>
+
+                {user.bio && (
+                  <p className="mt-2 max-w-2xl text-xs leading-5 text-muted-foreground sm:mt-3 sm:text-sm sm:leading-relaxed">
+                    {user.bio}
+                  </p>
+                )}
+
+                <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-[10px] text-muted-foreground sm:mt-5 sm:gap-x-5 sm:gap-y-2 sm:text-sm">
+  <span className="inline-flex items-center gap-1">
+    <CalendarDays className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+    Joined {formatDate(user.created_at)}
+  </span>
+
+  <span className="inline-flex items-center gap-1.5">
+    <Clock3 className="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" />
+
+    <span>
+      Last activity:{" "}
+      <span
+        className={`font-semibold ${
+          isOnline
+            ? "text-green-600 dark:text-green-400"
+            : "text-foreground"
+        }`}
+      >
+        {lastActivityText}
+      </span>
+
+      <span className="ml-1">
+        ({lastActivityDate})
+      </span>
+    </span>
+  </span>
+</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Profile statistics */}
+          <div className="p-4 sm:p-8">
+            <div className="grid grid-cols-3 text-center">
+              <div className="min-w-0 px-1.5 sm:px-2">
+                <div className="text-xl font-semibold sm:text-2xl">
+                  {resources?.length ?? 0}
+                </div>
+
+                <div className="mt-0.5 text-[10px] text-muted-foreground sm:mt-1 sm:text-sm">
+                  Resources
                 </div>
               </div>
 
-              <div className="mt-5 grid grid-cols-1 gap-3 sm:mt-6 sm:grid-cols-2 sm:gap-4">
-                <InfoItem
-                  icon={Phone}
-                  label="Phone"
-                  value={
-                    user.phone_number ||
-                    "—"
-                  }
-                />
+              <div className="min-w-0 border-x border-border px-1.5 sm:px-2">
+                <div className="text-xl font-semibold sm:text-2xl">
+                  {totalDownloads.toLocaleString()}
+                </div>
 
-                <InfoItem
-                  icon={GraduationCap}
-                  label="College"
-                  value={
-                    user.college ||
-                    "—"
-                  }
-                />
-
-                <InfoItem
-                  icon={GraduationCap}
-                  label="Department"
-                  value={
-                    user.department ||
-                    "—"
-                  }
-                />
-
-                <InfoItem
-                  icon={GraduationCap}
-                  label="Level"
-                  value={
-                    user.level ||
-                    "—"
-                  }
-                />
+                <div className="mt-0.5 text-[10px] text-muted-foreground sm:mt-1 sm:text-sm">
+                  Downloads
+                </div>
               </div>
+
+              <div className="min-w-0 px-1.5 sm:px-2">
+                <div className="text-xl font-semibold sm:text-2xl">
+                  {user.reputation}
+                </div>
+
+                <div className="mt-0.5 text-[10px] text-muted-foreground sm:mt-1 sm:text-sm">
+                  Reputation
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Profile and administration content */}
+        <div className="grid gap-4 sm:gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
+          {/* Main content */}
+          <main className="min-w-0 space-y-4 sm:space-y-6">
+            {/* Profile information */}
+            <section className="rounded-md border border-border bg-card p-4 shadow-soft sm:p-6">
+              <SectionHeading
+                title="Profile Information"
+                description="Personal contact and academic details associated with this account."
+              />
+
+              <div className="mt-4 grid grid-cols-1 gap-x-6 gap-y-5 sm:mt-5 sm:grid-cols-2">
+  <InfoItem
+    label="Phone number"
+    value={user.phone_number || "Not provided"}
+  />
+
+  <InfoItem
+    label="College"
+    value={user.college || "Not provided"}
+  />
+
+  <InfoItem
+    label="Department"
+    value={user.department || "Not provided"}
+  />
+
+  <InfoItem
+    label="Academic level"
+    value={user.level || "Not provided"}
+  />
+</div>
             </section>
 
-            {/* Account overview */}
-            <section className="border border-border bg-card p-3.5 shadow-soft sm:p-5">
-              <SectionHeading>
-                Account Overview
-              </SectionHeading>
+            {/* Account record */}
+            <section className="rounded-md border border-border bg-card p-4 shadow-soft sm:p-6">
+              <SectionHeading
+                title="Account Record"
+                description="Registration and profile maintenance information."
+              />
 
-              <div className="mt-4 grid grid-cols-1 gap-3 sm:mt-0 sm:grid-cols-2 sm:gap-4">
+              <div className="mt-4 grid grid-cols-1 gap-x-6 gap-y-5 sm:mt-5 sm:grid-cols-2">
                 <InfoItem
-                  icon={Shield}
-                  label="Role"
-                  value={formatLabel(
-                    user.primary_role,
-                  )}
+                  label="Registration date"
+                  value={formatDateTime(user.created_at)}
                 />
 
                 <InfoItem
-                  icon={UserRound}
-                  label="Status"
-                  value={formatLabel(
-                    user.status,
-                  )}
+                  label="Last profile update"
+                  value={formatDateTime(user.updated_at)}
                 />
 
                 <InfoItem
-                  icon={UserCog}
-                  label="Reputation"
-                  value={String(
-                    user.reputation,
-                  )}
+                  label="Reputation score"
+                  value={String(user.reputation)}
                 />
 
                 <InfoItem
-                  icon={CalendarDays}
-                  label="Registered"
-                  value={formatDate(
-                    user.created_at,
-                  )}
-                />
-
-                <InfoItem
-                  icon={CalendarDays}
-                  label="Last activity"
-                  value={formatDateTime(
-                    user.last_activity,
-                  )}
-                />
-
-                <InfoItem
-                  icon={CalendarDays}
-                  label="Profile updated"
-                  value={formatDateTime(
-                    user.updated_at,
-                  )}
+                  label="Account identifier"
+                  value={user.id}
+                  mono
                 />
               </div>
             </section>
 
             {/* Subscription */}
-            <section className="border border-border bg-card p-3.5 shadow-soft sm:p-5">
-              <SectionHeading>
-                Subscription
-              </SectionHeading>
-
-              <div className="mt-4 grid grid-cols-1 gap-3 sm:mt-0 sm:grid-cols-2 sm:gap-4">
-                <InfoItem
-                  label="Plan"
-                  value={formatLabel(
-                    user.subscription_plan,
-                  )}
-                />
-
-                <InfoItem
-                  label="Status"
-                  value={formatLabel(
-                    user.subscription_status,
-                  )}
-                />
-
-                <InfoItem
-                  label="Started"
-                  value={formatDate(
-                    user.subscription_started_at,
-                  )}
-                />
-
-                <InfoItem
-                  label="Expires"
-                  value={formatDate(
-                    user.subscription_expires_at,
-                  )}
+            <section className="rounded-md border border-border bg-card p-4 shadow-soft sm:p-6">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <SectionHeading
+                  title="Subscription"
+                  description="Current plan and subscription record."
                 />
               </div>
 
-              <div className="mt-3 border-t border-border pt-3 text-xs leading-5 text-muted-foreground sm:mt-4 sm:pt-4 sm:text-sm sm:leading-normal">
+              <div className="mt-4 grid grid-cols-1 gap-x-6 gap-y-5 sm:mt-5 sm:grid-cols-2">
+                <InfoItem
+                  label="Subscription status"
+                  value={formatLabel(user.subscription_status)}
+                />
+
+                <div className="min-w-0">
+  <div className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground sm:text-xs">
+    Plan
+  </div>
+
+  <p
+    className={`mt-1.5 text-xs font-semibold sm:text-sm ${
+      isPremium
+        ? "text-gold"
+        : "text-green-600 dark:text-green-400"
+    }`}
+  >
+    {formatLabel(user.subscription_plan)}
+  </p>
+</div>
+
+                <InfoItem
+                  label="Subscription started"
+                  value={formatDate(user.subscription_started_at)}
+                />
+
+                <InfoItem
+                  label="Subscription expires"
+                  value={formatDate(user.subscription_expires_at)}
+                />
+              </div>
+
+              <div className="mt-5 flex items-start gap-2.5 border-t border-border pt-4">
                 {subscriptionActive ? (
-                  <>
-                    This account currently has
-                    an active{" "}
-                    <span className="font-medium text-foreground">
-                      {formatLabel(
-                        user.subscription_plan,
-                      )}
-                    </span>{" "}
-                    subscription.
-                  </>
+                  <CircleCheck className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
                 ) : (
-                  <>
-                    This account does not
-                    currently have an active
-                    subscription.
-                  </>
+                  <Activity className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
                 )}
+
+                <p className="text-xs leading-5 text-muted-foreground">
+                  {subscriptionActive ? (
+                    <>
+                      This account currently has an active{" "}
+                      <span
+                        className={`font-semibold ${
+                          isPremium
+                            ? "text-gold"
+                            : "text-green-600 dark:text-green-400"
+                        }`}
+                      >
+                        {formatLabel(user.subscription_plan)}
+                      </span>{" "}
+                      subscription.
+                    </>
+                  ) : (
+                    "This account does not currently have an active subscription."
+                  )}
+                </p>
               </div>
             </section>
 
-            {/* Resources */}
-            <section className="border border-border bg-card p-3.5 shadow-soft sm:p-5">
-              <div className="flex items-center justify-between gap-3">
-                <SectionHeading>
-                  Resources
-                </SectionHeading>
+            {/* Uploaded resources */}
+            <section className="rounded-md border border-border bg-card p-3.5 shadow-soft sm:p-6">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <SectionHeading
+                  title="Uploaded Resources"
+                  description="Resources submitted by this account."
+                />
 
-                <span className="text-[10px] text-muted-foreground sm:text-xs">
-                  {resources?.length ?? 0}{" "}
-                  total
+                <span className="shrink-0 text-xs text-muted-foreground">
+                  {resources?.length ?? 0} total
                 </span>
               </div>
 
               {resourcesLoading ? (
-                <div className="flex items-center justify-center py-7 text-xs text-muted-foreground sm:py-8 sm:text-sm">
-                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin sm:mr-2 sm:h-4 sm:w-4" />
+                <div className="flex items-center justify-center py-10 text-xs text-muted-foreground">
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Loading resources...
                 </div>
-              ) : resources &&
-                resources.length > 0 ? (
-                <div className="mt-3 divide-y divide-border sm:mt-4">
-                  {resources
-                    .slice(0, 8)
-                    .map(
-                      (resource) => (
-                        <div
-                          key={
-                            resource.id
-                          }
-                          className="flex flex-col gap-2.5 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:py-4"
-                        >
-                          <div className="flex min-w-0 items-start gap-2.5 sm:gap-3">
-                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-sm bg-muted sm:h-9 sm:w-9">
-                              <FileText className="h-3.5 w-3.5 text-muted-foreground sm:h-4 sm:w-4" />
-                            </div>
+              ) : resources && resources.length > 0 ? (
+                <ul className="mt-4 divide-y divide-border border-y border-border">
+                  {(showAllResources
+                    ? resources
+                    : resources.slice(0, 10)
+                    ).map((resource) => (
+                    <li
+                      key={resource.id}
+                      className="py-3 sm:py-4"
+                    >
+                      <div className="flex flex-col gap-2">
+  <div className="flex min-w-0 items-start gap-3">
+   <div className="min-w-0 flex-1">
+      {/* Resource status */}
+      <p
+        className={`mb-1.5 text-[10px] font-semibold sm:text-xs ${getResourceStatusStyles(resource.status || "unknown")}`}
+    >
+      {formatLabel(resource.status || "unknown")}
+    </p>
 
-                            <div className="min-w-0">
-                              <p className="truncate text-xs font-medium sm:text-sm">
-                                {resource.title ||
-                                  resource.file_name ||
-                                  "Untitled resource"}
-                              </p>
+      {/* Resource title */}
+      <p className="break-words text-xs font-medium sm:text-sm">
+        {resource.title ||
+          resource.file_name ||
+          "Untitled resource"}
+      </p>
 
-                              <p className="mt-1 text-[10px] text-muted-foreground sm:text-xs">
-                                {resource.file_name ||
-                                  "No file name"}
-                                {" · "}
-                                {formatFileSize(
-                                  resource.file_size,
-                                )}
-                              </p>
-                            </div>
-                          </div>
+      {/* Resource metadata */}
+      <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] text-muted-foreground sm:text-xs">
+        <span>
+          {resource.file_name || "No file name"}
+        </span>
 
-                          <div className="flex items-center gap-2 pl-10 text-[10px] text-muted-foreground sm:gap-3 sm:pl-0 sm:text-xs">
-                            <span>
-                              {formatLabel(
-                                resource.status ||
-                                  "unknown",
-                              )}
-                            </span>
+        <span aria-hidden="true">·</span>
 
-                            <span>
-                              {formatDate(
-                                resource.created_at,
-                              )}
-                            </span>
-                          </div>
-                        </div>
-                      ),
-                    )}
-                </div>
+        <span>
+          {formatFileSize(resource.file_size)}
+        </span>
+
+        <span aria-hidden="true">·</span>
+
+        <span className="inline-flex items-center gap-1">
+          <Download className="h-3 w-3" />
+          {(resource.download_count ?? 0).toLocaleString()} downloads
+        </span>
+
+        <span aria-hidden="true">·</span>
+
+        <span>
+          {formatDate(resource.created_at)}
+        </span>
+      </div>
+    </div>
+  </div>
+</div>
+                    </li>
+                  ))}
+                </ul>
               ) : (
-                <div className="mt-3 py-7 text-center text-xs text-muted-foreground sm:mt-4 sm:py-8 sm:text-sm">
-                  This user has not
-                  uploaded any resources.
+                <div className="mt-4 border-y border-dashed border-border py-7 text-center sm:py-8">
+                  <FileText className="mx-auto h-7 w-7 text-muted-foreground/60 sm:h-8 sm:w-8" />
+
+                  <p className="mt-2.5 text-xs text-muted-foreground sm:mt-3 sm:text-sm">
+                    No resources uploaded yet.
+                  </p>
                 </div>
               )}
 
-              {approvedResources.length >
-                0 && (
-                <div className="mt-3 border-t border-border pt-3 text-xs text-muted-foreground sm:mt-4 sm:pt-4 sm:text-sm">
-                  <span className="font-medium text-foreground">
-                    {
-                      approvedResources.length
-                    }
-                  </span>{" "}
-                  approved{" "}
-                  {approvedResources.length ===
-                  1
-                    ? "resource"
-                    : "resources"}
-                </div>
-              )}
+              {resources && resources.length > 10 && (
+  <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+    <p className="text-[10px] text-muted-foreground sm:text-xs">
+      {showAllResources
+        ? `Showing all ${resources.length} uploaded resources.`
+        : `Showing the 10 most recent resources out of ${resources.length} total.`}
+    </p>
+
+    <Button
+  type="button"
+  variant="outline"
+  size="sm"
+  className="h-8 shrink-0 bg-gradient-emerald text-[10px] text-white hover:bg-none hover:bg-accent hover:text-accent-foreground sm:text-xs"
+  onClick={() =>
+    setShowAllResources((value) => !value)
+  }
+>
+  <History className="mr-1.5 h-3.5 w-3.5" />
+  {showAllResources ? "Show less" : "View all"}
+</Button>
+  </div>
+)}
+
+              <div className="mt-4 flex items-center justify-between border-t border-border pt-4">
+                <span className="text-xs text-muted-foreground">
+                  Approved resources
+                </span>
+
+                <span className="text-sm font-semibold text-foreground">
+                  {approvedResources.length}
+                </span>
+              </div>
             </section>
 
-            {/* User audit history */}
-            <section className="border border-border bg-card p-3.5 shadow-soft sm:p-5">
-              <div className="flex items-center justify-between gap-2.5">
-                <div className="flex min-w-0 items-center gap-1.5 sm:gap-2">
-                  <History className="h-3.5 w-3.5 shrink-0 text-muted-foreground sm:h-4 sm:w-4" />
+            {/* Administration audit history */}
+            <section className="rounded-md border border-border bg-card p-3.5 shadow-soft sm:p-6">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <SectionHeading
+                  title="Administration Audit History"
+                  description="Recorded administrative changes made to this account."
+                />
 
-                  <SectionHeading>
-                    User Audit History
-                  </SectionHeading>
-                </div>
-
-                {auditHistory &&
-                  auditHistory.length >
-                    0 && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 shrink-0 px-1.5 text-[10px] sm:px-2 sm:text-xs text-gold"
-                      onClick={() =>
-                        setShowHistory(
-                          (value) =>
-                            !value,
-                        )
-                      }
-                    >
-                      {showHistory
-                        ? "Hide history"
-                        : `History (${auditHistory.length})`}
-                    </Button>
-                  )}
+                {auditHistory && auditHistory.length > 0 && (
+                  <Button
+  type="button"
+  variant="outline"
+  size="sm"
+  className="h-8 shrink-0 bg-gradient-emerald text-[10px] text-white hover:bg-none hover:bg-accent hover:text-accent-foreground sm:text-xs"
+                    onClick={() =>
+                      setShowHistory((value) => !value)
+                    }
+                  >
+                    <History className="mr-1.5 h-3.5 w-3.5" />
+                    {showHistory ? "Collapse" : "View history"}
+                    {" "}
+                    ({auditHistory.length})
+                  </Button>
+                )}
               </div>
 
               {auditHistoryLoading ? (
-                <div className="flex items-center justify-center py-7 text-xs text-muted-foreground sm:py-8 sm:text-sm">
-                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin sm:mr-2 sm:h-4 sm:w-4" />
+                <div className="flex items-center justify-center py-8 text-xs text-muted-foreground">
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Loading audit history...
                 </div>
-              ) : auditHistory &&
-                auditHistory.length >
-                  0 ? (
+              ) : auditHistory && auditHistory.length > 0 ? (
                 showHistory ? (
-                  <div className="mt-3 divide-y divide-border sm:mt-4">
-                    {auditHistory.map(
-                      (log) => (
-                        <div
-                          key={log.id}
-                          className="py-3 sm:py-4"
-                        >
-                          <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
-                            <div>
-                              <p className="text-xs font-medium sm:text-sm">
-                                {getAuditActionLabel(
-                                  log.action,
-                                )}
-                              </p>
+                  <div className="mt-5 divide-y divide-border">
+                    {auditHistory.map((log) => (
+                      <div
+                        key={log.id}
+                        className="py-4 first:pt-1 last:pb-1"
+                      >
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                          <div className="min-w-0">
+                            <p className="text-xs font-semibold sm:text-sm">
+                              {getAuditActionLabel(log.action)}
+                            </p>
 
-                              <p className="mt-1 text-[10px] text-muted-foreground sm:text-xs">
-                                {getAuditChange(
-                                  log,
-                                )}
-                              </p>
-                            </div>
-
-                            <span className="text-[10px] text-muted-foreground sm:text-[11px]">
-                              {formatDateTime(
-                                log.created_at,
-                              )}
-                            </span>
-                          </div>
-
-                          <p className="mt-1.5 text-[10px] text-muted-foreground sm:mt-2 sm:text-xs">
-                            By{" "}
-                            <span className="font-medium text-foreground">
-                              {log.actor_name ??
-                                "Unknown user"}
-                            </span>
-                          </p>
-
-                          <div className="mt-1.5 border-l-2 border-border pl-2.5 sm:mt-2 sm:pl-3">
-                            <p className="text-[10px] leading-4 text-muted-foreground sm:text-xs sm:leading-5">
-                              <span className="font-medium text-foreground">
-                                Reason:
-                              </span>{" "}
-                              {log.reason ||
-                                "No reason recorded."}
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              {getAuditChange(log)}
                             </p>
                           </div>
+
+                          <span className="shrink-0 text-[10px] text-muted-foreground sm:text-xs">
+                            {formatDateTime(log.created_at)}
+                          </span>
                         </div>
-                      ),
-                    )}
+
+                        <p className="mt-2 text-[10px] text-muted-foreground sm:text-xs">
+                          Performed by{" "}
+                          <span className="font-medium text-foreground">
+                            {log.actor_name ?? "Unknown user"}
+                          </span>
+                        </p>
+
+                        <div className="mt-3 border-l-2 border-border pl-3">
+                          <p className="text-[10px] leading-5 text-muted-foreground sm:text-xs">
+                            <span className="font-semibold text-foreground">
+                              Reason:
+                            </span>{" "}
+                            {log.reason || "No reason recorded."}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 ) : (
-                  <p className="mt-2.5 text-[10px] text-muted-foreground sm:mt-3 sm:text-xs">
-                    {auditHistory.length}{" "}
-                    recorded{" "}
-                    {auditHistory.length ===
-                    1
-                      ? "change"
-                      : "changes"}.
-                  </p>
+                  <div className="mt-4 flex items-center gap-2 bg-muted/20">
+                    <History className="h-4 w-4 shrink-0 text-gold" />
+
+                    <p className="text-xs text-gold">
+                      {auditHistory.length} administrative{" "}
+                      {auditHistory.length === 1 ? "change" : "changes"}{" "}
+                      recorded for this account.
+                    </p>
+                  </div>
                 )
               ) : (
-                <p className="mt-3 text-xs text-muted-foreground sm:mt-4 sm:text-sm">
-                  No account changes have
-                  been recorded yet.
-                </p>
+                <div className="mt-4 border border-dashed border-border px-4 py-7 text-center">
+                  <History className="mx-auto h-6 w-6 text-muted-foreground" />
+
+                  <p className="mt-2 text-xs font-medium">
+                    No audit records
+                  </p>
+
+                  <p className="mt-1 text-[10px] text-muted-foreground sm:text-xs">
+                    Administrative changes will appear here.
+                  </p>
+                </div>
               )}
             </section>
-          </div>
+          </main>
 
-          {/* Right column */}
-          <div className="space-y-4 sm:space-y-5">
-            {/* Role management */}
-            <section className="border border-border bg-card p-3.5 shadow-soft sm:p-5">
-              <SectionHeading>
-                Account Controls
-              </SectionHeading>
+          {/* Sidebar */}
+          <aside className="min-w-0 space-y-4 sm:space-y-6">
+            {/* Account management */}
+            <section className="rounded-md border border-border bg-card shadow-soft">
+              <div className="flex items-center gap-2.5 border-b border-border p-4 sm:p-5">
 
-              <div className="mt-4 space-y-3 sm:mt-0 sm:space-y-4">
                 <div>
-                  <label className="mb-1.5 block text-[10px] font-medium uppercase tracking-wider text-muted-foreground sm:mb-2 sm:text-xs">
-                    Role
+                  <h2 className="text-sm font-semibold sm:text-base">
+                    Account Management
+                  </h2>
+
+                  <p className="text-xs text-muted-foreground sm:text-sm">
+                    Manage access and account permissions.
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-5 p-4 sm:p-5">
+                <div>
+                  <label className="mb-2 block text-xs font-semibold">
+                    Account role
                   </label>
 
                   <Select
-                    value={
-                      user.primary_role
-                    }
-                    onValueChange={(
-                      value,
-                    ) =>
-                      requestRoleChange(
-                        value as AppRole,
-                      )
+                    value={user.primary_role}
+                    onValueChange={(value) =>
+                      requestRoleChange(value as AppRole)
                     }
                     disabled={
                       !canModifyUser ||
-                      setRole.isPending
+                      setRole.isPending ||
+                      setStatus.isPending
                     }
                   >
-                    <SelectTrigger className="h-9 text-xs sm:h-10 sm:text-sm">
+                    <SelectTrigger className="h-10 text-xs sm:text-sm">
                       <SelectValue />
                     </SelectTrigger>
 
                     <SelectContent>
-                      {ROLES.map(
-                        (role) => {
-                          const blockedForCoAdmin =
-                            !currentUserIsAdmin &&
-                            role ===
-                              "admin";
+                      {ROLES.map((role) => {
+                        const blockedForCoAdmin =
+                          !currentUserIsAdmin &&
+                          role === "admin";
 
-                          return (
-                            <SelectItem
-                              key={role}
-                              value={role}
-                              disabled={
-                                blockedForCoAdmin
-                              }
-                            >
-                              {formatLabel(
-                                role,
-                              )}
-                            </SelectItem>
-                          );
-                        },
-                      )}
+                        return (
+                          <SelectItem
+                            key={role}
+                            value={role}
+                            disabled={blockedForCoAdmin}
+                          >
+                            {formatLabel(role)}
+                          </SelectItem>
+                        );
+                      })}
                     </SelectContent>
                   </Select>
+
+                  {!currentUserIsAdmin && (
+                    <p className="mt-2 text-[10px] leading-4 text-gold">
+                      Co-admins cannot assign the administrator role.
+                    </p>
+                  )}
                 </div>
 
                 <div>
-                  <label className="mb-1.5 block text-[10px] font-medium uppercase tracking-wider text-muted-foreground sm:mb-2 sm:text-xs">
+                  <label className="mb-2 block text-xs font-semibold">
                     Account status
                   </label>
 
                   <Select
-                    value={user.status}
-                    onValueChange={(
-                      value,
-                    ) =>
-                      requestStatusChange(
-                        value as AccountStatus,
-                      )
-                    }
-                    disabled={
-                      !canModifyUser ||
-                      setStatus.isPending
-                    }
-                  >
-                    <SelectTrigger className="h-9 text-xs sm:h-10 sm:text-sm">
-                      <SelectValue />
-                    </SelectTrigger>
+  value={user.status}
+  onValueChange={(value) =>
+    requestStatusChange(value as AccountStatus)
+  }
+  disabled={
+    !canModifyUser ||
+    setStatus.isPending ||
+    setRole.isPending
+  }
+>
+  <SelectTrigger
+    className={`h-10 text-xs sm:text-sm ${getUserStatusStyles(
+      user.status
+    )
+      .split(" ")
+      .filter((className) => className.startsWith("text-"))
+      .join(" ")}`}
+  >
+    <SelectValue />
+  </SelectTrigger>
 
-                    <SelectContent>
-                      {STATUSES.map(
-                        (status) => (
-                          <SelectItem
-                            key={status}
-                            value={status}
-                          >
-                            {formatLabel(
-                              status,
-                            )}
-                          </SelectItem>
-                        ),
-                      )}
-                    </SelectContent>
-                  </Select>
+  <SelectContent>
+    {STATUSES.map((status) => (
+      <SelectItem
+        key={status}
+        value={status}
+        className={getUserStatusStyles(status)
+          .split(" ")
+          .filter((className) => className.startsWith("text-"))
+          .join(" ")}
+      >
+        {formatLabel(status)}
+      </SelectItem>
+    ))}
+  </SelectContent>
+</Select>
                 </div>
 
                 {!canModifyUser && (
-                  <p className="text-[10px] leading-4 text-muted-foreground sm:text-xs sm:leading-5">
-                    {currentUser?.id ===
-                    user.id
-                      ? "You cannot modify your own account from this page."
-                      : "This account is restricted by your current administrator permissions."}
-                  </p>
+                  
+                    <p className="text-[10px] leading-5 text-gold sm:text-xs">
+                      {currentUser?.id === user.id
+                        ? "You cannot modify your own account from this page."
+                        : "Restricted by your current administrator permissions."}
+                    </p>
+                  
+                )}
+
+                {actionLoading && (
+                  <div className="flex items-center gap-2 border-t border-border pt-3 text-xs text-muted-foreground">
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    Applying account change...
+                  </div>
                 )}
               </div>
-            </section>
-
-            {/* Account dates */}
-            <section className="border border-border bg-card p-3.5 shadow-soft sm:p-5">
-              <SectionHeading>
-                Account Timeline
-              </SectionHeading>
-
-              <div className="mt-4 space-y-3 sm:mt-0 sm:space-y-4">
-                <TimelineItem
-                  label="Registered"
-                  value={formatDateTime(
-                    user.created_at,
-                  )}
-                />
-
-                <TimelineItem
-                  label="Last activity"
-                  value={formatDateTime(
-                    user.last_activity,
-                  )}
-                />
-
-                <TimelineItem
-                  label="Last profile update"
-                  value={formatDateTime(
-                    user.updated_at,
-                  )}
-                />
-
-                {user.subscription_started_at && (
-                  <TimelineItem
-                    label="Subscription started"
-                    value={formatDateTime(
-                      user.subscription_started_at,
-                    )}
-                  />
-                )}
-
-                {user.subscription_expires_at && (
-                  <TimelineItem
-                    label="Subscription expires"
-                    value={formatDateTime(
-                      user.subscription_expires_at,
-                    )}
-                  />
-                )}
-              </div>
-            </section>
-
-            {/* Activity */}
-            <section className="border border-border bg-card p-3.5 shadow-soft sm:p-5">
-              <SectionHeading>
-                Recent Activity
-              </SectionHeading>
-
-              {recentActivity.length >
-              0 ? (
-                <div className="mt-3 space-y-3 sm:mt-4 sm:space-y-4">
-                  {recentActivity.map(
-                    (item) => (
-                      <div
-                        key={item.id}
-                        className="relative pl-4 sm:pl-5"
-                      >
-                        <span className="absolute left-0 top-1.5 h-1.5 w-1.5 rounded-full bg-muted-foreground sm:h-2 sm:w-2" />
-
-                        <div>
-                          <p className="text-xs font-medium sm:text-sm">
-                            {item.title}
-                          </p>
-
-                          <p className="mt-1 text-[10px] leading-4 text-muted-foreground sm:text-xs sm:leading-5">
-                            {
-                              item.description
-                            }
-                          </p>
-
-                          <p className="mt-1 text-[10px] text-muted-foreground sm:text-[11px]">
-                            {formatDateTime(
-                              item.created_at,
-                            )}
-                          </p>
-                        </div>
-                      </div>
-                    ),
-                  )}
-                </div>
-              ) : (
-                <p className="mt-3 text-xs text-muted-foreground sm:mt-4 sm:text-sm">
-                  No recent activity
-                  recorded.
-                </p>
-              )}
             </section>
 
             {/* Usage summary */}
-            <section className="border border-border bg-card p-3.5 shadow-soft sm:p-5">
-              <SectionHeading>
-                Usage Summary
-              </SectionHeading>
+            <section className="rounded-md border border-border bg-card p-4 shadow-soft sm:p-6">
+              <SectionHeading
+                title="Usage Summary"
+                description="Recorded account contribution."
+              />
 
-              <div className="mt-3 space-y-3 sm:mt-4 sm:space-y-4">
+              <div className="mt-4 space-y-4 sm:mt-5">
                 <SummaryRow
                   icon={Upload}
                   label="Uploads"
-                  value={String(
-                    resources?.length ??
-                      0,
-                  )}
+                  value={(resources?.length ?? 0).toLocaleString()}
                 />
 
                 <SummaryRow
                   icon={FileText}
                   label="Approved resources"
-                  value={String(
-                    approvedResources.length,
-                  )}
+                  value={approvedResources.length.toLocaleString()}
                 />
 
                 <SummaryRow
                   icon={Download}
                   label="Downloads"
-                  value="—"
+                  value={totalDownloads.toLocaleString()}
                 />
               </div>
             </section>
-          </div>
+
+            {/* Recent activity */}
+            <section className="rounded-md border border-border bg-card p-4 shadow-soft sm:p-6">
+              <SectionHeading
+                title="Recent Activity"
+                description="Recent recorded account events."
+              />
+
+              {recentActivity.length > 0 ? (
+                <div className="mt-4 space-y-4 sm:mt-5">
+                  {recentActivity.map((item, index) => (
+                    <div
+                      key={item.id}
+                      className="relative flex gap-3"
+                    >
+                      <div className="flex flex-col items-center">
+                        <span
+                          className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${
+                            index === 0
+                              ? "bg-gold"
+                              : "bg-muted-foreground/50"
+                          }`}
+                        />
+
+                        {index !== recentActivity.length - 1 && (
+                          <span className="mt-1 h-full w-px bg-border" />
+                        )}
+                      </div>
+
+                      <div className="min-w-0 flex-1 pb-1">
+                        <p className="text-xs font-semibold">
+                          {item.title}
+                        </p>
+
+                        <p className="mt-1 text-[10px] leading-5 text-muted-foreground sm:text-xs">
+                          {item.description}
+                        </p>
+
+                        <p className="mt-1.5 text-[10px] text-muted-foreground">
+                          {formatDateTime(item.created_at)}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="mt-4 text-xs text-muted-foreground">
+                  No recent account events recorded.
+                </p>
+              )}
+            </section>
+          </aside>
         </div>
+      </main>
 
-        {/* Confirmed actions */}
-        <section className="border border-border bg-card p-3.5 shadow-soft sm:p-5">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-            <div>
-              <h2 className="text-xs font-semibold sm:text-sm">
-                Confirmed Actions
-              </h2>
-
-              <p className="mt-1 text-[10px] leading-4 text-muted-foreground sm:text-xs sm:leading-normal">
-                Changes are applied through
-                the protected admin RPCs
-                and recorded in the audit
-                history.
-              </p>
-            </div>
-
-            <div className="flex flex-col gap-2 sm:flex-row">
-              <Button
-                type="button"
-                variant="outline"
-                className="h-9 w-full text-xs sm:h-10 sm:w-auto sm:text-sm"
-                disabled={
-                  !canModifyUser ||
-                  user.status ===
-                    "active" ||
-                  actionLoading
-                }
-                onClick={() =>
-                  requestStatusChange(
-                    "active",
-                  )
-                }
-              >
-                Set Active
-              </Button>
-
-              <Button
-                type="button"
-                variant="outline"
-                className="h-9 w-full text-xs sm:h-10 sm:w-auto sm:text-sm"
-                disabled={
-                  !canModifyUser ||
-                  user.status ===
-                    "suspended" ||
-                  actionLoading
-                }
-                onClick={() =>
-                  requestStatusChange(
-                    "suspended",
-                  )
-                }
-              >
-                Suspend
-              </Button>
-
-              <Button
-                type="button"
-                variant="outline"
-                className="h-9 w-full text-xs sm:h-10 sm:w-auto sm:text-sm"
-                disabled={
-                  !canModifyUser ||
-                  user.status ===
-                    "inactive" ||
-                  actionLoading
-                }
-                onClick={() =>
-                  requestStatusChange(
-                    "inactive",
-                  )
-                }
-              >
-                Set Inactive
-              </Button>
-            </div>
-          </div>
-        </section>
-      </div>
-
-      {/* Confirmation dialog */}
+      {/* Reason-required confirmation dialog */}
       <AlertDialog
-        open={
-          pendingAction !== null
-        }
+        open={pendingAction !== null}
         onOpenChange={(open) => {
-          if (
-            !open &&
-            !actionLoading
-          ) {
+          if (!open && !actionLoading) {
             setPendingAction(null);
             setActionReason("");
           }
         }}
       >
-        <AlertDialogContent className="max-w-[calc(100%-2rem)] rounded-sm p-4 sm:max-w-lg sm:p-6">
+        <AlertDialogContent className="max-w-[calc(100%-2rem)] rounded-2xl p-4 sm:max-w-lg sm:p-6">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-base sm:text-lg">
               Confirm account change
             </AlertDialogTitle>
 
-            <AlertDialogDescription className="text-xs leading-5 sm:text-sm sm:leading-normal">
-              {pendingAction?.type ===
-                "status" && (
+            <AlertDialogDescription className="text-xs leading-5 sm:text-sm">
+              {pendingAction?.type === "status" && (
                 <>
                   Change{" "}
                   <strong>
-                    {user.full_name ||
-                      "this user"}
+                    {user.full_name || "this user"}
                   </strong>{" "}
                   from{" "}
                   <strong>
-                    {formatLabel(
-                      user.status,
-                    )}
+                    {formatLabel(user.status)}
                   </strong>{" "}
                   to{" "}
                   <strong>
-                    {formatLabel(
-                      pendingAction.value,
-                    )}
+                    {formatLabel(pendingAction.value)}
                   </strong>
                   ?
                 </>
               )}
 
-              {pendingAction?.type ===
-                "role" && (
+              {pendingAction?.type === "role" && (
                 <>
                   Change{" "}
                   <strong>
-                    {user.full_name ||
-                      "this user"}
+                    {user.full_name || "this user"}
                   </strong>
                   's role from{" "}
                   <strong>
-                    {formatLabel(
-                      user.primary_role,
-                    )}
+                    {formatLabel(user.primary_role)}
                   </strong>{" "}
                   to{" "}
                   <strong>
-                    {formatLabel(
-                      pendingAction.value,
-                    )}
+                    {formatLabel(pendingAction.value)}
                   </strong>
                   ?
                 </>
@@ -1882,31 +1870,28 @@ function UserDetailsPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
 
-          <div className="space-y-2.5 sm:space-y-2">
+          <div className="space-y-2.5">
             <label
               htmlFor="user-change-reason"
-              className="text-xs font-medium sm:text-sm"
+              className="text-xs font-semibold sm:text-sm"
             >
-              Reason
+              Reason for this change
             </label>
 
             <Input
               id="user-change-reason"
               value={actionReason}
               onChange={(event) =>
-                setActionReason(
-                  event.target.value,
-                )
+                setActionReason(event.target.value)
               }
               placeholder="Enter a reason for this change..."
               disabled={actionLoading}
               autoComplete="off"
-              className="h-9 text-xs sm:h-10 sm:text-sm"
+              className="h-10 text-xs sm:text-sm"
             />
 
-            <p className="text-[10px] leading-4 text-muted-foreground sm:text-xs sm:leading-normal">
-              This reason will be saved in
-              the user audit history.
+            <p className="text-[10px] leading-5 text-muted-foreground sm:text-xs">
+              This reason will be saved in the user audit history.
             </p>
           </div>
 
@@ -1930,7 +1915,7 @@ function UserDetailsPage() {
               className="h-9 w-full text-xs sm:h-10 sm:w-auto sm:text-sm"
             >
               {actionLoading && (
-                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin sm:mr-2 sm:h-4 sm:w-4" />
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               )}
 
               Confirm change
@@ -1942,15 +1927,46 @@ function UserDetailsPage() {
   );
 }
 
-function SectionHeading({
-  children,
+function SubscriptionPlanBadge({
+  plan,
 }: {
-  children: React.ReactNode;
+  plan: SubscriptionPlan;
+}) {
+  const isPremium = plan === "premium";
+
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 whitespace-nowrap px-2.5 py-1 text-[10px] font-semibold sm:text-xs ${
+        isPremium
+          ? "text-gold"
+          : "text-green-500"
+      }`}
+    >
+      {isPremium && <Crown className="h-3 w-3" />}
+      {formatLabel(plan).toUpperCase()}
+    </span>
+  );
+}
+
+function SectionHeading({
+  title,
+  description,
+}: {
+  title: string;
+  description?: string;
 }) {
   return (
-    <h2 className="text-xs font-semibold sm:text-sm">
-      {children}
-    </h2>
+    <div>
+      <h2 className="text-sm font-semibold sm:text-base">
+        {title}
+      </h2>
+
+      {description && (
+        <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
+          {description}
+        </p>
+      )}
+    </div>
   );
 }
 
@@ -1958,43 +1974,29 @@ function InfoItem({
   icon: Icon,
   label,
   value,
+  mono = false,
 }: {
   icon?: typeof UserRound;
   label: string;
   value: string;
+  mono?: boolean;
 }) {
   return (
     <div className="min-w-0">
-      <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground sm:gap-2 sm:text-xs">
-        {Icon && (
-          <Icon className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-        )}
+      <div className="flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground sm:text-xs">
+        {Icon && <Icon className="h-3.5 w-3.5 shrink-0" />}
         <span>{label}</span>
       </div>
 
-      <p className="mt-1 break-words text-xs font-medium sm:text-sm">
+      <p
+        className={`mt-1.5 break-words text-xs font-medium sm:text-sm ${
+          mono
+            ? "font-mono text-[10px] text-muted-foreground sm:text-xs"
+            : "text-foreground"
+        }`}
+      >
         {value}
       </p>
-    </div>
-  );
-}
-
-function TimelineItem({
-  label,
-  value,
-}: {
-  label: string;
-  value: string;
-}) {
-  return (
-    <div className="flex items-start justify-between gap-3 sm:gap-4">
-      <span className="text-[10px] text-muted-foreground sm:text-xs">
-        {label}
-      </span>
-
-      <span className="text-right text-[10px] font-medium sm:text-xs">
-        {value}
-      </span>
     </div>
   );
 }
@@ -2009,13 +2011,13 @@ function SummaryRow({
   value: string;
 }) {
   return (
-    <div className="flex items-center justify-between gap-3 sm:gap-4">
-      <div className="flex items-center gap-1.5 text-xs text-muted-foreground sm:gap-2 sm:text-sm">
-        <Icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+    <div className="flex items-center justify-between gap-3">
+      <div className="flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
+        <Icon className="h-4 w-4 shrink-0" />
         <span>{label}</span>
       </div>
 
-      <span className="text-xs font-semibold sm:text-sm">
+      <span className="shrink-0 text-sm font-semibold">
         {value}
       </span>
     </div>

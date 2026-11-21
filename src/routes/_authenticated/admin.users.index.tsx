@@ -248,16 +248,16 @@ function formatLabel(value: string) {
 function getStatusTextColor(status: AccountStatus) {
   switch (status) {
     case "active":
-      return "text-green-600 dark:text-green-400";
+      return "text-muted-foreground";
 
     case "pending":
-      return "text-amber-600 dark:text-amber-400";
+      return "text-muted-foreground";
 
     case "suspended":
-      return "text-gold";
+      return "text-muted-foreground";
 
     case "rejected":
-      return "text-red-600 dark:text-red-400";
+      return "text-muted-foreground";
 
     case "inactive":
     default:
@@ -487,6 +487,9 @@ function UsersPage() {
 
   const [roleFilter, setRoleFilter] =
     useState("all");
+  
+  const [planFilter, setPlanFilter] =
+  useState<"all" | SubscriptionPlan>("all");
 
   const [presenceFilter, setPresenceFilter] =
     useState<"all" | "online" | "offline">("all");
@@ -824,6 +827,10 @@ function UsersPage() {
         roleFilter === "all" ||
         user.primary_role === roleFilter;
 
+      const matchesPlan =
+        planFilter === "all" ||
+        user.subscription_plan === planFilter;
+
       const isOnline = onlineUserIds.has(user.id);
 
       const matchesPresence =
@@ -862,6 +869,7 @@ function UsersPage() {
         matchesSearch &&
         matchesStatus &&
         matchesRole &&
+        matchesPlan &&
         matchesPresence &&
         matchesDateFrom &&
         matchesDateTo
@@ -900,6 +908,7 @@ function UsersPage() {
     search,
     statusFilter,
     roleFilter,
+    planFilter,
     presenceFilter,
     sort,
     dateFrom,
@@ -912,16 +921,17 @@ function UsersPage() {
    * or sort order changes.
    */
   useEffect(() => {
-    setPage(1);
-  }, [
-    search,
-    statusFilter,
-    roleFilter,
-    presenceFilter,
-    sort,
-    dateFrom,
-    dateTo,
-  ]);
+  setPage(1);
+}, [
+  search,
+  statusFilter,
+  roleFilter,
+  planFilter,
+  presenceFilter,
+  sort,
+  dateFrom,
+  dateTo,
+]);
 
   /*
    * Remember page changes so scrolling
@@ -1001,14 +1011,15 @@ function UsersPage() {
     );
   };
 
-  const hasActiveFilters =
-    search.trim() !== "" ||
-    statusFilter !== "all" ||
-    roleFilter !== "all" ||
-    presenceFilter !== "all" ||
-    dateFrom !== "" ||
-    dateTo !== "" ||
-    sort !== "newest";
+const hasActiveFilters =
+  search.trim() !== "" ||
+  statusFilter !== "all" ||
+  roleFilter !== "all" ||
+  planFilter !== "all" ||
+  presenceFilter !== "all" ||
+  dateFrom !== "" ||
+  dateTo !== "" ||
+  sort !== "newest";
 
   const totalCount = filteredUsers.length;
 
@@ -1039,6 +1050,7 @@ function UsersPage() {
     setSearch("");
     setStatusFilter("all");
     setRoleFilter("all");
+    setPlanFilter("all");
     setPresenceFilter("all");
     setSort("newest");
     setDateFrom("");
@@ -1056,7 +1068,7 @@ function UsersPage() {
         >
           <div className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_170px_170px]">
             {/* Search */}
-            <div className="relative col-span-2 min-w-0 lg:col-span-2">
+            <div className="relative col-span-2 min-w-0 lg:col-span-1">
               <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground sm:left-3 sm:h-4 sm:w-4" />
 
               <Input
@@ -1070,29 +1082,28 @@ function UsersPage() {
             </div>
 
             {/* Status */}
-            <Select
-              value={statusFilter}
-              onValueChange={setStatusFilter}
-            >
-              <SelectTrigger className="h-9 w-full min-w-0 text-xs sm:h-10 sm:text-sm">
-                <SelectValue placeholder="All statuses" />
-              </SelectTrigger>
+<div className="col-span-2 min-w-0 lg:col-span-1">
+  <Select
+    value={statusFilter}
+    onValueChange={setStatusFilter}
+  >
+    <SelectTrigger className="h-9 w-full min-w-0 text-xs sm:h-10 sm:text-sm">
+      <SelectValue placeholder="All statuses" />
+    </SelectTrigger>
 
-              <SelectContent>
-                <SelectItem value="all">
-                  All statuses
-                </SelectItem>
+    <SelectContent>
+      <SelectItem value="all">
+        All statuses
+      </SelectItem>
 
-                {STATUSES.map((status) => (
-                  <SelectItem
-                    key={status}
-                    value={status}
-                  >
-                    {formatLabel(status)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+      {STATUSES.map((status) => (
+        <SelectItem key={status} value={status}>
+          {formatLabel(status)}
+        </SelectItem>
+      ))}
+    </SelectContent>
+  </Select>
+</div>
 
             {/* Role */}
             <Select
@@ -1118,6 +1129,31 @@ function UsersPage() {
                 ))}
               </SelectContent>
             </Select>
+{/* Plan */}
+<Select
+  value={planFilter}
+  onValueChange={(value) =>
+    setPlanFilter(value as typeof planFilter)
+  }
+>
+  <SelectTrigger className="h-9 w-full min-w-0 text-xs sm:h-10 sm:text-sm">
+    <SelectValue placeholder="All plans" />
+  </SelectTrigger>
+
+  <SelectContent>
+    <SelectItem value="all">
+      All plans
+    </SelectItem>
+
+    <SelectItem value="free">
+      Free
+    </SelectItem>
+
+    <SelectItem value="premium">
+      Premium
+    </SelectItem>
+  </SelectContent>
+</Select>
 
             {/* Presence */}
             {canViewUserPresence && (
@@ -1340,31 +1376,31 @@ function UsersPage() {
                     #
                   </th>
 
-                  <th className="p-3 !pl-5 font-medium sm:p-4 sm:!pl-5">
+                  <th className="p-3 pl-5 font-medium sm:p-4 sm:!pl-5">
                     User
                   </th>
 
-                  <th className="p-3 !pl-5.5 font-medium sm:p-4 sm:!pl-5.5">
+                  <th className="p-3 pl-4.5 font-medium">
                     Role
                   </th>
 
-                  <th className="p-3 !pl-5.5 font-medium sm:p-4 sm:!pl-5.5">
+                  <th className="min-w-[100px] p-3 pl-3 font-medium">
                     Status
                   </th>
 
-                  <th className="p-3 !pl-5.5 font-medium sm:p-4 sm:!pl-5.5">
+                  <th className="min-w-[90px] p-3 pl-4.5 font-medium">
                     Plan
                   </th>
 
-                  <th className="p-3 !pl-5.5 font-medium sm:p-4 sm:!pl-5.5">
+                  <th className="p-3 pl-4.5 font-medium">
                     Joined
                   </th>
 
-                  <th className="p-3 !pl-5.5 font-medium sm:p-4 sm:!pl-5.5">
+                  <th className="p-3 pl-4.5 font-medium">
                     Last Activity
                   </th>
 
-                  <th className="p-3 text-center font-medium sm:p-4">
+                  <th className="p-3 pl-7 font-medium">
                     History
                   </th>
                 </tr>
@@ -1420,11 +1456,8 @@ function UsersPage() {
                     const isSelf =
                       currentUser?.id === user.id;
 
-                    const canModify =
-                      canModifyUser(user);
-
-                    const canOpenDetails =
-                      canModify;
+                    const canOpenDetails = true;
+                    const canModify = canModifyUser(user);
 
                     const RoleIcon =
                       getRoleIcon(user.primary_role);
@@ -1572,7 +1605,7 @@ function UsersPage() {
 
                           {/* Read-only Role */}
                           <td className="p-3 sm:p-4">
-                            <div className="flex items-center gap-1.5 whitespace-nowrap text-xs sm:gap-2 sm:text-sm">
+                            <div className="flex items-center text-muted-foreground gap-1.5 whitespace-nowrap text-xs sm:gap-2 sm:text-sm">
                               <RoleIcon className="h-3 w-3 shrink-0 text-muted-foreground sm:h-3.5 sm:w-3.5" />
 
                               <span>
@@ -1595,15 +1628,13 @@ function UsersPage() {
                           {/* Subscription Plan */}
                           <td className="p-3 sm:p-4">
                             <span
-                              className={`whitespace-nowrap text-xs font-medium sm:text-sm ${
+                              className={
                                 user.subscription_plan === "premium"
-                                  ? "text-gold"
-                                  : "text-muted-foreground"
-                              }`}
+                                  ? "font-semibold text-muted-foreground"
+                                  : "font-semibold text-muted-foreground"
+                              }
                             >
-                              {formatLabel(
-                                user.subscription_plan,
-                              )}
+                              {formatLabel(user.subscription_plan)}
                             </span>
                           </td>
 
@@ -1641,7 +1672,7 @@ function UsersPage() {
 
                           {/* History */}
                           <td className="p-3 text-center sm:p-4">
-                            <div className="flex items-center justify-center">
+                            <div className="flex items-left justify-left">
                               <Button
                                 type="button"
                                 variant="ghost"
