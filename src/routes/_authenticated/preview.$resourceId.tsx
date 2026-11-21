@@ -272,7 +272,7 @@ function PreviewPage() {
 
   return (
     <>
-      <div className="mx-3 max-w-7xl space-y-4 sm:space-y-4">
+      <div className="mx-3 max-w-8xl space-y-4 sm:space-y-4">
         <div className="flex items-center justify-between">
           <Button
             type="button"
