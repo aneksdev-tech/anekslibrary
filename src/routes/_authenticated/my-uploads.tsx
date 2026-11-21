@@ -578,7 +578,7 @@ function MyUploads() {
         <Button
           type="button"
           variant="outline"
-          className="h-10 w-full min-w-0 bg-muted justify-between px-2 text-xs font-normal sm:text-sm"
+          className="h-10 w-full min-w-0 bg-card justify-between px-2 text-xs font-normal sm:text-sm"
           aria-label="Filter uploads from this date"
         >
           <span
@@ -625,7 +625,7 @@ function MyUploads() {
         <Button
           type="button"
           variant="outline"
-          className="h-10 w-full min-w-0 bg-muted justify-between px-2 text-xs font-normal sm:text-sm"
+          className="h-10 w-full min-w-0 bg-card justify-between px-2 text-xs font-normal sm:text-sm"
           aria-label="Filter uploads up to this date"
         >
           <span
