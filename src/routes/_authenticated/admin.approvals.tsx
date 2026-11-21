@@ -1306,7 +1306,7 @@ useEffect(() => {
           type="button"
           variant="outline"
           aria-label="Filter academic resources from this date"
-          className="h-9 w-full min-w-0 justify-between bg-muted px-2 text-xs font-normal sm:h-10 sm:text-sm"
+          className="h-9 w-full min-w-0 justify-between bg-card px-2 text-xs font-normal sm:h-10 sm:text-sm"
         >
           <span
             className={
@@ -1353,7 +1353,7 @@ useEffect(() => {
           type="button"
           variant="outline"
           aria-label="Filter academic resources up to this date"
-          className="h-9 w-full min-w-0 justify-between bg-muted px-2 text-xs font-normal sm:h-10 sm:text-sm"
+          className="h-9 w-full min-w-0 justify-between bg-card px-2 text-xs font-normal sm:h-10 sm:text-sm"
         >
           <span
             className={
