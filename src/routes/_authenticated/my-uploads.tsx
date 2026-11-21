@@ -13,6 +13,7 @@ import {
   Search,
   Trash2,
   X,
+  CalendarDays,
 } from "lucide-react";
 import {
   Select,
@@ -43,6 +44,13 @@ import {
   EmptyState,
   StatusPill,
 } from "./dashboard";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute(
   "/_authenticated/my-uploads",
@@ -118,6 +126,36 @@ const STATUS_ORDER: Record<string, number> = {
   deleted: 4,
   draft: 5,
 };
+
+function parseDateValue(value: string): Date | undefined {
+  if (!value) return undefined;
+
+  const [year, month, day] = value.split("-").map(Number);
+
+  if (!year || !month || !day) return undefined;
+
+  return new Date(year, month - 1, day);
+}
+
+function formatDateDisplay(value: string): string {
+  const date = parseDateValue(value);
+
+  if (!date) return "DD/MM/YYYY";
+
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const year = date.getFullYear();
+
+  return `${day}/${month}/${year}`;
+}
+
+function formatDateValue(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
 
 function MyUploads() {
   const { user } = useAuth();
@@ -535,32 +573,96 @@ function MyUploads() {
 
   {/* Date from */}
   <div className="min-w-0">
-    <input
-      id="upload-date-from"
-      type="date"
-      value={dateFrom}
-      max={dateTo || undefined}
-      onChange={(event) =>
-        setDateFrom(event.target.value)
-      }
-      aria-label="Filter uploads from this date"
-      className="block h-10 w-full min-w-0 rounded-md border border-input bg-card px-1 text-xs text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 sm:px-2 sm:text-sm"
-    />
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          className="h-10 w-full min-w-0 bg-muted justify-between px-2 text-xs font-normal sm:text-sm"
+          aria-label="Filter uploads from this date"
+        >
+          <span
+            className={
+              dateFrom
+                ? "text-foreground"
+                : "text-muted-foreground"
+            }
+          >
+            {formatDateDisplay(dateFrom)}
+          </span>
+
+          <CalendarDays className="h-4 w-4 shrink-0 text-muted-foreground" />
+        </Button>
+      </PopoverTrigger>
+
+      <PopoverContent
+        className="w-auto p-0"
+        align="start"
+      >
+        <Calendar
+          mode="single"
+          selected={parseDateValue(dateFrom)}
+          onSelect={(date) => {
+            if (date) {
+              handleDateFromChange(formatDateValue(date));
+            }
+          }}
+          disabled={
+            dateTo
+              ? { after: parseDateValue(dateTo)! }
+              : undefined
+          }
+          initialFocus
+        />
+      </PopoverContent>
+    </Popover>
   </div>
 
   {/* Date to */}
   <div className="min-w-0">
-    <input
-      id="upload-date-to"
-      type="date"
-      value={dateTo}
-      min={dateFrom || undefined}
-      onChange={(event) =>
-        setDateTo(event.target.value)
-      }
-      aria-label="Filter uploads up to this date"
-      className="block h-10 w-full min-w-0 rounded-md border border-input bg-card px-1 text-xs text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 sm:px-2 sm:text-sm"
-    />
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          className="h-10 w-full min-w-0 bg-muted justify-between px-2 text-xs font-normal sm:text-sm"
+          aria-label="Filter uploads up to this date"
+        >
+          <span
+            className={
+              dateTo
+                ? "text-foreground"
+                : "text-muted-foreground"
+            }
+          >
+            {formatDateDisplay(dateTo)}
+          </span>
+
+          <CalendarDays className="h-4 w-4 shrink-0 text-muted-foreground" />
+        </Button>
+      </PopoverTrigger>
+
+      <PopoverContent
+        className="w-auto p-0"
+        align="end"
+      >
+        <Calendar
+          mode="single"
+          selected={parseDateValue(dateTo)}
+          onSelect={(date) => {
+            if (date) {
+              handleDateToChange(formatDateValue(date));
+            }
+          }}
+          disabled={
+            dateFrom
+              ? { before: parseDateValue(dateFrom)! }
+              : undefined
+          }
+          initialFocus
+        />
+      </PopoverContent>
+    </Popover>
   </div>
 </div>
 
