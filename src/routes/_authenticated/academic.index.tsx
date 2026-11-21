@@ -847,7 +847,7 @@ useEffect(() => {
         <Button
           type="button"
           variant="outline"
-          className="h-10 w-full min-w-0 bg-muted justify-between px-2 text-xs font-normal sm:text-sm"
+          className="h-10 w-full min-w-0 bg-card justify-between px-2 text-xs font-normal sm:text-sm"
         >
           <span
             className={
@@ -898,7 +898,7 @@ useEffect(() => {
         <Button
           type="button"
           variant="outline"
-          className="h-10 w-full min-w-0 bg-muted justify-between px-2 text-xs font-normal sm:text-sm"
+          className="h-10 w-full min-w-0 bg-card justify-between px-2 text-xs font-normal sm:text-sm"
         >
           <span
             className={
