@@ -36,6 +36,7 @@ import {
   Ban,
   Crown,
   ShieldCheck,
+  BookOpen,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -1134,85 +1135,109 @@ function UserDetailsPage() {
         {/* Profile identity */}
         <section className="overflow-hidden rounded-md border border-border bg-card shadow-soft">
           <div className="border-b border-border bg-muted/20 p-4 sm:p-8">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-6">
-              <div className="shrink-0">
-                {user.avatar_url ? (
-                  <img
-                    src={user.avatar_url}
-                    alt={user.full_name || "User profile"}
-                    className="h-36 w-32 rounded-md border-2 border-primary/30 object-cover shadow-xl sm:h-48 sm:w-40"
-                  />
-                ) : (
-                  <div className="flex h-36 w-32 items-center justify-center rounded-md border-2 border-primary/30 bg-muted text-3xl font-semibold shadow-lg sm:h-48 sm:w-40 sm:text-4xl">
-                    {getInitials(user.full_name || "User")}
-                  </div>
-                )}
-              </div>
+  <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-6">
 
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                  <span className="inline-flex items-center gap-1 rounded-full bg-gold/10 px-2 py-0.5 text-[10px] font-medium text-gold sm:gap-1.5 sm:px-3 sm:py-1 sm:text-xs">
-                    <RoleIcon className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                    {formatLabel(user.primary_role)}
-                  </span>
-
-                  <span className="inline-flex items-center gap-1 rounded-full bg-gold/10 px-2 py-0.5 text-[10px] font-medium text-gold sm:gap-1.5 sm:px-3 sm:py-1 sm:text-xs">
-                    {contributor.emoji}
-                    {contributor.name}
-                </span>
-
-                  <SubscriptionPlanBadge
-                    plan={user.subscription_plan}
-                  />
-                </div>
-
-                <h1 className="mt-3 break-words font-display text-xl font-semibold sm:mt-4 sm:text-3xl">
-                  {user.full_name || "Unnamed user"}
-                </h1>
-
-                <div className="mt-1.5 flex min-w-0 items-start gap-1.5 text-xs text-muted-foreground sm:mt-2 sm:text-sm">
-                  <Mail className="mt-0.5 h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" />
-                  <span className="break-all">
-                    {user.email || "No email address"}
-                  </span>
-                </div>
-
-                {user.bio && (
-                  <p className="mt-2 max-w-2xl text-xs leading-5 text-muted-foreground sm:mt-3 sm:text-sm sm:leading-relaxed">
-                    {user.bio}
-                  </p>
-                )}
-
-                <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-[10px] text-muted-foreground sm:mt-5 sm:gap-x-5 sm:gap-y-2 sm:text-sm">
-  <span className="inline-flex items-center gap-1">
-    <CalendarDays className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-    Joined {formatDate(user.created_at)}
-  </span>
-
-  <span className="inline-flex items-center gap-1.5">
-    <Clock3 className="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" />
-
-    <span>
-      Last activity:{" "}
-      <span
-        className={`font-semibold ${
-          isOnline
-            ? "text-green-600 dark:text-green-400"
-            : "text-foreground"
-        }`}
-      >
-        {lastActivityText}
+    {/* Mobile badges */}
+    <div className="flex items-center gap-1.5 sm:hidden">
+      <span className="inline-flex items-center gap-1 rounded-full bg-gold/10 px-2 py-0.5 text-[10px] font-medium text-gold">
+        <RoleIcon className="h-3 w-3" />
+        {formatLabel(user.primary_role)}
       </span>
 
-      <span className="ml-1">
-        ({lastActivityDate})
+      <span className="inline-flex items-center gap-1 rounded-full bg-gold/10 px-2 py-0.5 text-[10px] font-medium text-gold">
+        {contributor.emoji}
+        {contributor.name}
       </span>
-    </span>
-  </span>
+
+      <div className="ml-auto">
+        <SubscriptionPlanBadge
+          plan={user.subscription_plan}
+        />
+      </div>
+    </div>
+
+    {/* Profile picture */}
+    <div className="shrink-0">
+      {user.avatar_url ? (
+        <img
+          src={user.avatar_url}
+          alt={user.full_name || "User profile"}
+          className="h-36 w-32 rounded-md border-2 border-primary/30 object-cover shadow-xl sm:h-48 sm:w-40"
+        />
+      ) : (
+        <div className="flex h-36 w-32 items-center justify-center rounded-md border-2 border-primary/30 bg-muted text-3xl font-semibold shadow-lg sm:h-48 sm:w-40 sm:text-4xl">
+          {getInitials(user.full_name || "User")}
+        </div>
+      )}
+    </div>
+
+    {/* Profile details */}
+    <div className="min-w-0 flex-1">
+
+      {/* Desktop badges */}
+      <div className="hidden flex-wrap items-center gap-1.5 sm:flex sm:gap-2">
+        <span className="inline-flex items-center gap-1 rounded-full bg-gold/10 px-2 py-0.5 text-[10px] font-medium text-gold sm:gap-1.5 sm:px-3 sm:py-1 sm:text-xs">
+          <RoleIcon className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+          {formatLabel(user.primary_role)}
+        </span>
+
+        <span className="inline-flex items-center gap-1 rounded-full bg-gold/10 px-2 py-0.5 text-[10px] font-medium text-gold sm:gap-1.5 sm:px-3 sm:py-1 sm:text-xs">
+          {contributor.emoji}
+          {contributor.name}
+        </span>
+
+        <SubscriptionPlanBadge
+          plan={user.subscription_plan}
+        />
+      </div>
+
+      <h1 className="mt-3 break-words font-display text-xl font-semibold sm:mt-4 sm:text-3xl">
+        {user.full_name || "Unnamed user"}
+      </h1>
+
+      <div className="mt-1.5 flex min-w-0 items-start gap-1.5 text-xs text-muted-foreground sm:mt-2 sm:text-sm">
+        <Mail className="mt-0.5 h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" />
+        <span className="break-all">
+          {user.email || "No email address"}
+        </span>
+      </div>
+
+      {user.bio && (
+        <p className="mt-2 max-w-2xl text-xs leading-5 text-muted-foreground sm:mt-3 sm:text-sm sm:leading-relaxed">
+          {user.bio}
+        </p>
+      )}
+
+      <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-[10px] text-muted-foreground sm:mt-5 sm:gap-x-5 sm:gap-y-2 sm:text-sm">
+        <span className="inline-flex items-center gap-1">
+          <CalendarDays className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+          Joined {formatDate(user.created_at)}
+        </span>
+
+        <span className="inline-flex items-center gap-1.5">
+          <Clock3 className="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" />
+
+          <span>
+            Last activity:{" "}
+            <span
+              className={`font-semibold ${
+                isOnline
+                  ? "text-green-600 dark:text-green-400"
+                  : "text-foreground"
+              }`}
+            >
+              {lastActivityText}
+            </span>
+
+            <span className="ml-1">
+              ({lastActivityDate})
+            </span>
+          </span>
+        </span>
+      </div>
+    </div>
+  </div>
 </div>
-              </div>
-            </div>
-          </div>
 
           {/* Profile statistics */}
           <div className="p-4 sm:p-8">
@@ -1936,14 +1961,19 @@ function SubscriptionPlanBadge({
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 whitespace-nowrap px-2.5 py-1 text-[10px] font-semibold sm:text-xs ${
+      title={isPremium ? "Premium Plan" : "Free Plan"}
+      aria-label={isPremium ? "Premium Plan" : "Free Plan"}
+      className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border ${
         isPremium
-          ? "text-gold"
-          : "text-green-500"
+          ? "border-gold/30 bg-gold/10 text-gold"
+          : "border-muted-foreground bg-muted-foreground/10 text-muted-foreground"
       }`}
     >
-      {isPremium && <Crown className="h-3 w-3" />}
-      {formatLabel(plan).toUpperCase()}
+      {isPremium ? (
+        <Crown className="h-3.5 w-3.5" />
+      ) : (
+        <Shield className="h-3.5 w-3.5" />
+      )}
     </span>
   );
 }
