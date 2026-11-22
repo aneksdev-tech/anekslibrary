@@ -1475,7 +1475,6 @@ function UserDetailsPage() {
                             </div>
                           </div>
                         </div>
-                      </div>
                     </li>
                   ))}
                 </ul>
