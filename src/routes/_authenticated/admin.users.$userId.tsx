@@ -54,11 +54,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  getContributorLevel,
-  getLevelProgress,
-  getNextContributorLevel,
-} from "@/lib/reputation";
+import { getContributorLevel } from "@/lib/reputation";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -768,14 +764,6 @@ function UserDetailsPage() {
     user?.reputation ?? 0,
   );
 
-  const progress = getLevelProgress(
-  user?.reputation ?? 0,
-);
-
-const nextLevel = getNextContributorLevel(
-  user?.reputation ?? 0,
-);
-
   const totalDownloads = useMemo(
     () =>
       (resources ?? []).reduce(
@@ -1250,56 +1238,40 @@ const nextLevel = getNextContributorLevel(
           </div>
 
           {/* Profile statistics */}
-<div className="p-4 sm:p-8">
-  <div className="grid grid-cols-3 text-center">
-    <div className="min-w-0 px-1.5 sm:px-2">
-      <div className="text-xl font-semibold sm:text-2xl">
-        {resources?.length ?? 0}
-      </div>
+          <div className="p-4 sm:p-8">
+            <div className="grid grid-cols-3 text-center">
+              <div className="min-w-0 px-1.5 sm:px-2">
+                <div className="text-xl font-semibold sm:text-2xl">
+                  {resources?.length ?? 0}
+                </div>
 
-      <div className="mt-0.5 text-[10px] text-muted-foreground sm:mt-1 sm:text-sm">
-        Resources
-      </div>
-    </div>
+                <div className="mt-0.5 text-[10px] text-muted-foreground sm:mt-1 sm:text-sm">
+                  Resources
+                </div>
+              </div>
 
-    <div className="min-w-0 border-x border-border px-1.5 sm:px-2">
-      <div className="text-xl font-semibold sm:text-2xl">
-        {totalDownloads.toLocaleString()}
-      </div>
+              <div className="min-w-0 border-x border-border px-1.5 sm:px-2">
+                <div className="text-xl font-semibold sm:text-2xl">
+                  {totalDownloads.toLocaleString()}
+                </div>
 
-      <div className="mt-0.5 text-[10px] text-muted-foreground sm:mt-1 sm:text-sm">
-        Downloads
-      </div>
-    </div>
+                <div className="mt-0.5 text-[10px] text-muted-foreground sm:mt-1 sm:text-sm">
+                  Downloads
+                </div>
+              </div>
 
-    {/* Reputation */}
-    <div className="min-w-0 px-1.5 sm:px-2">
-      <div className="text-sm font-medium text-gold sm:text-base">
-        {contributor.name}
-      </div>
+              <div className="min-w-0 px-1.5 sm:px-2">
+                <div className="text-xl font-semibold sm:text-2xl">
+                  {user.reputation}
+                </div>
 
-      <div className="mt-1 text-[10px] text-muted-foreground sm:text-xs">
-        {user.reputation} pts
-      </div>
-
-      <div className="mt-2 h-1.5 overflow-hidden rounded-sm bg-muted sm:h-2">
-        <div
-          className="h-full rounded-sm bg-gradient-emerald transition-all duration-500"
-          style={{
-            width: `${progress}%`,
-          }}
-        />
-      </div>
-
-      <p className="mt-1 text-[9px] text-muted-foreground sm:text-[10px]">
-        {nextLevel
-          ? `${nextLevel.pointsNeeded} pts until ${nextLevel.emoji} ${nextLevel.name}`
-          : "Highest level reached 👑"}
-      </p>
-    </div>
-  </div>
-</div>
-</section>
+                <div className="mt-0.5 text-[10px] text-muted-foreground sm:mt-1 sm:text-sm">
+                  Reputation
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
 
         {/* Profile and administration content */}
         <div className="grid gap-4 sm:gap-6 min-[820px]:grid-cols-[minmax(0,1fr)_220px]">
