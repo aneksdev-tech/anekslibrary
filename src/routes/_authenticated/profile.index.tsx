@@ -681,7 +681,7 @@ function ProfilePage() {
         </p>
       </div>
 
-      <div className="grid gap-4 sm:gap-6 min-[820px]:grid-cols-[minmax(0,1fr)_220px]">
+      <div className="grid gap-4 sm:gap-6 min-[820px]:grid-cols-[minmax(0,1fr)_240px]">
         {/* Main profile card */}
         <div className="overflow-hidden rounded-sm border border-border bg-card shadow-soft">
           {/* Profile identity */}
@@ -1308,18 +1308,18 @@ function ProfilePage() {
             <div className="flex items-center gap-1.5 sm:gap-2">
               <ShieldCheck className="h-3.5 w-3.5 text-primary sm:h-4 sm:w-4" />
 
-              <h3 className="text-sm font-semibold sm:text-base">
+              <h3 className="text-[10px] font-semibold sm:text-base">
                 Account
               </h3>
             </div>
 
             <div className="mt-4 divide-y divide-border sm:mt-5">
               <div className="flex items-center justify-between gap-3 py-2.5 first:pt-0 sm:py-3">
-                <span className="text-xs text-muted-foreground sm:text-sm">
+                <span className="text-xs text-muted-foreground sm:text-xs">
                   Status
                 </span>
 
-                <span className="text-xs font-medium capitalize sm:text-sm">
+                <span className="text-xs font-medium capitalize sm:text-xs">
                   {profile?.status === "active"
                     ? "🟢 Active"
                     : profile?.status || "-"}
@@ -1327,11 +1327,11 @@ function ProfilePage() {
               </div>
 
               <div className="flex items-center justify-between gap-3 py-2.5 last:pb-0 sm:py-3">
-                <span className="text-xs text-muted-foreground sm:text-sm">
+                <span className="text-xs text-muted-foreground sm:text-xs">
                   Member since
                 </span>
 
-                <span className="text-right text-xs font-medium sm:text-sm">
+                <span className="text-right text-xs font-medium sm:text-xs">
                   {profile?.created_at
                     ? formatDate(profile.created_at)
                     : "-"}
@@ -1348,7 +1348,7 @@ function ProfilePage() {
                   Subscription
                 </p>
 
-                <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
+                <p className="mt-1 text-xs text-muted-foreground sm:text-xs">
                   Current plan and subscription record.
                 </p>
               </div>
@@ -1360,7 +1360,7 @@ function ProfilePage() {
                   Subscription status
                 </div>
 
-                <p className="mt-1.5 text-xs font-semibold sm:text-sm">
+                <p className="mt-1.5 text-xs font-semibold sm:text-xs">
                   {formatLabel(profile?.subscription_status)}
                 </p>
               </div>
@@ -1371,7 +1371,7 @@ function ProfilePage() {
                 </div>
 
                 <p
-                  className={`mt-1.5 text-xs font-semibold sm:text-sm ${
+                  className={`mt-1.5 text-xs font-semibold sm:text-xs ${
                     isPremium
                       ? "text-gold"
                       : "text-green-600 dark:text-green-400"
@@ -1386,7 +1386,7 @@ function ProfilePage() {
                   Subscription started
                 </div>
 
-                <p className="mt-1.5 text-xs font-semibold sm:text-sm">
+                <p className="mt-1.5 text-xs font-semibold sm:text-xs">
                   {profile?.subscription_started_at
                     ? formatDate(profile.subscription_started_at)
                     : "-"}
@@ -1398,7 +1398,7 @@ function ProfilePage() {
                   Subscription expires
                 </div>
 
-                <p className="mt-1.5 text-xs font-semibold sm:text-sm">
+                <p className="mt-1.5 text-xs font-semibold sm:text-xs">
                   {profile?.subscription_expires_at
                     ? formatDate(profile.subscription_expires_at)
                     : "-"}
