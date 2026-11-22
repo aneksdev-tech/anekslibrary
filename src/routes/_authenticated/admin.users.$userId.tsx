@@ -1276,7 +1276,7 @@ function UserDetailsPage() {
         </section>
 
         {/* Profile and administration content */}
-        <div className="grid gap-4 sm:gap-6 min-[760px]:grid-cols-[minmax(0,1fr)_230px]">
+        <div className="grid gap-4 sm:gap-6 min-[740px]:grid-cols-[minmax(0,1fr)_230px]">
           {/* Main content */}
           <main className="min-w-0 space-y-4 sm:space-y-6">
             {/* Profile information */}
@@ -1638,7 +1638,7 @@ function UserDetailsPage() {
               <div className="flex items-center gap-2.5 border-b border-border p-4 sm:p-5">
 
                 <div>
-                  <h2 className="text-sm uppercase font-semibold sm:text-gold">
+                  <h2 className="text-[10px] text-gold uppercase font-semibold sm:text-xs">
                     Account Management
                   </h2>
 
