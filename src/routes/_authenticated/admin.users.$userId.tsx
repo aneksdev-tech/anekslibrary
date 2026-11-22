@@ -1276,7 +1276,7 @@ function UserDetailsPage() {
         </section>
 
         {/* Profile and administration content */}
-        <div className="grid gap-4 sm:gap-6 min-[880px]:grid-cols-[minmax(0,1fr)_340px]">
+        <div className="grid gap-4 sm:gap-6 min-[880px]:grid-cols-[minmax(0,1fr)_280px]">
           {/* Main content */}
           <main className="min-w-0 space-y-4 sm:space-y-6">
             {/* Profile information */}
