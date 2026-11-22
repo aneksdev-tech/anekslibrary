@@ -1230,13 +1230,15 @@ function ProfilePage() {
                 </p>
               </div>
             </div>
-
             <div className="mt-4 flex items-center gap-2.5 sm:mt-5 sm:gap-3">
               <div>
                 <p className="text-sm font-medium text-gold sm:text-base">
                   {contributor.name}
                 </p>
 
+                <p className="text-[10px] text-muted-foreground sm:text-xs">
+                  Contribution points
+                </p>
                 <span className="text-base font-semibold sm:text-md">
                 {profile?.reputation ?? 0}
 
@@ -1244,10 +1246,6 @@ function ProfilePage() {
                   pts
                 </span>
               </span>
-
-                <p className="text-[10px] text-muted-foreground sm:text-xs">
-                  Contributor level
-                </p>
               </div>
             </div>
 
@@ -1263,7 +1261,7 @@ function ProfilePage() {
             <p className="mt-1.5 text-[10px] text-muted-foreground sm:mt-2 sm:text-xs">
               {nextLevel
                 ? `${nextLevel.pointsNeeded} pts until ${nextLevel.emoji} ${nextLevel.name}`
-                : "Highest contributor level reached 👑"}
+                : "Highest reputation level reached 👑"}
             </p>
           </div>
 
