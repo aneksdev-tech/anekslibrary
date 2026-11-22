@@ -1249,7 +1249,7 @@ function ProfilePage() {
               </div>
             </div>
 
-            <div className="mt-4 h-1.5 overflow-hidden rounded-sm bg-muted sm:mt-5 sm:h-2">
+            <div className="h-1.5 overflow-hidden rounded-sm bg-muted sm:h-2">
               <div
                 className="h-full rounded-sm bg-gradient-emerald transition-all duration-500"
                 style={{
