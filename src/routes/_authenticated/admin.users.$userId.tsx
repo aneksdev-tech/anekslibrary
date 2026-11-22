@@ -503,9 +503,9 @@ function UserDetailsPage() {
 
   const [showHistory, setShowHistory] =
     useState(false);
-  
+
   const [showAllResources, setShowAllResources] =
-  useState(false);
+    useState(false);
 
   const currentUserIsAdmin =
     roles?.includes("admin") ?? false;
@@ -761,8 +761,8 @@ function UserDetailsPage() {
   );
 
   const contributor = getContributorLevel(
-  user?.reputation ?? 0,
-);
+    user?.reputation ?? 0,
+  );
 
   const totalDownloads = useMemo(
     () =>
@@ -1103,141 +1103,139 @@ function UserDetailsPage() {
     <>
       <main className="mx-auto w-full max-w-8xl space-y-4 pb-8 sm:space-y-6">
         {/* Page heading */}
-<div>
-  <div>
-    <Button
-      variant="ghost"
-      className="-ml-2 h-8 gap-1.5 px-2 text-xs transition-colors hover:bg-transparent hover:text-muted-foreground sm:h-9 sm:gap-2 sm:text-sm"
-      onClick={() =>
-        navigate({ to: "/admin/users" })
-      }
-    >
-      <ArrowLeft className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-      Back
-    </Button>
-  </div>
+        <div>
+          <div>
+            <Button
+              variant="ghost"
+              className="-ml-2 h-8 gap-1.5 px-2 text-xs transition-colors hover:bg-transparent hover:text-muted-foreground sm:h-9 sm:gap-2 sm:text-sm"
+              onClick={() =>
+                navigate({ to: "/admin/users" })
+              }
+            >
+              <ArrowLeft className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              Back
+            </Button>
+          </div>
 
-  <div className="mt-3">
-    <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-gold sm:text-xs">
-      Administration
-    </p>
+          <div className="mt-3">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-gold sm:text-xs">
+              Administration
+            </p>
 
-    <h1 className="mt-1 font-display text-xl font-semibold sm:text-3xl">
-      User Details
-    </h1>
+            <h1 className="mt-1 font-display text-xl font-semibold sm:text-3xl">
+              User Details
+            </h1>
 
-    <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
-      Account details, activity, and contribution history.
-    </p>
-  </div>
-</div>
+            <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
+              Account details, activity, and contribution history.
+            </p>
+          </div>
+        </div>
 
         {/* Profile identity */}
         <section className="overflow-hidden rounded-md border border-border bg-card shadow-soft">
           <div className="border-b border-border bg-muted/20 p-4 sm:p-8">
-  <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-6">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-6">
+              {/* Mobile badges */}
+              <div className="flex items-center gap-1.5 sm:hidden">
+                <span className="inline-flex items-center gap-1 rounded-full bg-gold/10 px-2 py-0.5 text-[10px] font-medium text-gold">
+                  <RoleIcon className="h-3 w-3" />
+                  {formatLabel(user.primary_role)}
+                </span>
 
-    {/* Mobile badges */}
-    <div className="flex items-center gap-1.5 sm:hidden">
-      <span className="inline-flex items-center gap-1 rounded-full bg-gold/10 px-2 py-0.5 text-[10px] font-medium text-gold">
-        <RoleIcon className="h-3 w-3" />
-        {formatLabel(user.primary_role)}
-      </span>
+                <span className="inline-flex items-center gap-1 rounded-full bg-gold/10 px-2 py-0.5 text-[10px] font-medium text-gold">
+                  {contributor.emoji}
+                  {contributor.name}
+                </span>
 
-      <span className="inline-flex items-center gap-1 rounded-full bg-gold/10 px-2 py-0.5 text-[10px] font-medium text-gold">
-        {contributor.emoji}
-        {contributor.name}
-      </span>
+                <div className="ml-auto">
+                  <SubscriptionPlanBadge
+                    plan={user.subscription_plan}
+                  />
+                </div>
+              </div>
 
-      <div className="ml-auto">
-        <SubscriptionPlanBadge
-          plan={user.subscription_plan}
-        />
-      </div>
-    </div>
+              {/* Profile picture */}
+              <div className="shrink-0">
+                {user.avatar_url ? (
+                  <img
+                    src={user.avatar_url}
+                    alt={user.full_name || "User profile"}
+                    className="h-36 w-32 rounded-md border-2 border-primary/30 object-cover shadow-xl sm:h-48 sm:w-40"
+                  />
+                ) : (
+                  <div className="flex h-36 w-32 items-center justify-center rounded-md border-2 border-primary/30 bg-muted text-3xl font-semibold shadow-lg sm:h-48 sm:w-40 sm:text-4xl">
+                    {getInitials(user.full_name || "User")}
+                  </div>
+                )}
+              </div>
 
-    {/* Profile picture */}
-    <div className="shrink-0">
-      {user.avatar_url ? (
-        <img
-          src={user.avatar_url}
-          alt={user.full_name || "User profile"}
-          className="h-36 w-32 rounded-md border-2 border-primary/30 object-cover shadow-xl sm:h-48 sm:w-40"
-        />
-      ) : (
-        <div className="flex h-36 w-32 items-center justify-center rounded-md border-2 border-primary/30 bg-muted text-3xl font-semibold shadow-lg sm:h-48 sm:w-40 sm:text-4xl">
-          {getInitials(user.full_name || "User")}
-        </div>
-      )}
-    </div>
+              {/* Profile details */}
+              <div className="min-w-0 flex-1">
+                {/* Desktop badges */}
+                <div className="hidden flex-wrap items-center gap-1.5 sm:flex sm:gap-2">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-gold/10 px-2 py-0.5 text-[10px] font-medium text-gold sm:gap-1.5 sm:px-3 sm:py-1 sm:text-xs">
+                    <RoleIcon className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                    {formatLabel(user.primary_role)}
+                  </span>
 
-    {/* Profile details */}
-    <div className="min-w-0 flex-1">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-gold/10 px-2 py-0.5 text-[10px] font-medium text-gold sm:gap-1.5 sm:px-3 sm:py-1 sm:text-xs">
+                    {contributor.emoji}
+                    {contributor.name}
+                  </span>
 
-      {/* Desktop badges */}
-      <div className="hidden flex-wrap items-center gap-1.5 sm:flex sm:gap-2">
-        <span className="inline-flex items-center gap-1 rounded-full bg-gold/10 px-2 py-0.5 text-[10px] font-medium text-gold sm:gap-1.5 sm:px-3 sm:py-1 sm:text-xs">
-          <RoleIcon className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-          {formatLabel(user.primary_role)}
-        </span>
+                  <SubscriptionPlanBadge
+                    plan={user.subscription_plan}
+                  />
+                </div>
 
-        <span className="inline-flex items-center gap-1 rounded-full bg-gold/10 px-2 py-0.5 text-[10px] font-medium text-gold sm:gap-1.5 sm:px-3 sm:py-1 sm:text-xs">
-          {contributor.emoji}
-          {contributor.name}
-        </span>
+                <h1 className="mt-3 break-words font-display text-xl font-semibold sm:mt-4 sm:text-3xl">
+                  {user.full_name || "Unnamed user"}
+                </h1>
 
-        <SubscriptionPlanBadge
-          plan={user.subscription_plan}
-        />
-      </div>
+                <div className="mt-1.5 flex min-w-0 items-start gap-1.5 text-xs text-muted-foreground sm:mt-2 sm:text-sm">
+                  <Mail className="mt-0.5 h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" />
+                  <span className="break-all">
+                    {user.email || "No email address"}
+                  </span>
+                </div>
 
-      <h1 className="mt-3 break-words font-display text-xl font-semibold sm:mt-4 sm:text-3xl">
-        {user.full_name || "Unnamed user"}
-      </h1>
+                {user.bio && (
+                  <p className="mt-2 max-w-2xl text-xs leading-5 text-muted-foreground sm:mt-3 sm:text-sm sm:leading-relaxed">
+                    {user.bio}
+                  </p>
+                )}
 
-      <div className="mt-1.5 flex min-w-0 items-start gap-1.5 text-xs text-muted-foreground sm:mt-2 sm:text-sm">
-        <Mail className="mt-0.5 h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" />
-        <span className="break-all">
-          {user.email || "No email address"}
-        </span>
-      </div>
+                <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-[10px] text-muted-foreground sm:mt-5 sm:gap-x-5 sm:gap-y-2 sm:text-sm">
+                  <span className="inline-flex items-center gap-1">
+                    <CalendarDays className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                    Joined {formatDate(user.created_at)}
+                  </span>
 
-      {user.bio && (
-        <p className="mt-2 max-w-2xl text-xs leading-5 text-muted-foreground sm:mt-3 sm:text-sm sm:leading-relaxed">
-          {user.bio}
-        </p>
-      )}
+                  <span className="inline-flex items-center gap-1.5">
+                    <Clock3 className="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" />
 
-      <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-[10px] text-muted-foreground sm:mt-5 sm:gap-x-5 sm:gap-y-2 sm:text-sm">
-        <span className="inline-flex items-center gap-1">
-          <CalendarDays className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-          Joined {formatDate(user.created_at)}
-        </span>
+                    <span>
+                      Last activity:{" "}
+                      <span
+                        className={`font-semibold ${
+                          isOnline
+                            ? "text-green-600 dark:text-green-400"
+                            : "text-foreground"
+                        }`}
+                      >
+                        {lastActivityText}
+                      </span>
 
-        <span className="inline-flex items-center gap-1.5">
-          <Clock3 className="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" />
-
-          <span>
-            Last activity:{" "}
-            <span
-              className={`font-semibold ${
-                isOnline
-                  ? "text-green-600 dark:text-green-400"
-                  : "text-foreground"
-              }`}
-            >
-              {lastActivityText}
-            </span>
-
-            <span className="ml-1">
-              ({lastActivityDate})
-            </span>
-          </span>
-        </span>
-      </div>
-    </div>
-  </div>
-</div>
+                      <span className="ml-1">
+                        ({lastActivityDate})
+                      </span>
+                    </span>
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
 
           {/* Profile statistics */}
           <div className="p-4 sm:p-8">
@@ -1287,26 +1285,26 @@ function UserDetailsPage() {
               />
 
               <div className="mt-4 grid grid-cols-1 gap-x-6 gap-y-5 sm:mt-5 sm:grid-cols-2">
-  <InfoItem
-    label="Phone number"
-    value={user.phone_number || "Not provided"}
-  />
+                <InfoItem
+                  label="Phone number"
+                  value={user.phone_number || "Not provided"}
+                />
 
-  <InfoItem
-    label="College"
-    value={user.college || "Not provided"}
-  />
+                <InfoItem
+                  label="College"
+                  value={user.college || "Not provided"}
+                />
 
-  <InfoItem
-    label="Department"
-    value={user.department || "Not provided"}
-  />
+                <InfoItem
+                  label="Department"
+                  value={user.department || "Not provided"}
+                />
 
-  <InfoItem
-    label="Academic level"
-    value={user.level || "Not provided"}
-  />
-</div>
+                <InfoItem
+                  label="Academic level"
+                  value={user.level || "Not provided"}
+                />
+              </div>
             </section>
 
             {/* Account record */}
@@ -1356,20 +1354,20 @@ function UserDetailsPage() {
                 />
 
                 <div className="min-w-0">
-  <div className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground sm:text-xs">
-    Plan
-  </div>
+                  <div className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground sm:text-xs">
+                    Plan
+                  </div>
 
-  <p
-    className={`mt-1.5 text-xs font-semibold sm:text-sm ${
-      isPremium
-        ? "text-gold"
-        : "text-green-600 dark:text-green-400"
-    }`}
-  >
-    {formatLabel(user.subscription_plan)}
-  </p>
-</div>
+                  <p
+                    className={`mt-1.5 text-xs font-semibold sm:text-sm ${
+                      isPremium
+                        ? "text-gold"
+                        : "text-green-600 dark:text-green-400"
+                    }`}
+                  >
+                    {formatLabel(user.subscription_plan)}
+                  </p>
+                </div>
 
                 <InfoItem
                   label="Subscription started"
@@ -1434,56 +1432,56 @@ function UserDetailsPage() {
                   {(showAllResources
                     ? resources
                     : resources.slice(0, 10)
-                    ).map((resource) => (
+                  ).map((resource) => (
                     <li
                       key={resource.id}
                       className="py-3 sm:py-4"
                     >
                       <div className="flex flex-col gap-2">
-  <div className="flex min-w-0 items-start gap-3">
-   <div className="min-w-0 flex-1">
-      {/* Resource status */}
-      <p
-        className={`mb-1.5 text-[10px] font-semibold sm:text-xs ${getResourceStatusStyles(resource.status || "unknown")}`}
-    >
-      {formatLabel(resource.status || "unknown")}
-    </p>
+                        <div className="flex min-w-0 items-start gap-3">
+                          <div className="min-w-0 flex-1">
+                            {/* Resource status */}
+                            <p
+                              className={`mb-1.5 text-[10px] font-semibold sm:text-xs ${getResourceStatusStyles(resource.status || "unknown")}`}
+                            >
+                              {formatLabel(resource.status || "unknown")}
+                            </p>
 
-      {/* Resource title */}
-      <p className="break-words text-xs font-medium sm:text-sm">
-        {resource.title ||
-          resource.file_name ||
-          "Untitled resource"}
-      </p>
+                            {/* Resource title */}
+                            <p className="break-words text-xs font-medium sm:text-sm">
+                              {resource.title ||
+                                resource.file_name ||
+                                "Untitled resource"}
+                            </p>
 
-      {/* Resource metadata */}
-      <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] text-muted-foreground sm:text-xs">
-        <span>
-          {resource.file_name || "No file name"}
-        </span>
+                            {/* Resource metadata */}
+                            <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] text-muted-foreground sm:text-xs">
+                              <span>
+                                {resource.file_name || "No file name"}
+                              </span>
 
-        <span aria-hidden="true">·</span>
+                              <span aria-hidden="true">·</span>
 
-        <span>
-          {formatFileSize(resource.file_size)}
-        </span>
+                              <span>
+                                {formatFileSize(resource.file_size)}
+                              </span>
 
-        <span aria-hidden="true">·</span>
+                              <span aria-hidden="true">·</span>
 
-        <span className="inline-flex items-center gap-1">
-          <Download className="h-3 w-3" />
-          {(resource.download_count ?? 0).toLocaleString()} downloads
-        </span>
+                              <span className="inline-flex items-center gap-1">
+                                <Download className="h-3 w-3" />
+                                {(resource.download_count ?? 0).toLocaleString()} downloads
+                              </span>
 
-        <span aria-hidden="true">·</span>
+                              <span aria-hidden="true">·</span>
 
-        <span>
-          {formatDate(resource.created_at)}
-        </span>
-      </div>
-    </div>
-  </div>
-</div>
+                              <span>
+                                {formatDate(resource.created_at)}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     </li>
                   ))}
                 </ul>
@@ -1498,27 +1496,27 @@ function UserDetailsPage() {
               )}
 
               {resources && resources.length > 10 && (
-  <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-    <p className="text-[10px] text-muted-foreground sm:text-xs">
-      {showAllResources
-        ? `Showing all ${resources.length} uploaded resources.`
-        : `Showing the 10 most recent resources out of ${resources.length} total.`}
-    </p>
+                <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-[10px] text-muted-foreground sm:text-xs">
+                    {showAllResources
+                      ? `Showing all ${resources.length} uploaded resources.`
+                      : `Showing the 10 most recent resources out of ${resources.length} total.`}
+                  </p>
 
-    <Button
-  type="button"
-  variant="outline"
-  size="sm"
-  className="h-8 shrink-0 bg-gradient-emerald text-[10px] text-white hover:bg-none hover:bg-accent hover:text-accent-foreground sm:text-xs"
-  onClick={() =>
-    setShowAllResources((value) => !value)
-  }
->
-  <History className="mr-1.5 h-3.5 w-3.5" />
-  {showAllResources ? "Show less" : "View all"}
-</Button>
-  </div>
-)}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-8 shrink-0 bg-gradient-emerald text-[10px] text-white hover:bg-none hover:bg-accent hover:text-accent-foreground sm:text-xs"
+                    onClick={() =>
+                      setShowAllResources((value) => !value)
+                    }
+                  >
+                    <History className="mr-1.5 h-3.5 w-3.5" />
+                    {showAllResources ? "Show less" : "View all"}
+                  </Button>
+                </div>
+              )}
 
               <div className="mt-4 flex items-center justify-between border-t border-border pt-4">
                 <span className="text-xs text-muted-foreground">
@@ -1541,10 +1539,10 @@ function UserDetailsPage() {
 
                 {auditHistory && auditHistory.length > 0 && (
                   <Button
-  type="button"
-  variant="outline"
-  size="sm"
-  className="h-8 shrink-0 bg-gradient-emerald text-[10px] text-white hover:bg-none hover:bg-accent hover:text-accent-foreground sm:text-xs"
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-8 shrink-0 bg-gradient-emerald text-[10px] text-white hover:bg-none hover:bg-accent hover:text-accent-foreground sm:text-xs"
                     onClick={() =>
                       setShowHistory((value) => !value)
                     }
@@ -1606,14 +1604,14 @@ function UserDetailsPage() {
                   </div>
                 ) : (
                   <div className="mt-4 flex items-center gap-2 bg-muted/20">
-  <History className="h-4 w-4 shrink-0 text-muted-foreground" />
+                    <History className="h-4 w-4 shrink-0 text-muted-foreground" />
 
-  <p className="text-xs text-muted-foreground">
-    {auditHistory.length} administrative{" "}
-    {auditHistory.length === 1 ? "change" : "changes"}{" "}
-    recorded for this account.
-  </p>
-</div>
+                    <p className="text-xs text-muted-foreground">
+                      {auditHistory.length} administrative{" "}
+                      {auditHistory.length === 1 ? "change" : "changes"}{" "}
+                      recorded for this account.
+                    </p>
+                  </div>
                 )
               ) : (
                 <div className="mt-4 border border-dashed border-border px-4 py-7 text-center">
@@ -1636,7 +1634,6 @@ function UserDetailsPage() {
             {/* Account management */}
             <section className="rounded-md border border-border bg-card shadow-soft">
               <div className="flex items-center gap-2.5 border-b border-border p-4 sm:p-5">
-
                 <div>
                   <h2 className="text-[10px] text-gold uppercase font-semibold sm:text-xs">
                     Account Management
@@ -1701,52 +1698,50 @@ function UserDetailsPage() {
                   </label>
 
                   <Select
-  value={user.status}
-  onValueChange={(value) =>
-    requestStatusChange(value as AccountStatus)
-  }
-  disabled={
-    !canModifyUser ||
-    setStatus.isPending ||
-    setRole.isPending
-  }
->
-  <SelectTrigger
-    className={`h-10 text-xs sm:text-sm ${getUserStatusStyles(
-      user.status
-    )
-      .split(" ")
-      .filter((className) => className.startsWith("text-"))
-      .join(" ")}`}
-  >
-    <SelectValue />
-  </SelectTrigger>
+                    value={user.status}
+                    onValueChange={(value) =>
+                      requestStatusChange(value as AccountStatus)
+                    }
+                    disabled={
+                      !canModifyUser ||
+                      setStatus.isPending ||
+                      setRole.isPending
+                    }
+                  >
+                    <SelectTrigger
+                      className={`h-10 text-xs sm:text-sm ${getUserStatusStyles(
+                        user.status,
+                      )
+                        .split(" ")
+                        .filter((className) => className.startsWith("text-"))
+                        .join(" ")}`}
+                    >
+                      <SelectValue />
+                    </SelectTrigger>
 
-  <SelectContent>
-    {STATUSES.map((status) => (
-      <SelectItem
-        key={status}
-        value={status}
-        className={getUserStatusStyles(status)
-          .split(" ")
-          .filter((className) => className.startsWith("text-"))
-          .join(" ")}
-      >
-        {formatLabel(status)}
-      </SelectItem>
-    ))}
-  </SelectContent>
-</Select>
+                    <SelectContent>
+                      {STATUSES.map((status) => (
+                        <SelectItem
+                          key={status}
+                          value={status}
+                          className={getUserStatusStyles(status)
+                            .split(" ")
+                            .filter((className) => className.startsWith("text-"))
+                            .join(" ")}
+                        >
+                          {formatLabel(status)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 {!canModifyUser && (
-                  
-                    <p className="text-[10px] leading-5 text-muted-foreground sm:text-xs">
-                      {currentUser?.id === user.id
-                        ? "You cannot modify your own account from this page."
-                        : "Restricted by your current administrator permissions."}
-                    </p>
-                  
+                  <p className="text-[10px] leading-5 text-muted-foreground sm:text-xs">
+                    {currentUser?.id === user.id
+                      ? "You cannot modify your own account from this page."
+                      : "Restricted by your current administrator permissions."}
+                  </p>
                 )}
 
                 {actionLoading && (
