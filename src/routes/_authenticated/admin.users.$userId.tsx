@@ -1276,7 +1276,7 @@ function UserDetailsPage() {
         </section>
 
         {/* Profile and administration content */}
-        <div className="grid gap-4 sm:gap-6 min-[740px]:grid-cols-[minmax(0,1fr)_220px]">
+        <div className="grid gap-4 sm:gap-6 min-[720px]:grid-cols-[minmax(0,1fr)_220px]">
           {/* Main content */}
           <main className="min-w-0 space-y-4 sm:space-y-6">
             {/* Profile information */}
@@ -1992,7 +1992,7 @@ function SectionHeading({
       </h2>
 
       {description && (
-        <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
+        <p className="mt-1 text-xs text-muted-foreground sm:text-xs">
           {description}
         </p>
       )}
