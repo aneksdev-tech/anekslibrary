@@ -9,12 +9,14 @@ import {
   Check,
   Loader2,
   Mail,
+  Shield,
   ShieldCheck,
   CalendarDays,
   Crown,
   GraduationCap,
   CircleCheck,
   Activity,
+  UserRound,
 } from "lucide-react";
 import {
   AlertDialog,
@@ -98,17 +100,13 @@ function SubscriptionPlanBadge({
     <span
       title={isPremium ? "Premium Plan" : "Free Plan"}
       aria-label={isPremium ? "Premium Plan" : "Free Plan"}
-      className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border ${
+      className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium sm:gap-1.5 sm:px-3 sm:py-1 sm:text-xs ${
         isPremium
-          ? "border-gold/30 bg-gold/10 text-gold"
-          : "border-muted-foreground bg-muted-foreground/10 text-muted-foreground"
+          ? "bg-gold/10 text-gold"
+          : "bg-muted text-muted-foreground"
       }`}
     >
-      {isPremium ? (
-        <Crown className="h-3.5 w-3.5" />
-      ) : (
-        <GraduationCap className="h-3.5 w-3.5" />
-      )}
+      {isPremium ? "Premium Account" : "Free Account"}
     </span>
   );
 }
@@ -131,16 +129,32 @@ function ProfilePage() {
     isResearcher;
 
   const needsLevel = isStudent;
+  
+  const roleLabels: Record<string, string> = {
+  admin: "Administrator",
+  "co-admin": "Co-admin",
+  coadmin: "Co-admin",
+  lecturer: "Lecturer",
+  staff: "Staff",
+  student: "Student",
+  researcher: "Researcher",
+  guest: "Guest",
+};
 
-  const roleLabel = profile?.primary_role
-    ? profile.primary_role
-        .split("-")
-        .map(
-          (word) =>
-            word.charAt(0).toUpperCase() + word.slice(1),
-        )
-        .join(" ")
-    : "User";
+const roleIcons: Record<string, typeof UserRound> = {
+  admin: Shield,
+  "co-admin": Shield,
+  coadmin: Shield,
+  lecturer: UserRound,
+  staff: UserRound,
+  student: UserRound,
+  researcher: UserRound,
+  guest: UserRound,
+};
+
+const roleKey = profile?.primary_role ?? "guest";
+const roleLabel = roleLabels[roleKey] ?? "Member";
+const RoleIcon = roleIcons[roleKey] ?? UserRound;
 
   const contributor = getContributorLevel(
     profile?.reputation ?? 0,
@@ -662,106 +676,91 @@ function ProfilePage() {
         {/* Main profile card */}
         <div className="overflow-hidden rounded-sm border border-border bg-card shadow-soft">
           {/* Profile identity */}
-          <div className="border-b border-border bg-muted/20 p-4 sm:p-8">
-            <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:gap-6">
-              {/* Mobile badges */}
-              <div className="flex w-full items-center gap-1.5 sm:hidden">
-                <span className="inline-flex items-center gap-1 rounded-full bg-gold/10 px-2 py-0.5 text-[10px] font-medium text-gold">
-                  {roleLabel}
-                </span>
+<div className="border-b border-border bg-muted/20 p-4 sm:p-8">
+  <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:gap-6">
+    {/* Profile picture */}
+    <div className="relative w-fit shrink-0">
+      {avatarUrl ? (
+        <img
+          src={avatarUrl}
+          alt={profile?.full_name || "Profile avatar"}
+          className="h-28 w-24 rounded-md border-2 border-primary/30 object-cover shadow-xl sm:h-40 sm:w-32"
+        />
+      ) : (
+        <div className="flex h-28 w-24 items-center justify-center rounded-md border-2 border-primary/30 bg-muted text-3xl font-semibold shadow-lg sm:h-40 sm:w-32 sm:text-4xl">
+          {(profile?.full_name || "User")
+            .charAt(0)
+            .toUpperCase()}
+        </div>
+      )}
 
-                <span className="inline-flex items-center gap-1 rounded-full bg-gold/10 px-2 py-0.5 text-[10px] font-medium text-gold">
-                  {contributor.emoji}
-                  {contributor.name}
-                </span>
+      <button
+        type="button"
+        disabled={busy}
+        onClick={() => fileInputRef.current?.click()}
+        className="absolute bottom-1.5 right-1.5 flex h-8 w-8 items-center justify-center rounded-md border border-border bg-card text-foreground shadow-lg transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50 sm:bottom-2 sm:right-2 sm:h-10 sm:w-10"
+        aria-label="Change profile photo"
+        title="Change profile photo"
+      >
+        <Camera className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+      </button>
+    </div>
 
-                <div className="ml-auto">
-                  <SubscriptionPlanBadge
-                    plan={profile?.subscription_plan}
-                  />
-                </div>
-              </div>
+    {/* Profile details */}
+    <div className="min-w-0 flex-1">
+      {/* Role and subscription badges */}
+      <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+        <span className="inline-flex items-center gap-1 rounded-full bg-gold/10 px-2 py-0.5 text-[10px] font-medium text-gold sm:gap-1.5 sm:px-3 sm:py-1 sm:text-xs">
+          <RoleIcon className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+          {roleLabel}
+        </span>
 
-              {/* Profile picture */}
-              <div className="relative w-fit shrink-0">
-                {avatarUrl ? (
-                  <img
-                    src={avatarUrl}
-                    alt={profile?.full_name || "Profile avatar"}
-                    className="h-36 w-32 rounded-md border-2 border-primary/30 object-cover shadow-xl sm:h-48 sm:w-40"
-                  />
-                ) : (
-                  <div className="flex h-36 w-32 items-center justify-center rounded-md border-2 border-primary/30 bg-muted text-3xl font-semibold shadow-lg sm:h-48 sm:w-40 sm:text-4xl">
-                    {(profile?.full_name || "User")
-                      .charAt(0)
-                      .toUpperCase()}
-                  </div>
-                )}
+        <SubscriptionPlanBadge
+          plan={profile?.subscription_plan}
+        />
+      </div>
 
-                <button
-                  type="button"
-                  disabled={busy}
-                  onClick={() => fileInputRef.current?.click()}
-                  className="absolute bottom-1.5 right-1.5 flex h-8 w-8 items-center justify-center rounded-md border border-border bg-card text-foreground shadow-lg transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50 sm:bottom-2 sm:right-2 sm:h-10 sm:w-10"
-                  aria-label="Change profile photo"
-                  title="Change profile photo"
-                >
-                  <Camera className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                </button>
-              </div>
+      <h2 className="mt-3 break-words font-display text-xl font-semibold sm:mt-4 sm:text-3xl">
+        {profile?.full_name || "Unnamed User"}
+      </h2>
 
-              {/* Profile details */}
-              <div className="min-w-0 flex-1">
-                {/* Desktop badges */}
-                <div className="hidden flex-wrap items-center gap-1.5 sm:flex sm:gap-2">
-                  <span className="inline-flex items-center gap-1 rounded-full bg-gold/10 px-2 py-0.5 text-[10px] font-medium text-gold sm:gap-1.5 sm:px-3 sm:py-1 sm:text-xs">
-                    {roleLabel}
-                  </span>
+      <div className="mt-1.5 flex min-w-0 items-start gap-1.5 text-xs text-muted-foreground sm:mt-2 sm:text-sm">
+        <Mail className="mt-0.5 h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" />
 
-                  <span className="inline-flex items-center gap-1 rounded-full bg-gold/10 px-2 py-0.5 text-[10px] font-medium text-gold sm:gap-1.5 sm:px-3 sm:py-1 sm:text-xs">
-                    {contributor.emoji}
-                    {contributor.name}
-                  </span>
+        <span className="break-all">
+          {user?.email || "No email available"}
+        </span>
+      </div>
 
-                  <SubscriptionPlanBadge
-                    plan={profile?.subscription_plan}
-                  />
-                </div>
+      {profile?.bio ? (
+        <p className="mt-2 max-w-2xl text-xs leading-5 text-muted-foreground sm:mt-3 sm:text-sm sm:leading-relaxed">
+          {profile.bio}
+        </p>
+      ) : (
+        <p className="mt-2 text-xs italic text-muted-foreground sm:mt-3 sm:text-sm">
+          No bio yet.
+        </p>
+      )}
 
-                <h2 className="mt-3 break-words font-display text-xl font-semibold sm:mt-4 sm:text-3xl">
-                  {profile?.full_name || "Unnamed User"}
-                </h2>
+      {/* Reputation and membership date */}
+      <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-[10px] text-muted-foreground sm:mt-5 sm:gap-x-5 sm:gap-y-2 sm:text-sm">
+        <span className="inline-flex items-center gap-1 rounded-full bg-gold/10 px-2 py-0.5 text-[10px] font-medium text-gold sm:gap-1.5 sm:px-3 sm:py-1 sm:text-xs">
+          <UserRound className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+          {contributor.emoji}
+          {contributor.name}
+        </span>
 
-                <div className="mt-1.5 flex min-w-0 items-start gap-1.5 text-xs text-muted-foreground sm:mt-2 sm:text-sm">
-                  <Mail className="mt-0.5 h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" />
-
-                  <span className="break-all">
-                    {user?.email || "No email available"}
-                  </span>
-                </div>
-
-                {profile?.bio ? (
-                  <p className="mt-2 max-w-2xl text-xs leading-5 text-muted-foreground sm:mt-3 sm:text-sm sm:leading-relaxed">
-                    {profile.bio}
-                  </p>
-                ) : (
-                  <p className="mt-2 text-xs italic text-muted-foreground sm:mt-3 sm:text-sm">
-                    No bio yet.
-                  </p>
-                )}
-
-                <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-[10px] text-muted-foreground sm:mt-5 sm:gap-x-5 sm:gap-y-2 sm:text-sm">
-                  <span className="inline-flex items-center gap-1">
-                    <CalendarDays className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                    Joined{" "}
-                    {profile?.created_at
-                      ? formatDate(profile.created_at)
-                      : "-"}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
+        <span className="inline-flex items-center gap-1">
+          <CalendarDays className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+          Member since{" "}
+          {profile?.created_at
+            ? formatDate(profile.created_at)
+            : "-"}
+        </span>
+      </div>
+    </div>
+  </div>
+</div>
 
           {/* Completion — intentionally before editable information */}
           <div className="border-b border-border p-2">

@@ -19,7 +19,6 @@ import {
   Clock3,
   Download,
   FileText,
-  GraduationCap,
   History,
   Loader2,
   Mail,
@@ -29,14 +28,9 @@ import {
   UserRound,
   Upload,
   RefreshCw,
-  Building2,
   Activity,
   CircleCheck,
   CircleX,
-  Ban,
-  Crown,
-  ShieldCheck,
-  BookOpen,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -54,7 +48,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { getContributorLevel } from "@/lib/reputation";
+import {
+  getContributorLevel,
+  getLevelProgress,
+  getNextContributorLevel,
+} from "@/lib/reputation";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -391,23 +389,32 @@ function getInitials(fullName: string) {
 }
 
 function getRoleIcon(role: AppRole) {
-  if (
-    role === "student" ||
-    role === "lecturer" ||
-    role === "researcher"
-  ) {
-    return GraduationCap;
-  }
-
-  if (
-    role === "admin" ||
-    role === "co-admin" ||
-    role === "staff"
-  ) {
+  if (role === "admin" || role === "co-admin") {
     return Shield;
   }
 
   return UserRound;
+}
+
+function getRoleLabel(role: AppRole) {
+  switch (role) {
+    case "admin":
+      return "Administrator";
+    case "co-admin":
+      return "Co-admin";
+    case "lecturer":
+      return "Lecturer";
+    case "staff":
+      return "Staff";
+    case "student":
+      return "Student";
+    case "researcher":
+      return "Researcher";
+    case "guest":
+      return "Guest";
+    default:
+      return formatLabel(role);
+  }
 }
 
 function getUserStatusStyles(status: string) {
@@ -761,6 +768,14 @@ function UserDetailsPage() {
   );
 
   const contributor = getContributorLevel(
+    user?.reputation ?? 0,
+  );
+
+  const progress = getLevelProgress(
+    user?.reputation ?? 0,
+  );
+
+  const nextLevel = getNextContributorLevel(
     user?.reputation ?? 0,
   );
 
@@ -1133,145 +1148,128 @@ function UserDetailsPage() {
         </div>
 
         {/* Profile identity */}
-        <section className="overflow-hidden rounded-md border border-border bg-card shadow-soft">
-          <div className="border-b border-border bg-muted/20 p-4 sm:p-8">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-6">
-              {/* Mobile badges */}
-              <div className="flex items-center gap-1.5 sm:hidden">
-                <span className="inline-flex items-center gap-1 rounded-full bg-gold/10 px-2 py-0.5 text-[10px] font-medium text-gold">
-                  <RoleIcon className="h-3 w-3" />
-                  {formatLabel(user.primary_role)}
-                </span>
-
-                <span className="inline-flex items-center gap-1 rounded-full bg-gold/10 px-2 py-0.5 text-[10px] font-medium text-gold">
-                  {contributor.emoji}
-                  {contributor.name}
-                </span>
-
-                <div className="ml-auto">
-                  <SubscriptionPlanBadge
-                    plan={user.subscription_plan}
-                  />
-                </div>
-              </div>
-
-              {/* Profile picture */}
-              <div className="shrink-0">
-                {user.avatar_url ? (
-                  <img
-                    src={user.avatar_url}
-                    alt={user.full_name || "User profile"}
-                    className="h-36 w-32 rounded-md border-2 border-primary/30 object-cover shadow-xl sm:h-48 sm:w-40"
-                  />
-                ) : (
-                  <div className="flex h-36 w-32 items-center justify-center rounded-md border-2 border-primary/30 bg-muted text-3xl font-semibold shadow-lg sm:h-48 sm:w-40 sm:text-4xl">
-                    {getInitials(user.full_name || "User")}
-                  </div>
-                )}
-              </div>
-
-              {/* Profile details */}
-              <div className="min-w-0 flex-1">
-                {/* Desktop badges */}
-                <div className="hidden flex-wrap items-center gap-1.5 sm:flex sm:gap-2">
-                  <span className="inline-flex items-center gap-1 rounded-full bg-gold/10 px-2 py-0.5 text-[10px] font-medium text-gold sm:gap-1.5 sm:px-3 sm:py-1 sm:text-xs">
-                    <RoleIcon className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                    {formatLabel(user.primary_role)}
-                  </span>
-
-                  <span className="inline-flex items-center gap-1 rounded-full bg-gold/10 px-2 py-0.5 text-[10px] font-medium text-gold sm:gap-1.5 sm:px-3 sm:py-1 sm:text-xs">
-                    {contributor.emoji}
-                    {contributor.name}
-                  </span>
-
-                  <SubscriptionPlanBadge
-                    plan={user.subscription_plan}
-                  />
-                </div>
-
-                <h1 className="mt-3 break-words font-display text-xl font-semibold sm:mt-4 sm:text-3xl">
-                  {user.full_name || "Unnamed user"}
-                </h1>
-
-                <div className="mt-1.5 flex min-w-0 items-start gap-1.5 text-xs text-muted-foreground sm:mt-2 sm:text-sm">
-                  <Mail className="mt-0.5 h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" />
-                  <span className="break-all">
-                    {user.email || "No email address"}
-                  </span>
-                </div>
-
-                {user.bio && (
-                  <p className="mt-2 max-w-2xl text-xs leading-5 text-muted-foreground sm:mt-3 sm:text-sm sm:leading-relaxed">
-                    {user.bio}
-                  </p>
-                )}
-
-                <div className="w-full mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-[10px] text-muted-foreground sm:mt-5 sm:gap-x-5 sm:gap-y-2 sm:text-sm">
-                  <span className="inline-flex items-center gap-1">
-                    <CalendarDays className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                    Joined {formatDate(user.created_at)}
-                  </span>
-
-                  <span className="inline-flex items-center gap-1.5">
-                    <Clock3 className="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" />
-
-                    <span>
-                      Last seen:{" "}
-                      <span
-                        className={`font-semibold ${
-                          isOnline
-                            ? "text-green-600 dark:text-green-400"
-                            : "text-foreground"
-                        }`}
-                      >
-                        {lastActivityText}
-                      </span>
-
-                      <span className="ml-1">
-                        ({lastActivityDate})
-                      </span>
-                    </span>
-                  </span>
-                </div>
-              </div>
-            </div>
+<section className="overflow-hidden rounded-md border border-border bg-card shadow-soft">
+  <div className="border-b border-border bg-muted/20 p-4 sm:p-8">
+    <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:gap-6">
+      {/* Profile picture */}
+      <div className="shrink-0">
+        {user.avatar_url ? (
+          <img
+            src={user.avatar_url}
+            alt={user.full_name || "User profile"}
+            className="h-28 w-24 rounded-md border-2 border-primary/30 object-cover shadow-xl sm:h-40 sm:w-32"
+          />
+        ) : (
+          <div className="flex h-28 w-24 items-center justify-center rounded-md border-2 border-primary/30 bg-muted text-2xl font-semibold shadow-lg sm:h-40 sm:w-32 sm:text-3xl">
+            {getInitials(user.full_name || "User")}
           </div>
+        )}
+      </div>
 
-          {/* Profile statistics */}
-          <div className="p-4 sm:p-8">
-            <div className="grid grid-cols-3 text-center">
-              <div className="min-w-0 px-1.5 sm:px-2">
-                <div className="text-xl font-semibold sm:text-2xl">
-                  {resources?.length ?? 0}
-                </div>
+      {/* Profile details */}
+      <div className="min-w-0 flex-1">
+        {/* Role and subscription badges */}
+        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+          <span className="inline-flex items-center gap-1 rounded-full bg-gold/10 px-2 py-0.5 text-[10px] font-medium text-gold sm:gap-1.5 sm:px-3 sm:py-1 sm:text-xs">
+            <RoleIcon className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+            {getRoleLabel(user.primary_role)}
+          </span>
 
-                <div className="mt-0.5 text-[10px] text-muted-foreground sm:mt-1 sm:text-sm">
-                  Resources
-                </div>
-              </div>
+          <SubscriptionPlanBadge
+            plan={user.subscription_plan}
+          />
+        </div>
 
-              <div className="min-w-0 border-x border-border px-1.5 sm:px-2">
-                <div className="text-xl font-semibold sm:text-2xl">
-                  {totalDownloads.toLocaleString()}
-                </div>
+        <h1 className="mt-3 break-words font-display text-xl font-semibold sm:mt-4 sm:text-3xl">
+          {user.full_name || "Unnamed user"}
+        </h1>
 
-                <div className="mt-0.5 text-[10px] text-muted-foreground sm:mt-1 sm:text-sm">
-                  Downloads
-                </div>
-              </div>
+        <div className="mt-1.5 flex min-w-0 items-start gap-1.5 text-xs text-muted-foreground sm:mt-2 sm:text-sm">
+          <Mail className="mt-0.5 h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" />
+          <span className="break-all">
+            {user.email || "No email address"}
+          </span>
+        </div>
 
-              <div className="min-w-0 px-1.5 sm:px-2">
-                <div className="text-xl font-semibold sm:text-2xl">
-                  {user.reputation}
-                </div>
+        {user.bio && (
+          <p className="mt-2 max-w-2xl text-xs leading-5 text-muted-foreground sm:mt-3 sm:text-sm sm:leading-relaxed">
+            {user.bio}
+          </p>
+        )}
 
-                <div className="mt-0.5 text-[10px] text-muted-foreground sm:mt-1 sm:text-sm">
-                  Reputation
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
+        {/* Reputation and account activity */}
+        <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 sm:mt-5 sm:gap-x-5">
+          <span className="inline-flex items-center gap-1 rounded-full bg-gold/10 px-2 py-0.5 text-[10px] font-medium text-gold sm:gap-1.5 sm:px-3 sm:py-1 sm:text-xs">
+            <UserRound className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            {contributor.emoji}
+            {contributor.name}
+          </span>
+
+          <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground sm:text-sm">
+            <CalendarDays className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            Joined {formatDate(user.created_at)}
+          </span>
+
+          <span className="inline-flex items-center gap-1.5 text-[10px] text-muted-foreground sm:text-sm">
+            <Clock3 className="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" />
+
+            <span>
+              Last seen:{" "}
+              <span
+                className={`font-semibold ${
+                  isOnline
+                    ? "text-green-600 dark:text-green-400"
+                    : "text-foreground"
+                }`}
+              >
+                {lastActivityText}
+              </span>
+
+              <span className="ml-1">
+                ({lastActivityDate})
+              </span>
+            </span>
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {/* Profile statistics */}
+  <div className="p-4 sm:p-8">
+    <div className="grid grid-cols-3 text-center">
+      <div className="min-w-0 px-1.5 sm:px-2">
+        <div className="text-xl font-semibold sm:text-2xl">
+          {resources?.length ?? 0}
+        </div>
+
+        <div className="mt-0.5 text-[10px] text-muted-foreground sm:mt-1 sm:text-sm">
+          Uploads
+        </div>
+      </div>
+
+      <div className="min-w-0 border-x border-border px-1.5 sm:px-2">
+        <div className="text-xl font-semibold sm:text-2xl">
+          {totalDownloads.toLocaleString()}
+        </div>
+
+        <div className="mt-0.5 text-[10px] text-muted-foreground sm:mt-1 sm:text-sm">
+          Downloads
+        </div>
+      </div>
+
+      <div className="min-w-0 px-1.5 sm:px-2">
+        <div className="text-xl font-semibold sm:text-2xl">
+          {user.reputation}
+        </div>
+
+        <div className="mt-0.5 text-[10px] text-muted-foreground sm:mt-1 sm:text-sm">
+          Reputation
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
 
         {/* Profile and administration content */}
         <div className="grid gap-4 sm:gap-6 min-[820px]:grid-cols-[minmax(0,1fr)_220px]">
@@ -1631,6 +1629,50 @@ function UserDetailsPage() {
 
           {/* Sidebar */}
           <aside className="min-w-0 space-y-4 sm:space-y-6">
+            {/* Reputation */}
+            <section className="rounded-sm border border-border bg-card p-3.5 shadow-soft sm:p-6">
+              <div className="flex flex-col items-start gap-2">
+                <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground sm:text-xs">
+                  Reputation
+                </p>
+              </div>
+
+              <div className="mb-2 flex items-center gap-2.5 sm:gap-3">
+                <div>
+                  <p className="text-sm font-medium text-gold sm:text-base">
+                    {contributor.name}
+                  </p>
+
+                  <p className="mt-4 text-[10px] text-muted-foreground sm:mt-3 sm:text-xs">
+                    Contribution points
+                  </p>
+
+                  <span className="text-base font-semibold sm:text-md">
+                    {user.reputation ?? 0}
+
+                    <span className="ml-1 text-[10px] font-normal text-muted-foreground sm:text-xs">
+                      pts
+                    </span>
+                  </span>
+                </div>
+              </div>
+
+              <div className="h-1.5 overflow-hidden rounded-sm bg-muted sm:h-2">
+                <div
+                  className="h-full rounded-sm bg-gradient-emerald transition-all duration-500"
+                  style={{
+                    width: `${progress}%`,
+                  }}
+                />
+              </div>
+
+              <p className="mt-1.5 text-[10px] text-muted-foreground sm:mt-2 sm:text-xs">
+                {nextLevel
+                  ? `${nextLevel.pointsNeeded} pts until ${nextLevel.emoji} ${nextLevel.name}`
+                  : "Highest reputation level reached 👑"}
+              </p>
+            </section>
+
             {/* Account management */}
             <section className="rounded-md border border-border bg-card shadow-soft">
               <div className="flex items-center gap-2.5 border-b border-border p-4 sm:p-5">
@@ -1958,17 +2000,13 @@ function SubscriptionPlanBadge({
     <span
       title={isPremium ? "Premium Plan" : "Free Plan"}
       aria-label={isPremium ? "Premium Plan" : "Free Plan"}
-      className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border ${
+      className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium sm:gap-1.5 sm:px-3 sm:py-1 sm:text-xs ${
         isPremium
-          ? "border-gold/30 bg-gold/10 text-gold"
-          : "border-muted-foreground bg-muted-foreground/10 text-muted-foreground"
+          ? "bg-gold/10 text-gold"
+          : "bg-muted text-muted-foreground"
       }`}
     >
-      {isPremium ? (
-        <Crown className="h-3.5 w-3.5" />
-      ) : (
-        <GraduationCap className="h-3.5 w-3.5" />
-      )}
+      {isPremium ? "Premium Account" : "Free Account"}
     </span>
   );
 }

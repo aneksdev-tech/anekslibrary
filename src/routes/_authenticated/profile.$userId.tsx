@@ -121,7 +121,7 @@ function PublicProfilePage() {
           year: "numeric",
         },
       )
-    : "";
+    : null;
 
   if (isLoading) {
     return (
@@ -134,7 +134,7 @@ function PublicProfilePage() {
   if (!profile) {
     return (
       <div className="flex h-[60vh] items-center justify-center px-4 text-sm sm:text-base">
-        Profile not found.
+        This profile could not be found.
       </div>
     );
   }
@@ -146,6 +146,11 @@ function PublicProfilePage() {
 
   const RoleIcon =
     roleIcons[roleKey] ?? UserRound;
+
+  const planKey = profile.subscription_plan ?? "free";
+
+  const isPremium = planKey === "premium";
+  const planLabel = isPremium ? "Premium Account" : "Free Account";
 
   const initials = (() => {
     const name = profile.full_name?.trim();
@@ -189,22 +194,22 @@ function PublicProfilePage() {
         </h1>
 
         <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
-          Public profile and contribution history.
+          View this member's profile and approved contributions.
         </p>
       </div>
-
-      <div className="grid gap-4 sm:gap-6 xl:grid-cols-[1fr_340px]">
+      
+      <div className="grid gap-4 sm:gap-6 min-[820px]:grid-cols-[minmax(0,1fr)_220px]">
         <main className="min-w-0 space-y-4 sm:space-y-6">
           <section className="overflow-hidden rounded-md border border-border bg-card shadow-soft">
             <div className="border-b border-border bg-muted/20 p-4 sm:p-8">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-6">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:gap-6">
                 <div className="shrink-0">
                   {profile.avatar_url ? (
                     <img
                       src={profile.avatar_url}
                       alt={
                         profile.full_name ??
-                        "Profile"
+                        "Profile picture"
                       }
                       className="h-28 w-24 rounded-md border-2 border-primary/30 object-cover shadow-xl sm:h-40 sm:w-32"
                     />
@@ -222,15 +227,19 @@ function PublicProfilePage() {
                       {roleLabel}
                     </span>
 
-                    <span className="inline-flex items-center gap-1 rounded-full bg-gold/10 px-2 py-0.5 text-[10px] font-medium text-gold sm:gap-1.5 sm:px-3 sm:py-1 sm:text-xs">
-                      {contributor.emoji}
-                      {contributor.name}
+                    <span
+                      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium sm:gap-1.5 sm:px-3 sm:py-1 sm:text-xs ${
+                        isPremium
+                          ? "bg-gold/10 text-gold"
+                          : "bg-muted text-muted-foreground"
+                      }`}
+                    >
+                      {planLabel}
                     </span>
                   </div>
 
                   <h2 className="mt-3 font-display text-xl font-semibold sm:mt-4 sm:text-3xl">
-                    {profile.full_name ??
-                      "Unknown user"}
+                    {profile.full_name ?? "Unknown user"}
                   </h2>
 
                   {profile.bio && (
@@ -240,16 +249,18 @@ function PublicProfilePage() {
                   )}
 
                   <div className="mt-4 flex flex-wrap gap-x-4 gap-y-1.5 text-[10px] text-muted-foreground sm:mt-5 sm:gap-x-5 sm:gap-y-2 sm:text-sm">
-                    <span className="inline-flex items-center gap-1">
-                      <CalendarDays className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                      Member since{" "}
-                      {joinedDate}
+                    <span className="inline-flex items-center gap-1 rounded-full bg-gold/10 px-2 py-0.5 text-[10px] font-medium text-gold sm:gap-1.5 sm:px-3 sm:py-1 sm:text-xs">
+                    <UserRound className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                      {contributor.emoji}
+                      {contributor.name}
                     </span>
-
-                    <span className="inline-flex items-center gap-1">
-                      <UserRound className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                      Public profile
-                    </span>
+                    {joinedDate && (
+                      <span className="inline-flex items-center gap-1">
+                        <CalendarDays className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                        Member since {joinedDate}
+                      </span>
+                    )}
+                    
                   </div>
                 </div>
               </div>
@@ -259,15 +270,13 @@ function PublicProfilePage() {
               <div className="grid grid-cols-3 text-center">
                 <div className="min-w-0 px-1.5 sm:px-2">
                   <div className="text-xl font-semibold sm:text-2xl">
-                    {resourcesLoading
+                    {resourcesLoading || resourcesError
                       ? "—"
-                      : resourcesError
-                        ? "—"
-                        : resources?.length ?? 0}
+                      : resources?.length ?? 0}
                   </div>
 
                   <div className="mt-0.5 text-[10px] text-muted-foreground sm:mt-1 sm:text-sm">
-                    Resources
+                    Uploads
                   </div>
                 </div>
 
@@ -299,11 +308,11 @@ function PublicProfilePage() {
           <section className="rounded-md border border-border bg-card p-3.5 shadow-soft sm:p-6">
             {resourcesLoading ? (
               <div className="py-7 text-center text-sm text-muted-foreground">
-                Loading resources...
+                Loading approved resources...
               </div>
             ) : resourcesError ? (
               <div className="py-7 text-center text-sm text-muted-foreground">
-                Unable to load resources. Please try again.
+                Unable to load approved resources. Please try again.
               </div>
             ) : resources && resources.length > 0 ? (
               <ul className="divide-y divide-border border-y border-border">
@@ -313,6 +322,9 @@ function PublicProfilePage() {
                     resource.category?.name?.trim()
                       ? resource.category.name.trim()
                       : "Uncategorized";
+
+                  const downloadCount =
+                    resource.download_count ?? 0;
 
                   return (
                     <li key={resource.id}>
@@ -340,8 +352,10 @@ function PublicProfilePage() {
 
                               <span className="inline-flex items-center gap-1">
                                 <Download className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                                {resource.download_count ?? 0}{" "}
-                                downloads
+                                {downloadCount}{" "}
+                                {downloadCount === 1
+                                  ? "download"
+                                  : "downloads"}
                               </span>
 
                               <span aria-hidden="true">
@@ -366,7 +380,7 @@ function PublicProfilePage() {
                 <FileText className="mx-auto h-7 w-7 text-muted-foreground/60 sm:h-8 sm:w-8" />
 
                 <p className="mt-2.5 text-xs text-muted-foreground sm:mt-3 sm:text-sm">
-                  No approved resources yet.
+                  No approved resources to display yet.
                 </p>
               </div>
             )}
@@ -374,41 +388,35 @@ function PublicProfilePage() {
         </main>
 
         <aside className="space-y-4 sm:space-y-6">
-          {/* Contribution */}
+          {/* Reputation */}
           <section className="rounded-md border border-border bg-card p-3.5 shadow-soft sm:p-6">
-            <div className="flex items-start justify-between gap-3 sm:gap-4">
-              <div>
-                <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground sm:text-xs">
-                  Contribution
-                </p>
-
-                <h3 className="mt-0.5 text-sm font-semibold sm:mt-1 sm:text-base">
-                  Reputation
-                </h3>
-              </div>
-
-              <span className="text-base font-semibold sm:text-lg">
-                {reputation}
-
-                <span className="ml-1 text-[10px] font-normal text-muted-foreground sm:text-xs">
-                  pts
-                </span>
-              </span>
+            <div className="flex flex-col items-start gap-2">
+              <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground sm:text-xs">
+                Reputation
+              </p>
             </div>
 
-            <div className="mt-4 flex items-center gap-2.5 sm:mt-5 sm:gap-3">
+            <div className="mb-2 flex items-center gap-2.5 sm:gap-3">
               <div>
                 <p className="text-sm font-medium text-gold sm:text-base">
                   {contributor.name}
                 </p>
 
-                <p className="text-[10px] text-muted-foreground sm:text-xs">
-                  Contributor level
+                <p className="mt-4 text-[10px] text-muted-foreground sm:mt-3 sm:text-xs">
+                  Contribution points
                 </p>
+
+                <span className="text-base font-semibold sm:text-md">
+                  {reputation}
+
+                  <span className="ml-1 text-[10px] font-normal text-muted-foreground sm:text-xs">
+                    pts
+                  </span>
+                </span>
               </div>
             </div>
 
-            <div className="mt-4 h-1.5 overflow-hidden rounded-sm bg-muted sm:mt-5 sm:h-2">
+            <div className="h-1.5 overflow-hidden rounded-sm bg-muted sm:h-2">
               <div
                 className="h-full rounded-sm bg-gradient-emerald transition-all duration-500"
                 style={{
@@ -420,10 +428,10 @@ function PublicProfilePage() {
             <p className="mt-1.5 text-[10px] text-muted-foreground sm:mt-2 sm:text-xs">
               {nextLevel
                 ? `${nextLevel.pointsNeeded} pts until ${nextLevel.emoji} ${nextLevel.name}`
-                : "Highest contributor level reached 👑"}
+                : "Highest reputation level reached 👑"}
             </p>
           </section>
-          </aside>
+        </aside>
       </div>
     </div>
   );
