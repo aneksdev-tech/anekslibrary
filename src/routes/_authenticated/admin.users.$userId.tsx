@@ -1448,38 +1448,30 @@ function UserDetailsPage() {
                             </p>
 
                             {/* Resource title */}
-                            <p className="break-words text-xs font-medium sm:text-sm">
-                              {resource.title ||
-                                resource.file_name ||
-                                "Untitled resource"}
-                            </p>
+<p className="break-words text-xs font-medium sm:text-sm">
+  {resource.title || "Untitled resource"}
+</p>
 
-                            {/* Resource metadata */}
-                            <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] text-muted-foreground sm:text-xs">
-                              <span>
-                                {resource.file_name || "No file name"}
-                              </span>
+{/* File name */}
+<p className="mt-0.5 break-words text-[10px] text-muted-foreground sm:text-xs">
+  {resource.file_name || "No file name"}
+</p>
 
-                              <span aria-hidden="true">·</span>
+{/* Resource metadata */}
+<div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] text-muted-foreground sm:text-xs">
+  <span>{formatFileSize(resource.file_size)}</span>
 
-                              <div>
-                              <span>
-                                {formatFileSize(resource.file_size)}
-                              </span>
+  <span aria-hidden="true">·</span>
 
-                              <span aria-hidden="true">·</span>
+  <span className="inline-flex items-center gap-1">
+    <Download className="h-3 w-3" />
+    {(resource.download_count ?? 0).toLocaleString()} downloads
+  </span>
 
-                              <span className="inline-flex items-center gap-1">
-                                <Download className="h-3 w-3" />
-                                {(resource.download_count ?? 0).toLocaleString()} downloads
-                              </span>
+  <span aria-hidden="true">·</span>
 
-                              <span aria-hidden="true">·</span>
-
-                              <span>
-                                {formatDate(resource.created_at)}
-                              </span>
-                              </div>
+  <span>{formatDate(resource.created_at)}</span>
+</div>
                             </div>
                           </div>
                         </div>
