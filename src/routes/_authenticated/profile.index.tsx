@@ -263,15 +263,6 @@ function ProfilePage() {
   /*
    * Academic information completion is role-specific
    * and based ONLY on saved values.
-   *
-   * Student:
-   *   College + Department + Level
-   *
-   * Lecturer / Staff / Researcher:
-   *   College/Institution + Department/Research Area
-   *
-   * Users without academic information:
-   *   No academic requirement.
    */
   const academicComplete = hasAcademicInformation
     ? isStudent
@@ -287,10 +278,7 @@ function ProfilePage() {
     : true;
 
   /*
-   * Phone completion:
-   * The phone number is considered complete only when
-   * it contains 13–15 actual digits, ignoring formatting
-   * characters such as spaces, +, (), . and -.
+   * Phone completion.
    */
   const savedPhoneDigits = savedForm.phone_number.replace(
     /\D/g,
@@ -303,14 +291,6 @@ function ProfilePage() {
 
   /*
    * Completion is based ONLY on saved profile information.
-   *
-   * Without academic information:
-   *   4 items × 25% = 100%
-   *
-   * With academic information:
-   *   5 items × 20% = 100%
-   *
-   * Academic requirements themselves remain role-specific.
    */
   const completionItems = [
     Boolean(profile?.avatar_url),
@@ -364,9 +344,6 @@ function ProfilePage() {
 
   /*
    * Save button validation.
-   *
-   * Phone is optional, but if supplied it must contain
-   * 13–15 digits.
    */
   const academicValid = hasAcademicInformation
     ? isStudent
@@ -953,15 +930,6 @@ function ProfilePage() {
                     onChange={(e) => {
                       const value = e.target.value;
 
-                      /*
-                       * Allow only:
-                       * digits
-                       * spaces
-                       * +
-                       * parentheses
-                       * periods
-                       * hyphens
-                       */
                       if (!/^[+]?[0-9\s().-]*$/.test(value)) {
                         return;
                       }
@@ -1255,7 +1223,7 @@ function ProfilePage() {
         <div className="space-y-4 sm:space-y-6">
           {/* Reputation */}
           <div className="rounded-sm border border-border bg-card p-3.5 shadow-soft sm:p-6">
-            <div className="flex items-start justify-between gap-3 sm:gap-4">
+            <div className="flex flex-col items-start gap-2">
               <div>
                 <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground sm:text-xs">
                   Contribution
@@ -1305,13 +1273,14 @@ function ProfilePage() {
 
           {/* Account */}
           <div className="rounded-sm border border-border bg-card p-3.5 shadow-soft sm:p-6">
-            <div className="flex items-center gap-1.5 sm:gap-2">
+            <div className="flex flex-col items-start gap-2">
               <h3 className="text-xs font-semibold sm:text-base">
                 Account
               </h3>
+            </div>
 
             <div className="mt-4 divide-y divide-border sm:mt-5">
-              <div className="flex items-center justify-between gap-3 py-2.5 first:pt-0 sm:py-3">
+              <div className="flex flex-col items-start gap-1 py-2.5 first:pt-0 sm:py-3">
                 <span className="text-xs text-muted-foreground sm:text-xs">
                   Status
                 </span>
@@ -1323,12 +1292,12 @@ function ProfilePage() {
                 </span>
               </div>
 
-              <div className="flex items-center justify-between gap-3 py-2.5 last:pb-0 sm:py-3">
+              <div className="flex flex-col items-start gap-1 py-2.5 last:pb-0 sm:py-3">
                 <span className="text-xs text-muted-foreground sm:text-xs">
                   Member since
                 </span>
 
-                <span className="text-right text-xs font-medium sm:text-xs">
+                <span className="text-xs font-medium sm:text-xs">
                   {profile?.created_at
                     ? formatDate(profile.created_at)
                     : "-"}
