@@ -1226,21 +1226,9 @@ function ProfilePage() {
             <div className="flex flex-col items-start gap-2">
               <div>
                 <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground sm:text-xs">
-                  Contribution
-                </p>
-
-                <h3 className="mt-0.5 text-xs font-semibold sm:mt-1 sm:text-base">
                   Reputation
-                </h3>
+                </p>
               </div>
-
-              <span className="text-base font-semibold sm:text-md">
-                {profile?.reputation ?? 0}
-
-                <span className="ml-1 text-[10px] font-normal text-muted-foreground sm:text-xs">
-                  pts
-                </span>
-              </span>
             </div>
 
             <div className="mt-4 flex items-center gap-2.5 sm:mt-5 sm:gap-3">
@@ -1248,6 +1236,14 @@ function ProfilePage() {
                 <p className="text-sm font-medium text-gold sm:text-base">
                   {contributor.name}
                 </p>
+
+                <span className="text-base font-semibold sm:text-md">
+                {profile?.reputation ?? 0}
+
+                <span className="ml-1 text-[10px] font-normal text-muted-foreground sm:text-xs">
+                  pts
+                </span>
+              </span>
 
                 <p className="text-[10px] text-muted-foreground sm:text-xs">
                   Contributor level
@@ -1257,7 +1253,7 @@ function ProfilePage() {
 
             <div className="mt-4 h-1.5 overflow-hidden rounded-sm bg-muted sm:mt-5 sm:h-2">
               <div
-                className="h-full rounded-sm bg-gold transition-all duration-500"
+                className="h-full rounded-sm bg-gradient-emerald transition-all duration-500"
                 style={{
                   width: `${progress}%`,
                 }}
