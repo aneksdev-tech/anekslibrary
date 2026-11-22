@@ -681,7 +681,7 @@ function ProfilePage() {
         </p>
       </div>
 
-      <div className="grid gap-4 sm:gap-6 min-[820px]:grid-cols-[minmax(0,1fr)_200px]">
+      <div className="grid gap-4 sm:gap-6 min-[820px]:grid-cols-[minmax(0,1fr)_220px]">
         {/* Main profile card */}
         <div className="overflow-hidden rounded-sm border border-border bg-card shadow-soft">
           {/* Profile identity */}
@@ -1266,7 +1266,7 @@ function ProfilePage() {
                 </h3>
               </div>
 
-              <span className="text-base font-semibold sm:text-lg">
+              <span className="text-base font-semibold sm:text-md">
                 {profile?.reputation ?? 0}
 
                 <span className="ml-1 text-[10px] font-normal text-muted-foreground sm:text-xs">
@@ -1306,12 +1306,9 @@ function ProfilePage() {
           {/* Account */}
           <div className="rounded-sm border border-border bg-card p-3.5 shadow-soft sm:p-6">
             <div className="flex items-center gap-1.5 sm:gap-2">
-              <ShieldCheck className="h-3.5 w-3.5 text-primary sm:h-4 sm:w-4" />
-
               <h3 className="text-xs font-semibold sm:text-base">
                 Account
               </h3>
-            </div>
 
             <div className="mt-4 divide-y divide-border sm:mt-5">
               <div className="flex items-center justify-between gap-3 py-2.5 first:pt-0 sm:py-3">
@@ -1354,7 +1351,7 @@ function ProfilePage() {
               </div>
             </div>
 
-            <div className="mt-4 grid grid-cols-1 gap-x-6 gap-y-5 sm:mt-5 sm:grid-cols-2 lg:grid-cols-1">
+            <div className="mt-4 grid grid-cols-1 gap-x-6 gap-y-5 sm:mt-5 sm:grid-cols-1 lg:grid-cols-1">
               <div className="min-w-0">
                 <div className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground sm:text-xs">
                   Subscription status
