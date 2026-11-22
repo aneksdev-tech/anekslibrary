@@ -681,7 +681,7 @@ function ProfilePage() {
         </p>
       </div>
 
-      <div className="grid gap-4 sm:gap-6 min-[820px]:grid-cols-[minmax(0,1fr)_240px]">
+      <div className="grid gap-4 sm:gap-6 min-[820px]:grid-cols-[minmax(0,1fr)_220px]">
         {/* Main profile card */}
         <div className="overflow-hidden rounded-sm border border-border bg-card shadow-soft">
           {/* Profile identity */}
@@ -1261,7 +1261,7 @@ function ProfilePage() {
                   Contribution
                 </p>
 
-                <h3 className="mt-0.5 text-sm font-semibold sm:mt-1 sm:text-base">
+                <h3 className="mt-0.5 text-xs font-semibold sm:mt-1 sm:text-base">
                   Reputation
                 </h3>
               </div>
@@ -1308,7 +1308,7 @@ function ProfilePage() {
             <div className="flex items-center gap-1.5 sm:gap-2">
               <ShieldCheck className="h-3.5 w-3.5 text-primary sm:h-4 sm:w-4" />
 
-              <h3 className="text-[10px] font-semibold sm:text-base">
+              <h3 className="text-xs font-semibold sm:text-base">
                 Account
               </h3>
             </div>
