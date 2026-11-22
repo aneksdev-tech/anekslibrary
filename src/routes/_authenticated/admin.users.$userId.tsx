@@ -1460,24 +1460,20 @@ function UserDetailsPage() {
   </p>
 
   {/* Line 3: Resource metadata */}
-  <div className="mt-1 flex w-full flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[10px] text-muted-foreground sm:text-xs">
-    <span>{formatFileSize(resource.file_size)}</span>
+<div className="mt-1 flex w-full min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1 text-[10px] text-muted-foreground sm:text-xs">
+  <span className="whitespace-nowrap">
+    {formatFileSize(resource.file_size)}
+  </span>
 
-    <span aria-hidden="true" className="text-muted-foreground/60">
-      ·
-    </span>
+  <span className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap">
+    <Download className="h-3 w-3" />
+    {(resource.download_count ?? 0).toLocaleString()} downloads
+  </span>
 
-    <span className="inline-flex items-center gap-1">
-      <Download className="h-3 w-3" />
-      {(resource.download_count ?? 0).toLocaleString()} downloads
-    </span>
-
-    <span aria-hidden="true" className="text-muted-foreground/60">
-      ·
-    </span>
-
-    <span>{formatDate(resource.created_at)}</span>
-  </div>
+  <span className="whitespace-nowrap">
+    {formatDate(resource.created_at)}
+  </span>
+</div>
 </div>
                             </div>
                           </div>
