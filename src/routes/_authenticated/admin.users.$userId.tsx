@@ -1246,7 +1246,7 @@ function UserDetailsPage() {
                 </div>
 
                 <div className="mt-0.5 text-[10px] text-muted-foreground sm:mt-1 sm:text-sm">
-                  Resources
+                  Uploads
                 </div>
               </div>
 
@@ -1266,7 +1266,7 @@ function UserDetailsPage() {
                 </div>
 
                 <div className="mt-0.5 text-[10px] text-muted-foreground sm:mt-1 sm:text-sm">
-                  Reputation
+                  Contribution Points
                 </div>
               </div>
             </div>
