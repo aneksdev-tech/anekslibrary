@@ -1276,7 +1276,7 @@ function UserDetailsPage() {
         </section>
 
         {/* Profile and administration content */}
-        <div className="grid gap-4 sm:gap-6 min-[740px]:grid-cols-[minmax(0,1fr)_230px]">
+        <div className="grid gap-4 sm:gap-6 min-[740px]:grid-cols-[minmax(0,1fr)_220px]">
           {/* Main content */}
           <main className="min-w-0 space-y-4 sm:space-y-6">
             {/* Profile information */}
@@ -1642,7 +1642,7 @@ function UserDetailsPage() {
                     Account Management
                   </h2>
 
-                  <p className="text-xs text-muted-foreground sm:text-sm">
+                  <p className="text-xs text-muted-foreground sm:text-xs">
                     Manage access and account permissions.
                   </p>
                 </div>
@@ -1665,7 +1665,7 @@ function UserDetailsPage() {
                       setStatus.isPending
                     }
                   >
-                    <SelectTrigger className="h-10 text-xs sm:text-sm">
+                    <SelectTrigger className="h-10 text-xs sm:text-xs">
                       <SelectValue />
                     </SelectTrigger>
 
