@@ -1462,6 +1462,7 @@ function UserDetailsPage() {
 
                               <span aria-hidden="true">·</span>
 
+                              <div>
                               <span>
                                 {formatFileSize(resource.file_size)}
                               </span>
@@ -1478,6 +1479,7 @@ function UserDetailsPage() {
                               <span>
                                 {formatDate(resource.created_at)}
                               </span>
+                              </div>
                             </div>
                           </div>
                         </div>
