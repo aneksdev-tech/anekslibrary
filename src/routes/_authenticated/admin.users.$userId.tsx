@@ -1241,32 +1241,29 @@ function UserDetailsPage() {
           <div className="p-4 sm:p-8">
             <div className="grid grid-cols-3 text-center">
               <div className="min-w-0 px-1.5 sm:px-2">
+                <div className="mb-0.5 text-[10px] text-muted-foreground sm:mb-1 sm:text-sm">
+                  Uploads
+                </div>
                 <div className="text-xl font-semibold sm:text-2xl">
                   {resources?.length ?? 0}
-                </div>
-
-                <div className="mt-0.5 text-[10px] text-muted-foreground sm:mt-1 sm:text-sm">
-                  Uploads
                 </div>
               </div>
 
               <div className="min-w-0 border-x border-border px-1.5 sm:px-2">
+                <div className="mb-0.5 text-[10px] text-muted-foreground sm:mb-1 sm:text-sm">
+                  Downloads
+                </div>
                 <div className="text-xl font-semibold sm:text-2xl">
                   {totalDownloads.toLocaleString()}
-                </div>
-
-                <div className="mt-0.5 text-[10px] text-muted-foreground sm:mt-1 sm:text-sm">
-                  Downloads
                 </div>
               </div>
 
               <div className="min-w-0 px-1.5 sm:px-2">
+                <div className="mb-0.5 text-[10px] text-muted-foreground sm:mb-1 sm:text-sm">
+                  Contribution Points
+                </div>
                 <div className="text-xl font-semibold sm:text-2xl">
                   {user.reputation}
-                </div>
-
-                <div className="mt-0.5 text-[10px] text-muted-foreground sm:mt-1 sm:text-sm">
-                  Contribution Points
                 </div>
               </div>
             </div>
