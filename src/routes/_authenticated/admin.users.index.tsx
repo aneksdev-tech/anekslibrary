@@ -1397,7 +1397,7 @@ const hasActiveFilters =
                   </th>
 
                   <th className="p-3 pl-4.5 font-medium">
-                    Last Activity
+                    Last Seen
                   </th>
 
                   <th className="p-3 pl-7 font-medium">

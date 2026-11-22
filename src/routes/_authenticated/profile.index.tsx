@@ -658,7 +658,7 @@ function ProfilePage() {
         </p>
       </div>
 
-      <div className="grid gap-4 sm:gap-6 min-[820px]:grid-cols-[minmax(0,1fr)_200px]">
+      <div className="grid gap-4 sm:gap-6 min-[820px]:grid-cols-[minmax(0,1fr)_220px]">
         {/* Main profile card */}
         <div className="overflow-hidden rounded-sm border border-border bg-card shadow-soft">
           {/* Profile identity */}
@@ -1230,13 +1230,13 @@ function ProfilePage() {
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-2.5 sm:gap-3">
+            <div className="mb-2 flex items-center gap-2.5 sm:mb-2 sm:gap-3">
               <div>
-                <p className="text-sm mb-4 font-medium text-gold sm:mb-5 sm:text-base">
+                <p className="text-sm font-medium text-gold sm:text-base">
                   {contributor.name}
                 </p>
 
-                <p className="text-[10px] text-muted-foreground sm:text-xs">
+                <p className="text-[10px] mt-4 text-muted-foreground sm:text-xs sm:mt-3">
                   Contribution points
                 </p>
                 <span className="text-base font-semibold sm:text-md">

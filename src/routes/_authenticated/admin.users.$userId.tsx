@@ -54,7 +54,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { getContributorLevel } from "@/lib/reputation";
+import {
+  getContributorLevel,
+  getLevelProgress,
+  getNextContributorLevel,
+} from "@/lib/reputation";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -764,6 +768,14 @@ function UserDetailsPage() {
     user?.reputation ?? 0,
   );
 
+  const progress = getLevelProgress(
+  user?.reputation ?? 0,
+);
+
+const nextLevel = getNextContributorLevel(
+  user?.reputation ?? 0,
+);
+
   const totalDownloads = useMemo(
     () =>
       (resources ?? []).reduce(
@@ -1206,7 +1218,7 @@ function UserDetailsPage() {
                   </p>
                 )}
 
-                <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-[10px] text-muted-foreground sm:mt-5 sm:gap-x-5 sm:gap-y-2 sm:text-sm">
+                <div className="w-full mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-[10px] text-muted-foreground sm:mt-5 sm:gap-x-5 sm:gap-y-2 sm:text-sm">
                   <span className="inline-flex items-center gap-1">
                     <CalendarDays className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                     Joined {formatDate(user.created_at)}
@@ -1216,7 +1228,7 @@ function UserDetailsPage() {
                     <Clock3 className="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" />
 
                     <span>
-                      Last activity:{" "}
+                      Last seen:{" "}
                       <span
                         className={`font-semibold ${
                           isOnline
@@ -1238,37 +1250,56 @@ function UserDetailsPage() {
           </div>
 
           {/* Profile statistics */}
-          <div className="p-4 sm:p-8">
-            <div className="grid grid-cols-3 text-center">
-              <div className="min-w-0 px-1.5 sm:px-2">
-                <div className="mb-0.5 text-[10px] text-muted-foreground sm:mb-1 sm:text-sm">
-                  Uploads
-                </div>
-                <div className="text-xl font-semibold sm:text-2xl">
-                  {resources?.length ?? 0}
-                </div>
-              </div>
+<div className="p-4 sm:p-8">
+  <div className="grid grid-cols-3 text-center">
+    <div className="min-w-0 px-1.5 sm:px-2">
+      <div className="text-xl font-semibold sm:text-2xl">
+        {resources?.length ?? 0}
+      </div>
 
-              <div className="min-w-0 border-x border-border px-1.5 sm:px-2">
-                <div className="mb-0.5 text-[10px] text-muted-foreground sm:mb-1 sm:text-sm">
-                  Downloads
-                </div>
-                <div className="text-xl font-semibold sm:text-2xl">
-                  {totalDownloads.toLocaleString()}
-                </div>
-              </div>
+      <div className="mt-0.5 text-[10px] text-muted-foreground sm:mt-1 sm:text-sm">
+        Resources
+      </div>
+    </div>
 
-              <div className="min-w-0 px-1.5 sm:px-2">
-                <div className="mb-0.5 text-[10px] text-muted-foreground sm:mb-1 sm:text-sm">
-                  Contribution Points
-                </div>
-                <div className="text-xl font-semibold sm:text-2xl">
-                  {user.reputation}
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
+    <div className="min-w-0 border-x border-border px-1.5 sm:px-2">
+      <div className="text-xl font-semibold sm:text-2xl">
+        {totalDownloads.toLocaleString()}
+      </div>
+
+      <div className="mt-0.5 text-[10px] text-muted-foreground sm:mt-1 sm:text-sm">
+        Downloads
+      </div>
+    </div>
+
+    {/* Reputation */}
+    <div className="min-w-0 px-1.5 sm:px-2">
+      <div className="text-sm font-medium text-gold sm:text-base">
+        {contributor.name}
+      </div>
+
+      <div className="mt-1 text-[10px] text-muted-foreground sm:text-xs">
+        {user.reputation} pts
+      </div>
+
+      <div className="mt-2 h-1.5 overflow-hidden rounded-sm bg-muted sm:h-2">
+        <div
+          className="h-full rounded-sm bg-gradient-emerald transition-all duration-500"
+          style={{
+            width: `${progress}%`,
+          }}
+        />
+      </div>
+
+      <p className="mt-1 text-[9px] text-muted-foreground sm:text-[10px]">
+        {nextLevel
+          ? `${nextLevel.pointsNeeded} pts until ${nextLevel.emoji} ${nextLevel.name}`
+          : "Highest level reached 👑"}
+      </p>
+    </div>
+  </div>
+</div>
+</section>
 
         {/* Profile and administration content */}
         <div className="grid gap-4 sm:gap-6 min-[820px]:grid-cols-[minmax(0,1fr)_220px]">
@@ -1444,37 +1475,41 @@ function UserDetailsPage() {
                               {formatLabel(resource.status || "unknown")}
                             </p>
 
-                            {/* Resource information */}
-<div className="flex w-full min-w-0 flex-col items-start">
-  {/* Line 1: Resource title */}
-  <p className="w-full break-words text-xs font-medium sm:text-sm">
-    {resource.title || "Untitled resource"}
-  </p>
+                            {/* Resource title */}
+                            <p className="break-words text-xs font-medium sm:text-sm">
+                              {resource.title ||
+                                resource.file_name ||
+                                "Untitled resource"}
+                            </p>
 
-  {/* Line 2: File name */}
-  <p className="mt-0.5 w-full break-words text-[10px] text-muted-foreground sm:text-xs">
-    {resource.file_name || "No file name"}
-  </p>
+                            {/* Resource metadata */}
+                            <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] text-muted-foreground sm:text-xs">
+                              <span>
+                                {resource.file_name || "No file name"}
+                              </span>
 
-  {/* Line 3: Resource metadata */}
-<div className="mt-1 flex w-full min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1 text-[10px] text-muted-foreground sm:text-xs">
-  <span className="whitespace-nowrap">
-    {formatFileSize(resource.file_size)}
-  </span>
+                              <span aria-hidden="true">·</span>
 
-  <span className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap">
-    <Download className="h-3 w-3" />
-    {(resource.download_count ?? 0).toLocaleString()} downloads
-  </span>
+                              <span>
+                                {formatFileSize(resource.file_size)}
+                              </span>
 
-  <span className="whitespace-nowrap">
-    {formatDate(resource.created_at)}
-  </span>
-</div>
-</div>
+                              <span aria-hidden="true">·</span>
+
+                              <span className="inline-flex items-center gap-1">
+                                <Download className="h-3 w-3" />
+                                {(resource.download_count ?? 0).toLocaleString()} downloads
+                              </span>
+
+                              <span aria-hidden="true">·</span>
+
+                              <span>
+                                {formatDate(resource.created_at)}
+                              </span>
                             </div>
                           </div>
                         </div>
+                      </div>
                     </li>
                   ))}
                 </ul>
