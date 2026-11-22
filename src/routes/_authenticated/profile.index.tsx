@@ -1230,7 +1230,7 @@ function ProfilePage() {
                 </p>
               </div>
             </div>
-            <div className="mt-4 flex items-center gap-2.5 sm:mt-5 sm:gap-3">
+            <div className="mb-4 flex items-center gap-2.5 sm:mt-5 sm:gap-3">
               <div>
                 <p className="text-sm font-medium text-gold sm:text-base">
                   {contributor.name}
