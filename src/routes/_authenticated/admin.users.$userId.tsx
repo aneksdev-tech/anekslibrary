@@ -1447,30 +1447,37 @@ function UserDetailsPage() {
                               {formatLabel(resource.status || "unknown")}
                             </p>
 
-                            {/* Resource title */}
-<p className="break-words text-xs font-medium sm:text-sm">
-  {resource.title || "Untitled resource"}
-</p>
+                            {/* Resource information */}
+<div className="flex w-full min-w-0 flex-col items-start">
+  {/* Line 1: Resource title */}
+  <p className="w-full break-words text-xs font-medium sm:text-sm">
+    {resource.title || "Untitled resource"}
+  </p>
 
-{/* File name */}
-<p className="mt-0.5 break-words text-[10px] text-muted-foreground sm:text-xs">
-  {resource.file_name || "No file name"}
-</p>
+  {/* Line 2: File name */}
+  <p className="mt-0.5 w-full break-words text-[10px] text-muted-foreground sm:text-xs">
+    {resource.file_name || "No file name"}
+  </p>
 
-{/* Resource metadata */}
-<div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] text-muted-foreground sm:text-xs">
-  <span>{formatFileSize(resource.file_size)}</span>
+  {/* Line 3: Resource metadata */}
+  <div className="mt-1 flex w-full flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[10px] text-muted-foreground sm:text-xs">
+    <span>{formatFileSize(resource.file_size)}</span>
 
-  <span aria-hidden="true">·</span>
+    <span aria-hidden="true" className="text-muted-foreground/60">
+      ·
+    </span>
 
-  <span className="inline-flex items-center gap-1">
-    <Download className="h-3 w-3" />
-    {(resource.download_count ?? 0).toLocaleString()} downloads
-  </span>
+    <span className="inline-flex items-center gap-1">
+      <Download className="h-3 w-3" />
+      {(resource.download_count ?? 0).toLocaleString()} downloads
+    </span>
 
-  <span aria-hidden="true">·</span>
+    <span aria-hidden="true" className="text-muted-foreground/60">
+      ·
+    </span>
 
-  <span>{formatDate(resource.created_at)}</span>
+    <span>{formatDate(resource.created_at)}</span>
+  </div>
 </div>
                             </div>
                           </div>
