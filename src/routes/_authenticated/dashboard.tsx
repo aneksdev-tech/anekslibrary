@@ -475,7 +475,7 @@ function DashboardPage() {
                     <p className="mt-1.5 text-[9px] leading-tight text-muted-foreground sm:mt-2 sm:text-[11px]">
                       {nextLevel
                         ? `${nextLevel.pointsNeeded} pts to ${nextLevel.emoji} ${nextLevel.name}`
-                        : "Highest contributor level reached 👑"}
+                        : "Highest reputation level reached 👑"}
                     </p>
                   </>
                 )}
