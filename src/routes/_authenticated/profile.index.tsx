@@ -681,7 +681,7 @@ function ProfilePage() {
         </p>
       </div>
 
-      <div className="grid gap-4 sm:gap-6 min-[1200px]:grid-cols-[minmax(0,1fr)_340px]">
+      <div className="grid gap-4 sm:gap-6 min-[820px]:grid-cols-[minmax(0,1fr)_220px]">
         {/* Main profile card */}
         <div className="overflow-hidden rounded-sm border border-border bg-card shadow-soft">
           {/* Profile identity */}
