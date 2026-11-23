@@ -295,7 +295,7 @@ function AdminOverview() {
       </div>
       
       {/* Primary statistics */}
-      <div className="grid grid-cols-2 gap-px overflow-hidden rounded-sm border border-border bg-border sm:grid-cols-2 lg:grid-cols-5">
+      <div className="grid grid-cols-2 gap-px overflow-hidden rounded-sm border border-border bg-border min-[820px]:grid-cols-5">
         {stats.map((stat, index) => {
           const Icon = stat.icon;
 
@@ -303,13 +303,7 @@ function AdminOverview() {
             <div
               key={stat.label}
               className={`group flex min-h-24 flex-col justify-between bg-card p-3 sm:min-h-32 sm:p-5 ${
-                index === 4
-                  ? "col-span-2 sm:col-span-1"
-                  : ""
-              } ${
-                index > 0
-                  ? "border-border"
-                  : ""
+                index > 0 ? "border-border" : ""
               }`}
             >
               <div className="flex items-center justify-between gap-2.5 sm:gap-3">

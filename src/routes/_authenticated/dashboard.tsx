@@ -377,7 +377,7 @@ function DashboardPage() {
       value:
         profile?.reputation ?? 0,
       icon: TrendingUp,
-      sub: `${contributor.emoji} ${contributor.name}`,
+      sub: contributor.name,
     },
   ];
 
@@ -452,9 +452,10 @@ function DashboardPage() {
 
                 <div className="mt-1 truncate text-[10px] text-muted-foreground sm:text-xs">
                   {c.label === "Reputation" ? (
-                    <span className="text-gold">
-                      {contributor.emoji} {contributor.name}
-                    </span>
+                    <span className="inline-flex items-center gap-1 text-gold">
+                    <contributor.icon className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                    {contributor.name}
+                </span>
                   ) : (
                     c.sub
                   )}
@@ -474,8 +475,8 @@ function DashboardPage() {
 
                     <p className="mt-1.5 text-[9px] leading-tight text-muted-foreground sm:mt-2 sm:text-[11px]">
                       {nextLevel
-                        ? `${nextLevel.pointsNeeded} pts to ${nextLevel.emoji} ${nextLevel.name}`
-                        : "Highest reputation level reached 👑"}
+                        ? `${nextLevel.pointsNeeded} pts to ${nextLevel.name}`
+                        : "Highest reputation level reached"}
                     </p>
                   </>
                 )}

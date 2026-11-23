@@ -15,6 +15,8 @@ import {
   useState,
 } from "react";
 import {
+  BookOpen,
+  BriefcaseBusiness,
   CalendarDays,
   ChevronDown,
   ChevronLeft,
@@ -25,8 +27,14 @@ import {
   Loader2,
   Search,
   Shield,
+  ShieldCheck,
   UserRound,
   X,
+  Microscope,
+  NotebookPen,
+  UserRoundSearch,
+  Presentation,
+  ClipboardList,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -384,26 +392,30 @@ function getInitials(
   }`.toUpperCase();
 }
 
-function getRoleIcon(
-  role: AppRole,
-) {
-  if (
-    role === "student" ||
-    role === "lecturer" ||
-    role === "researcher"
-  ) {
-    return GraduationCap;
-  }
+function getRoleIcon(role: AppRole) {
+  switch (role) {
+    case "admin":
+      return ShieldCheck;
 
-  if (
-    role === "admin" ||
-    role === "co-admin" ||
-    role === "staff"
-  ) {
-    return Shield;
-  }
+    case "co-admin":
+      return Shield;
 
-  return UserRound;
+    case "lecturer":
+      return Presentation;
+
+    case "student":
+      return NotebookPen;
+
+    case "researcher":
+      return Microscope;
+
+    case "staff":
+      return ClipboardList;
+
+    case "guest":
+    default:
+      return UserRoundSearch;
+  }
 }
 
 function getActorLabel(

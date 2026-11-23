@@ -17,6 +17,7 @@ import {
   Loader2,
   ArrowLeft,
   Share2,
+  File,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -270,6 +271,24 @@ function PreviewPage() {
     return `${parts[0]?.[0] ?? ""}${parts[1]?.[0] ?? ""}`.toUpperCase();
   })();
 
+  const formatFileSize = (bytes: number | null | undefined) => {
+  if (bytes == null || bytes <= 0) return null;
+
+  if (bytes < 1024) {
+    return `${bytes} B`;
+  }
+
+  if (bytes < 1024 * 1024) {
+    return `${(bytes / 1024).toFixed(1)} KB`;
+  }
+
+  if (bytes < 1024 * 1024 * 1024) {
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  }
+
+  return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+};
+
   return (
     <>
       <div className="mx-3 max-w-8xl space-y-4 sm:space-y-4">
@@ -302,9 +321,18 @@ function PreviewPage() {
           </span>
         </div>
 
-        <h1 className="font-display text-xl font-semibold leading-tight sm:text-3xl">
-          {resource.title}
-        </h1>
+        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+          <h1 className="font-display text-xl font-semibold leading-tight sm:text-3xl">
+            {resource.title}
+          </h1>
+
+          {resource.file_size != null && (
+            <span className="inline-flex shrink-0 items-center gap-1 text-[10px] font-normal text-muted-foreground sm:text-xs">
+              <File className="h-3 w-3 shrink-0" />
+              {formatFileSize(resource.file_size)}
+            </span>
+          )}
+        </div>
 
         {resource.description && (
           <p className="mt-2 max-w-3xl text-xs leading-relaxed text-muted-foreground sm:mt-4 sm:text-sm">

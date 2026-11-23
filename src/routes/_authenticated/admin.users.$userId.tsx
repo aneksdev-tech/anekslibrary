@@ -22,15 +22,19 @@ import {
   History,
   Loader2,
   Mail,
-  Phone,
+  ShieldCheck,
   Shield,
-  UserCog,
   UserRound,
   Upload,
   RefreshCw,
   Activity,
   CircleCheck,
   CircleX,
+  Microscope,
+  NotebookPen,
+  UserRoundSearch,
+  Presentation,
+  ClipboardList,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -389,11 +393,31 @@ function getInitials(fullName: string) {
 }
 
 function getRoleIcon(role: AppRole) {
-  if (role === "admin" || role === "co-admin") {
-    return Shield;
-  }
+  switch (role) {
+    case "admin":
+      return ShieldCheck;
 
-  return UserRound;
+    case "co-admin":
+      return Shield;
+
+    case "staff":
+      return ClipboardList;
+
+    case "lecturer":
+      return Presentation;
+
+    case "researcher":
+      return Microscope;
+
+    case "student":
+      return NotebookPen;
+
+    case "guest":
+      return UserRoundSearch;
+
+    default:
+      return UserRound;
+  }
 }
 
 function getRoleLabel(role: AppRole) {
@@ -423,7 +447,7 @@ function getUserStatusStyles(status: string) {
       return "text-green-500";
 
     case "suspended":
-      return "bg-amber-500/10 text-amber-600 dark:text-amber-400";
+      return "bg-gold text-gold dark:text-gold";
 
     case "rejected":
       return "bg-destructive/10 text-destructive";
@@ -1175,6 +1199,11 @@ function UserDetailsPage() {
             {getRoleLabel(user.primary_role)}
           </span>
 
+          <span className="inline-flex items-center gap-1 rounded-full bg-gold/10 px-2 py-0.5 text-[10px] font-medium text-gold sm:gap-1.5 sm:px-3 sm:py-1 sm:text-xs">
+            <contributor.icon className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+            {contributor.name}
+        </span>
+
           <SubscriptionPlanBadge
             plan={user.subscription_plan}
           />
@@ -1184,27 +1213,21 @@ function UserDetailsPage() {
           {user.full_name || "Unnamed user"}
         </h1>
 
-        <div className="mt-1.5 flex min-w-0 items-start gap-1.5 text-xs text-muted-foreground sm:mt-2 sm:text-sm">
+        {user.bio && (
+          <p className="mt-2 max-w-2xl text-xs leading-5 text-muted-foreground sm:mt-2 sm:text-sm sm:leading-relaxed">
+            {user.bio}
+          </p>
+        )}
+
+        <div className="mt-1.5 flex min-w-0 items-start gap-1.5 text-xs text-muted-foreground sm:mt-1.5 sm:text-sm">
           <Mail className="mt-0.5 h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" />
           <span className="break-all">
             {user.email || "No email address"}
           </span>
         </div>
 
-        {user.bio && (
-          <p className="mt-2 max-w-2xl text-xs leading-5 text-muted-foreground sm:mt-3 sm:text-sm sm:leading-relaxed">
-            {user.bio}
-          </p>
-        )}
-
         {/* Reputation and account activity */}
-        <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 sm:mt-5 sm:gap-x-5">
-          <span className="inline-flex items-center gap-1 rounded-full bg-gold/10 px-2 py-0.5 text-[10px] font-medium text-gold sm:gap-1.5 sm:px-3 sm:py-1 sm:text-xs">
-            <UserRound className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-            {contributor.emoji}
-            {contributor.name}
-          </span>
-
+        <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-2 sm:mt-1.5 sm:gap-x-5">
           <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground sm:text-sm">
             <CalendarDays className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             Joined {formatDate(user.created_at)}
@@ -1639,7 +1662,8 @@ function UserDetailsPage() {
 
               <div className="mb-2 flex items-center gap-2.5 sm:gap-3">
                 <div>
-                  <p className="text-sm font-medium text-gold sm:text-base">
+                  <p className="inline-flex items-center gap-1 mt-2 py-0.5 text-[10px] font-medium text-gold sm:gap-1.5 sm:py-1 sm:text-xs">
+                    <contributor.icon className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                     {contributor.name}
                   </p>
 
@@ -1666,11 +1690,16 @@ function UserDetailsPage() {
                 />
               </div>
 
-              <p className="mt-1.5 text-[10px] text-muted-foreground sm:mt-2 sm:text-xs">
-                {nextLevel
-                  ? `${nextLevel.pointsNeeded} pts until ${nextLevel.emoji} ${nextLevel.name}`
-                  : "Highest reputation level reached 👑"}
-              </p>
+              <p className="mt-1.5 flex items-center gap-1 text-[10px] text-muted-foreground sm:mt-2 sm:text-xs">
+  {nextLevel ? (
+    <>
+      {nextLevel.pointsNeeded} pts until{" "}
+      {nextLevel.name}
+    </>
+  ) : (
+    "Highest reputation level reached"
+  )}
+  </p>
             </section>
 
             {/* Account management */}

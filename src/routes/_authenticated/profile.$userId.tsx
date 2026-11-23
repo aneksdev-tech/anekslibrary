@@ -9,7 +9,13 @@ import {
   Download,
   FileText,
   Shield,
+  ShieldCheck,
+  NotebookPen,
+  UserRoundSearch,
+  Presentation,
+  ClipboardList,
   UserRound,
+  Microscope,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -37,13 +43,13 @@ const roleLabels: Record<string, string> = {
 };
 
 const roleIcons: Record<string, typeof UserRound> = {
-  admin: Shield,
+  admin: ShieldCheck,
   "co-admin": Shield,
-  lecturer: UserRound,
-  staff: UserRound,
-  student: UserRound,
-  researcher: UserRound,
-  guest: UserRound,
+  lecturer: Presentation,
+  staff: ClipboardList,
+  student: NotebookPen,
+  researcher: Microscope,
+  guest: UserRoundSearch,
 };
 
 function PublicProfilePage() {
@@ -227,6 +233,11 @@ function PublicProfilePage() {
                       {roleLabel}
                     </span>
 
+                    <span className="inline-flex items-center gap-1 rounded-full bg-gold/10 px-2 py-0.5 text-[10px] font-medium text-gold sm:gap-1.5 sm:px-3 sm:py-1 sm:text-xs">
+                      <contributor.icon className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                      {contributor.name}
+                    </span>
+
                     <span
                       className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium sm:gap-1.5 sm:px-3 sm:py-1 sm:text-xs ${
                         isPremium
@@ -243,17 +254,12 @@ function PublicProfilePage() {
                   </h2>
 
                   {profile.bio && (
-                    <p className="mt-1.5 max-w-2xl text-xs leading-5 text-muted-foreground sm:mt-2 sm:text-sm sm:leading-relaxed">
+                    <p className="mt-2 max-w-2xl text-xs leading-5 text-muted-foreground sm:mt-2 sm:text-sm sm:leading-relaxed">
                       {profile.bio}
                     </p>
                   )}
 
-                  <div className="mt-4 flex flex-wrap gap-x-4 gap-y-1.5 text-[10px] text-muted-foreground sm:mt-5 sm:gap-x-5 sm:gap-y-2 sm:text-sm">
-                    <span className="inline-flex items-center gap-1 rounded-full bg-gold/10 px-2 py-0.5 text-[10px] font-medium text-gold sm:gap-1.5 sm:px-3 sm:py-1 sm:text-xs">
-                    <UserRound className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                      {contributor.emoji}
-                      {contributor.name}
-                    </span>
+                  <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1.5 text-[10px] text-muted-foreground sm:mt-1.5 sm:gap-x-5 sm:gap-y-2 sm:text-sm">
                     {joinedDate && (
                       <span className="inline-flex items-center gap-1">
                         <CalendarDays className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
@@ -398,9 +404,10 @@ function PublicProfilePage() {
 
             <div className="mb-2 flex items-center gap-2.5 sm:gap-3">
               <div>
-                <p className="text-sm font-medium text-gold sm:text-base">
-                  {contributor.name}
-                </p>
+                <p className="inline-flex items-center gap-1 mt-2 py-0.5 text-[10px] font-medium text-gold sm:gap-1.5 sm:py-1 sm:text-xs">
+                    <contributor.icon className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                    {contributor.name}
+                  </p>
 
                 <p className="mt-4 text-[10px] text-muted-foreground sm:mt-3 sm:text-xs">
                   Contribution points
@@ -425,11 +432,16 @@ function PublicProfilePage() {
               />
             </div>
 
-            <p className="mt-1.5 text-[10px] text-muted-foreground sm:mt-2 sm:text-xs">
-              {nextLevel
-                ? `${nextLevel.pointsNeeded} pts until ${nextLevel.emoji} ${nextLevel.name}`
-                : "Highest reputation level reached 👑"}
-            </p>
+            <p className="mt-1.5 flex items-center gap-1 text-[10px] text-muted-foreground sm:mt-2 sm:text-xs">
+  {nextLevel ? (
+    <>
+      {nextLevel.pointsNeeded} pts until{" "}
+      {nextLevel.name}
+    </>
+  ) : (
+    "Highest reputation level reached"
+  )}
+</p>
           </section>
         </aside>
       </div>

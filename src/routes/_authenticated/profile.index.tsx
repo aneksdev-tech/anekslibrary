@@ -12,11 +12,12 @@ import {
   Shield,
   ShieldCheck,
   CalendarDays,
-  Crown,
-  GraduationCap,
-  CircleCheck,
-  Activity,
+  NotebookPen,
+  UserRoundSearch,
+  Presentation,
+  ClipboardList,
   UserRound,
+  Microscope,
 } from "lucide-react";
 import {
   AlertDialog,
@@ -129,7 +130,7 @@ function ProfilePage() {
     isResearcher;
 
   const needsLevel = isStudent;
-  
+
   const roleLabels: Record<string, string> = {
   admin: "Administrator",
   "co-admin": "Co-admin",
@@ -142,14 +143,13 @@ function ProfilePage() {
 };
 
 const roleIcons: Record<string, typeof UserRound> = {
-  admin: Shield,
+  admin: ShieldCheck,
   "co-admin": Shield,
-  coadmin: Shield,
-  lecturer: UserRound,
-  staff: UserRound,
-  student: UserRound,
-  researcher: UserRound,
-  guest: UserRound,
+  lecturer: Presentation,
+  staff: ClipboardList,
+  student: NotebookPen,
+  researcher: Microscope,
+  guest: UserRoundSearch,
 };
 
 const roleKey = profile?.primary_role ?? "guest";
@@ -715,6 +715,11 @@ const RoleIcon = roleIcons[roleKey] ?? UserRound;
           {roleLabel}
         </span>
 
+        <span className="inline-flex items-center gap-1 rounded-full bg-gold/10 px-2 py-0.5 text-[10px] font-medium text-gold sm:gap-1.5 sm:px-3 sm:py-1 sm:text-xs">
+          <contributor.icon className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+          {contributor.name}
+        </span>
+
         <SubscriptionPlanBadge
           plan={profile?.subscription_plan}
         />
@@ -724,32 +729,25 @@ const RoleIcon = roleIcons[roleKey] ?? UserRound;
         {profile?.full_name || "Unnamed User"}
       </h2>
 
-      <div className="mt-1.5 flex min-w-0 items-start gap-1.5 text-xs text-muted-foreground sm:mt-2 sm:text-sm">
+      {profile?.bio ? (
+        <p className="mt-2 max-w-2xl text-xs leading-5 text-muted-foreground sm:mt-2 sm:text-sm sm:leading-relaxed">
+          {profile.bio}
+        </p>
+      ) : (
+        <p className="mt-2 text-xs italic text-muted-foreground sm:mt-2 sm:text-sm">
+          No bio yet.
+        </p>
+      )}
+
+      <div className="mt-1.5 flex min-w-0 items-start gap-1.5 text-xs text-muted-foreground sm:mt-1.5 sm:text-sm">
         <Mail className="mt-0.5 h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" />
 
         <span className="break-all">
           {user?.email || "No email available"}
         </span>
       </div>
-
-      {profile?.bio ? (
-        <p className="mt-2 max-w-2xl text-xs leading-5 text-muted-foreground sm:mt-3 sm:text-sm sm:leading-relaxed">
-          {profile.bio}
-        </p>
-      ) : (
-        <p className="mt-2 text-xs italic text-muted-foreground sm:mt-3 sm:text-sm">
-          No bio yet.
-        </p>
-      )}
-
-      {/* Reputation and membership date */}
-      <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-[10px] text-muted-foreground sm:mt-5 sm:gap-x-5 sm:gap-y-2 sm:text-sm">
-        <span className="inline-flex items-center gap-1 rounded-full bg-gold/10 px-2 py-0.5 text-[10px] font-medium text-gold sm:gap-1.5 sm:px-3 sm:py-1 sm:text-xs">
-          <UserRound className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-          {contributor.emoji}
-          {contributor.name}
-        </span>
-
+      
+      <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-2 text-[10px] text-muted-foreground sm:mt-1.5 sm:gap-x-5 sm:gap-y-2 sm:text-sm">
         <span className="inline-flex items-center gap-1">
           <CalendarDays className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
           Member since{" "}
@@ -1231,8 +1229,9 @@ const RoleIcon = roleIcons[roleKey] ?? UserRound;
             </div>
             <div className="mb-2 flex items-center gap-2.5 sm:mb-2 sm:gap-3">
               <div>
-                <p className="text-sm font-medium text-gold sm:text-base">
-                  {contributor.name}
+                <p className="inline-flex items-center gap-1 mt-2 py-0.5 text-[10px] font-medium text-gold sm:gap-1.5 sm:py-1 sm:text-xs">
+                    <contributor.icon className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                    {contributor.name}
                 </p>
 
                 <p className="text-[10px] mt-4 text-muted-foreground sm:text-xs sm:mt-3">
@@ -1257,11 +1256,16 @@ const RoleIcon = roleIcons[roleKey] ?? UserRound;
               />
             </div>
 
-            <p className="mt-1.5 text-[10px] text-muted-foreground sm:mt-2 sm:text-xs">
-              {nextLevel
-                ? `${nextLevel.pointsNeeded} pts until ${nextLevel.emoji} ${nextLevel.name}`
-                : "Highest reputation level reached 👑"}
-            </p>
+            <p className="mt-1.5 flex items-center gap-1 text-[10px] text-muted-foreground sm:mt-2 sm:text-xs">
+  {nextLevel ? (
+    <>
+      {nextLevel.pointsNeeded} pts until{" "}
+      {nextLevel.name}
+    </>
+  ) : (
+    "Highest reputation level reached"
+  )}
+</p>
           </div>
 
           {/* Account */}
