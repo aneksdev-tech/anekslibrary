@@ -1,41 +1,7 @@
-import {
-  createFileRoute,
-  redirect,
-  useNavigate,
-} from "@tanstack/react-router";
-import {
-  useMutation,
-  useQuery,
-  useQueryClient,
-} from "@tanstack/react-query";
-import {
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
-import {
-  ArrowLeft,
-  CalendarDays,
-  Clock3,
-  Download,
-  FileText,
-  History,
-  Loader2,
-  Mail,
-  ShieldCheck,
-  Shield,
-  UserRound,
-  Upload,
-  RefreshCw,
-  Activity,
-  CircleCheck,
-  CircleX,
-  Microscope,
-  NotebookPen,
-  UserRoundSearch,
-  Presentation,
-  ClipboardList,
-} from "lucide-react";
+import { createFileRoute, redirect, useNavigate, Link, } from "@tanstack/react-router";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useMemo, useState } from "react";
+import { ArrowLeft, CalendarDays, Clock3, Download, FileText, History, Loader2, Mail, ShieldCheck, Shield, UserRound, Upload, RefreshCw, Activity, CircleCheck, CircleX, Microscope, NotebookPen, UserRoundSearch, Presentation, ClipboardList } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -45,28 +11,9 @@ import {
 } from "@/lib/auth";
 import type { Database } from "@/integrations/supabase/types";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  getContributorLevel,
-  getLevelProgress,
-  getNextContributorLevel,
-} from "@/lib/reputation";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { getContributorLevel, getLevelProgress, getNextContributorLevel } from "@/lib/reputation";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 
 export const Route = createFileRoute(
@@ -1450,62 +1397,146 @@ function UserDetailsPage() {
                 </div>
               ) : resources && resources.length > 0 ? (
                 <ul className="mt-4 divide-y divide-border border-y border-border">
-                  {(showAllResources
-                    ? resources
-                    : resources.slice(0, 10)
-                  ).map((resource) => (
-                    <li
-                      key={resource.id}
-                      className="py-3 sm:py-4"
-                    >
-                      <div className="flex flex-col gap-2">
-                        <div className="flex min-w-0 items-start gap-3">
-                          <div className="min-w-0 flex-1">
-                            {/* Resource status */}
-                            <p
-                              className={`mb-1.5 text-[10px] font-semibold sm:text-xs ${getResourceStatusStyles(resource.status || "unknown")}`}
-                            >
-                              {formatLabel(resource.status || "unknown")}
-                            </p>
+                 {(showAllResources
+  ? resources
+  : resources.slice(0, 10)
+).map((resource) => {
+  const status = resource.status?.toLowerCase();
+  const isApproved = status === "approved";
 
-                            {/* Resource title */}
-                            <p className="break-words text-xs font-medium sm:text-sm">
-                              {resource.title ||
-                                resource.file_name ||
-                                "Untitled resource"}
-                            </p>
+  const availabilityMessage = (() => {
+    switch (status) {
+      case "rejected":
+        return "This resource was rejected and is unavailable for preview.";
 
-                            {/* Resource metadata */}
-                            <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] text-muted-foreground sm:text-xs">
-                              <span>
-                                {resource.file_name || "No file name"}
-                              </span>
+      case "deleted":
+        return "This resource has been deleted and is no longer available.";
 
-                              <span aria-hidden="true">·</span>
+      case "pending":
+        return "This resource is awaiting approval.";
 
-                              <span>
-                                {formatFileSize(resource.file_size)}
-                              </span>
+      case "draft":
+        return "This resource is still a draft and has not been published.";
 
-                              <span aria-hidden="true">·</span>
+      default:
+        return "This resource is currently unavailable for preview.";
+    }
+  })();
 
-                              <span className="inline-flex items-center gap-1">
-                                <Download className="h-3 w-3" />
-                                {(resource.download_count ?? 0).toLocaleString()} downloads
-                              </span>
+  return (
+    <li key={resource.id}>
+      {isApproved ? (
+        <Link
+          to="/preview/$resourceId"
+          params={{
+            resourceId: resource.id,
+          }}
+          className="block cursor-pointer py-3 transition-colors hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset sm:py-4"
+        >
+          <div className="flex flex-col gap-2">
+            <div className="flex min-w-0 items-start gap-3">
+              <div className="min-w-0 flex-1">
+                {/* Resource status */}
+                <p
+                  className={`mb-1.5 text-[10px] font-semibold sm:text-xs ${getResourceStatusStyles(status || "unknown")}`}
+                >
+                  {formatLabel(status || "unknown")}
+                </p>
 
-                              <span aria-hidden="true">·</span>
+                {/* Resource title */}
+                <p className="break-words text-xs font-medium sm:text-sm">
+                  {resource.title ||
+                    resource.file_name ||
+                    "Untitled resource"}
+                </p>
 
-                              <span>
-                                {formatDate(resource.created_at)}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
+                {/* Resource metadata */}
+                <div className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[10px] text-muted-foreground sm:text-xs">
+                  <span>
+                    {resource.file_name || "No file name"}
+                  </span>
+
+                  <span aria-hidden="true">·</span>
+
+                  <span>
+                    {formatFileSize(resource.file_size)}
+                  </span>
+
+                  <span aria-hidden="true">·</span>
+
+                  <span className="inline-flex items-center gap-1">
+                    <Download className="h-3 w-3" />
+                    {(resource.download_count ?? 0).toLocaleString()} downloads
+                  </span>
+
+                  <span aria-hidden="true">·</span>
+
+                  <span>
+                    {formatDate(resource.created_at)}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </Link>
+      ) : (
+        <div className="cursor-default py-3 sm:py-4">
+          <div className="flex flex-col gap-2">
+            <div className="flex min-w-0 items-start gap-3">
+              <div className="min-w-0 flex-1">
+                {/* Resource status */}
+                <p
+                  className={`mb-1.5 text-[10px] font-semibold sm:text-xs ${getResourceStatusStyles(status || "unknown")}`}
+                >
+                  {formatLabel(status || "unknown")}
+                </p>
+
+                {/* Resource title */}
+                <p className="break-words text-xs font-medium sm:text-sm">
+                  {resource.title ||
+                    resource.file_name ||
+                    "Untitled resource"}
+                </p>
+
+                {/* Resource metadata */}
+                <div className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[10px] text-muted-foreground sm:text-xs">
+                  <span>
+                    {resource.file_name || "No file name"}
+                  </span>
+
+                  <span aria-hidden="true">·</span>
+
+                  <span>
+                    {formatFileSize(resource.file_size)}
+                  </span>
+
+                  <span aria-hidden="true">·</span>
+
+                  <span className="inline-flex items-center gap-1">
+                    <Download className="h-3 w-3" />
+                    {(resource.download_count ?? 0).toLocaleString()} downloads
+                  </span>
+
+                  <span aria-hidden="true">·</span>
+
+                  <span>
+                    {formatDate(resource.created_at)}
+                  </span>
+                </div>
+
+                {/* Resource availability message */}
+                <p className="mt-1.5 text-[10px] text-muted-foreground sm:text-xs">
+                  {availabilityMessage}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </li>
+  );
+})}
+</ul>
               ) : (
                 <div className="mt-4 border-y border-dashed border-border py-7 text-center sm:py-8">
                   <FileText className="mx-auto h-7 w-7 text-muted-foreground/60 sm:h-8 sm:w-8" />

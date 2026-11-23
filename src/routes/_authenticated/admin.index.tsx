@@ -223,7 +223,7 @@ function AdminOverview() {
 
   const stats = [
     {
-      label: "Total Users",
+      label: "Users",
       value: data?.users ?? 0,
       icon: Users,
     },
@@ -243,7 +243,7 @@ function AdminOverview() {
       icon: BookMarked,
     },
     {
-      label: "Library Storage",
+      label: "Storage",
       value: formatStorage(data?.storage ?? 0),
       icon: HardDrive,
     },
@@ -316,9 +316,9 @@ function AdminOverview() {
 
               <div
                 className={`mt-4 font-display font-semibold tracking-tight sm:mt-6 ${
-                  stat.label === "Library Storage"
-                    ? "text-xl sm:text-3xl"
-                    : "text-2xl sm:text-3xl"
+                  stat.label === "Storage"
+                    ? "text-1xl sm:text-1xl"
+                    : "text-1xl sm:text-1xl"
                 }`}
               >
                 {stat.value}
