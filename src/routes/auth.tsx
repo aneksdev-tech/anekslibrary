@@ -2161,18 +2161,19 @@ if (!googleCanSubmit) {
       </div>
 
       <Button
-  type="button"
-  className="group h-auto w-full justify-start bg-gradient-emerald py-4 text-primary-foreground shadow-soft transition-all hover:bg-none hover:bg-accent hover:shadow-md"
-  onClick={() => setRegistrationMethod("email")}
->
-  <Mail className="mr-2 h-4 w-4 transition-colors group-hover:text-primary" />
+        type="button"
+        variant="outline"
+        className="h-auto w-full justify-start py-4"
+        onClick={() => setRegistrationMethod("email")}
+      >
+        <Mail className="mr-2 h-4 w-4 transition-colors group-hover:text-primary" />
 
   <span className="flex flex-col items-start">
     <span className="font-semibold transition-colors group-hover:text-primary">
       Create account with email
     </span>
 
-    <span className="mt-1 text-xs font-normal text-primary-foreground/80 transition-colors group-hover:text-primary">
+    <span className="mt-1 text-xs font-normal text-muted-foreground">
       Enter your details and create a password.
     </span>
   </span>
