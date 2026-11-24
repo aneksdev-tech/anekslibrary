@@ -194,7 +194,7 @@ function Notifications() {
 
       {/* Notification list */}
       {isLoading ? (
-        <div className="rounded-sm border border-border bg-card p-3 shadow-soft sm:p-4">
+        <div className="p-3 sm:p-4">
   <div className="mb-3 flex items-center gap-2">
             <Loader2 className="h-3.5 w-3.5 animate-spin sm:h-4 sm:w-4" />
             Loading notifications…
