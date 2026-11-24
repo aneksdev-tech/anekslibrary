@@ -295,7 +295,7 @@ function AdminOverview() {
       </div>
       
       {/* Primary statistics */}
-      <div className="grid grid-cols-3 gap-px overflow-hidden rounded-sm border border-border bg-border min-[820px]:grid-cols-5">
+      <div className="grid grid-cols-1 gap-px overflow-hidden rounded-sm border border-border bg-border min-[820px]:grid-cols-5">
         {stats.map((stat, index) => {
           const Icon = stat.icon;
 
