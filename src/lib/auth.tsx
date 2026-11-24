@@ -355,15 +355,15 @@ export function AuthProvider({
       }
     };
 
-    // Publish immediately, then refresh every 30 seconds.
-    void sendHeartbeat();
+// Publish immediately, then refresh every 15 seconds.
+void sendHeartbeat();
 
-    const intervalId = window.setInterval(
-      () => {
-        void sendHeartbeat();
-      },
-      30_000,
-    );
+const intervalId = window.setInterval(
+  () => {
+    void sendHeartbeat();
+  },
+  15_000,
+);
 
     return () => {
       cancelled = true;
@@ -530,21 +530,31 @@ export function AuthProvider({
         refresh,
 
         signOut: async () => {
-          const { error } =
-            await supabase.auth.signOut();
+  // Clear online presence before signing out.
+  const { error: presenceError } =
+    await supabase.rpc("clear_user_presence");
 
-          if (error) {
-            console.error(
-              "Unable to sign out:",
-              error.message,
-            );
+  if (presenceError) {
+    console.error(
+      "Unable to clear online presence:",
+      presenceError.message,
+    );
+  }
 
-            return;
-          }
+  const { error } =
+    await supabase.auth.signOut();
 
-          window.location.href =
-            "/auth?mode=login";
-        },
+  if (error) {
+    console.error(
+      "Unable to sign out:",
+      error.message,
+    );
+
+    return;
+  }
+
+  window.location.href = "/auth?mode=login";
+},
       }}
     >
       {children}

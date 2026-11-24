@@ -85,6 +85,50 @@ function AuthPage() {
     refresh,
   } = useAuth();
 
+  const getPostAuthDestination = async (): Promise<string> => {
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return "/auth";
+    }
+
+    const {
+      data: profile,
+      error,
+    } = await supabase
+      .from("private_profiles")
+      .select("status")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    if (error || !profile) {
+      return "/pending";
+    }
+
+    switch (profile.status) {
+      case "active":
+        return next || "/dashboard";
+
+      case "pending":
+        return "/pending";
+
+      case "suspended":
+        return "/suspended";
+
+      case "rejected":
+        return "/rejected";
+
+      case "inactive":
+        return "/inactive";
+
+      default:
+        return "/pending";
+    }
+  };
+
   const [
     googleRegistrationBusy,
     setGoogleRegistrationBusy,
@@ -106,6 +150,9 @@ function AuthPage() {
 
   const googleLoginGuardHandled =
     useRef(false);
+  
+  const existingSessionRedirectHandled =
+  useRef(false);
 
   const googleOAuthErrorHandled =
     useRef(false);
@@ -485,11 +532,12 @@ function AuthPage() {
 
         setGoogleRegistrationBusy(false);
 
-        void navigate({
-          to:
-            next || "/dashboard",
-          replace: true,
-        });
+        const destination = await getPostAuthDestination();
+
+void navigate({
+  to: destination,
+  replace: true,
+});
       })();
     };
 
@@ -886,11 +934,12 @@ function AuthPage() {
 
         setGoogleRegistrationBusy(false);
 
-        void navigate({
-          to:
-            next || "/dashboard",
-          replace: true,
-        });
+        const destination = await getPostAuthDestination();
+
+void navigate({
+  to: destination,
+  replace: true,
+});
       })();
 
       return;
@@ -1025,11 +1074,12 @@ function AuthPage() {
             "Welcome back.",
           );
 
-          void navigate({
-            to:
-              next || "/dashboard",
-            replace: true,
-          });
+          const destination = await getPostAuthDestination();
+
+void navigate({
+  to: destination,
+  replace: true,
+});
 
           return;
         }
@@ -1105,14 +1155,24 @@ function AuthPage() {
       return;
     }
 
-    /*
-     * Existing email/password session.
-     */
+/*
+ * Existing email/password session.
+ */
+if (!existingSessionRedirectHandled.current) {
+  existingSessionRedirectHandled.current = true;
+
+  const redirectToPostAuthDestination = async () => {
+    const destination =
+      await getPostAuthDestination();
+
     void navigate({
-      to:
-        next || "/dashboard",
+      to: destination,
       replace: true,
     });
+  };
+
+  void redirectToPostAuthDestination();
+}
   }, [
     loading,
     session,
