@@ -27,20 +27,37 @@ if (!session?.user) {
 }
 
     const {
-      data: profile,
-      error: profileError,
-    } = await supabase
-      .from("private_profiles")
-      .select("status")
-      .eq("id", session.user.id)
-      .single();
+  data: profile,
+  error: profileError,
+} = await supabase
+  .from("private_profiles")
+  .select("status")
+  .eq("id", session.user.id)
+  .maybeSingle();
 
-    if (profileError) {
-      throw redirect({
-        to: "/pending",
-        replace: true,
-      });
-    }
+if (profileError) {
+  console.error(
+    "Unable to verify authenticated user's profile:",
+    profileError.message,
+  );
+
+  throw profileError;
+}
+
+if (!profile) {
+  // The authenticated user no longer has an application profile.
+  await supabase.auth.signOut({
+    scope: "local",
+  });
+
+  throw redirect({
+    to: "/auth",
+    search: {
+      mode: "login",
+    },
+    replace: true,
+  });
+}
 
     const currentPath = location.pathname;
 
