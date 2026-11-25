@@ -992,7 +992,7 @@ useEffect(() => {
 </div>
 {/* Resource queue */}
         <div>
-        <div className="overflow-hidden rounded-sm border border-border bg-card shadow-soft sm:rounded-sm">
+        <div className="overflow-hidden">
           {isLoading ? (
             <div className="p-8 text-center text-xs text-muted-foreground sm:p-10 sm:text-sm">
               <div className="flex items-center justify-center gap-1.5 sm:gap-2">
