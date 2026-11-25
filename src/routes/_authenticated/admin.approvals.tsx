@@ -520,7 +520,7 @@ useEffect(() => {
   setLevelFilter(ALL_OPTION);
   setSemesterFilter(ALL_OPTION);
   setCategoryFilter(ALL_OPTION);
-  setSortOrder("newest");
+  setSortOrder("oldest");
   setDateFrom("");
   setDateTo("");
   setPage(1);
@@ -1412,7 +1412,7 @@ useEffect(() => {
                       <span className="font-semibold text-gold">
                         {totalCount}
                       </span>{" "}
-                      matching pending{" "}
+                      pending{" "}
                       {totalCount === 1
                         ? "resource"
                         : "resources"}
@@ -1461,7 +1461,7 @@ useEffect(() => {
                 </div>
               ) : filteredResources.length > 0 ? (
                 <>
-                  <ul className="grid grid-cols-1 gap-3 lg:grid-cols-2 lg:gap-4 xl:grid-cols-3">
+                  <ul className="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4 xl:grid-cols-3">
   {filteredResources.map((resource) => {
     const isProcessing =
       decisionLoading &&
@@ -1521,7 +1521,7 @@ useEffect(() => {
         </h3>
 
         {/* Filename */}
-        <p className="mt-1 break-all text-xs text-muted-foreground sm:text-xs">
+        <p className="mt-1 break-all text-xs text-muted-foreground">
   {resource.file_name || "Unnamed file"}
   <span className="mx-1">·</span>
   <span>{formatFileSize(resource.file_size)}</span>
@@ -1584,9 +1584,6 @@ useEffect(() => {
         {/* Uploader and submission information */}
         <div className="mt-auto space-y-3  border-border pt-3 sm:pt-4">
           <div>
-            <p className="text-[10px] font-semibold text-foreground sm:text-xs">
-              Uploader
-            </p>
 
             <p className="mt-0.5 break-words text-[10px] text-muted-foreground sm:text-xs">
               {resource.uploader?.full_name?.trim() ||
@@ -1601,7 +1598,7 @@ useEffect(() => {
         </div>
 
         {/* Resource actions */}
-        <div className="mt-3 flex flex-row gap-1.5 border-t border-border pt-3 sm:mt-4 sm:gap-2">
+        <div className="mt-3 flex flex-row gap-1.5 border-t border-border pt-3 sm:mt-4 sm:gap-2 md:flex-col lg:flex-row">
           {canPreview && (
             <Button
               type="button"

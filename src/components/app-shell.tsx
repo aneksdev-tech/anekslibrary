@@ -359,7 +359,7 @@ const items = NAV.filter((n) => {
   return (
     <div className="flex min-h-dvh w-full bg-background text-foreground">
       {/* Desktop sidebar */}
-      <aside className="fixed inset-y-0 left-0 z-40 hidden w-50 flex-col border-r border-border bg-sidebar text-sidebar-foreground md:flex md:w-60 lg:w-64">
+      <aside className="fixed inset-y-0 left-0 z-40 hidden w-50 flex-col border-r border-border bg-sidebar text-sidebar-foreground md:flex md:w-56 lg:w-64">
         <Link
           to="/"
           className="flex items-center gap-0.5 px-4 py-6"
