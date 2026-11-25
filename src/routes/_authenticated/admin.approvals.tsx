@@ -16,6 +16,8 @@ import { toast } from "sonner";
 import { EmptyState } from "./dashboard";
 import { DocumentPreview } from "@/components/document-preview/DocumentPreview";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { BookOpen, Building2, GraduationCap, School, } from "lucide-react";
+import { ResourceTypeBadge } from "@/components/ResourceTypeBadge";
 import photo from "@/assets/Photo.jfif";
 
 export const Route = createFileRoute(
@@ -1434,7 +1436,7 @@ useEffect(() => {
             </div>
 
             {/* Resource results — separate from filters */}
-            <div className="overflow-hidden rounded-sm border border-border bg-card shadow-soft">
+            <div className="overflow-hidden">
               {isLoading ? (
                 <div className="p-8 text-center text-xs text-muted-foreground sm:p-10 sm:text-sm">
                   <div className="flex items-center justify-center gap-1.5 sm:gap-2">
@@ -1459,196 +1461,214 @@ useEffect(() => {
                 </div>
               ) : filteredResources.length > 0 ? (
                 <>
-                  <ul className="divide-y-0">
-                    {filteredResources.map((resource) => {
-                      const isProcessing =
-                        decisionLoading &&
-                        decide.variables?.id === resource.id;
+                  <ul className="grid grid-cols-1 gap-3 lg:grid-cols-2 lg:gap-4 xl:grid-cols-3">
+  {filteredResources.map((resource) => {
+    const isProcessing =
+      decisionLoading &&
+      decide.variables?.id === resource.id;
 
-                      const canPreview =
-                        resource.file_size > 0 &&
-                        resource.status === "pending";
+    const canPreview =
+      resource.file_size > 0 &&
+      resource.status === "pending";
 
-                      const categoryName =
-                        resource.category?.deleted_at == null &&
-                        resource.category?.name?.trim()
-                          ? resource.category.name.trim()
-                          : "Uncategorized";
+    const categoryName =
+      resource.category?.deleted_at == null &&
+      resource.category?.name?.trim()
+        ? resource.category.name.trim()
+        : "Uncategorized";
 
-                      return (
-                        <li
-                          key={resource.id}
-                          className="group border-b-2 border-border/70 p-3.5 transition-colors odd:bg-card even:bg-muted/40 hover:bg-muted/50 sm:p-5"
-                        >
-                          <div className="flex flex-col gap-3.5 sm:gap-4">
-                            <div className="flex flex-col gap-3.5 sm:gap-4 lg:flex-row lg:items-start lg:justify-between">
-                              <div className="min-w-0 flex-1">
-                                
+    const collegeLabel = resource.college
+      ? getResourceScopeLabel(resource.college, "college")
+      : "";
 
-                                  <span className="max-w-[180px] truncate py-0.5 text-[9px] font-medium uppercase tracking-wide text-gold sm:max-w-[220px] sm:text-[10px]">
-                                    {categoryName}
-                                  </span>
-                               
+    const collegeShort =
+      collegeLabel.match(/\((.*?)\)/)?.[1] ??
+      collegeLabel;
 
-                                <div className="mt-1.5 min-w-0 sm:mt-2">
-                                  <p className="break-words text-sm font-semibold leading-5 text-foreground sm:text-lg sm:leading-6">
-                                    {resource.title}
-                                  </p>
+    const departmentLabel = resource.department
+      ? getResourceScopeLabel(resource.department, "department")
+      : "";
 
-                                  <p className="mt-1 break-all text-[10px] text-muted-foreground sm:text-xs">
-                                    {resource.file_name || "Unnamed file"}
-                                  </p>
+    const levelLabel = resource.level
+      ? getResourceScopeLabel(resource.level, "level")
+      : "";
 
-                                  {resource.description && (
-                                    <p className="mt-2 max-w-4xl line-clamp-2 text-xs leading-5 text-muted-foreground sm:mt-3 sm:text-sm sm:leading-6">
-                                      {resource.description}
-                                    </p>
-                                  )}
-                                </div>
+    const semesterLabel = resource.semester
+      ? getResourceScopeLabel(resource.semester, "semester")
+      : "";
 
-                                <div className="mt-3 grid gap-3 text-[10px] sm:grid-cols-2 sm:gap-4 sm:text-xs xl:grid-cols-3">
-                                  <AuditItem
-                                    label="File size"
-                                    value={formatFileSize(resource.file_size)}
-                                  />
+    return (
+      <li
+        key={resource.id}
+        className="group flex min-w-0 flex-col rounded-sm border border-border bg-card p-3 shadow-soft transition-all hover:-translate-y-0.5 hover:shadow-elegant sm:p-5"
+      >
+        {/* Category and file type */}
+        <div className="mb-2.5 flex items-center justify-between gap-2 sm:mb-3">
+          <span className="min-w-0 flex-1 truncate text-[10px] font-medium uppercase text-gold sm:text-xs">
+            {categoryName}
+          </span>
 
-                                  {resource.course_code?.trim() && (
-    <AuditItem
-      label="Course code"
-      value={resource.course_code.trim()}
-    />
-  )}
+          <div className="shrink-0">
+            <ResourceTypeBadge
+              filePath={resource.file_name || ""}
+            />
+          </div>
+        </div>
 
-  {resource.college?.trim() && (
-    <AuditItem
-      label="College"
-      value={getResourceScopeLabel(resource.college, "college")}
-    />
-  )}
+        {/* Resource title */}
+        <h3 className="line-clamp-2 break-words font-display text-[13px] font-semibold leading-snug sm:text-lg">
+          {resource.title}
+        </h3>
 
-  {resource.department?.trim() && (
-    <AuditItem
-      label="Department"
-      value={getResourceScopeLabel(resource.department, "department")}
-    />
-  )}
+        {/* Filename */}
+        <p className="mt-1 break-all text-xs text-muted-foreground sm:text-xs">
+  {resource.file_name || "Unnamed file"}
+  <span className="mx-1">·</span>
+  <span>{formatFileSize(resource.file_size)}</span>
+</p>
+        {/* Description */}
+        {resource.description && (
+          <p className="mt-1.5 line-clamp-2 text-xs text-muted-foreground sm:mt-2 sm:text-xs">
+            {resource.description}
+          </p>
+        )}
 
-  {resource.level?.trim() && (
-    <AuditItem
-      label="Level"
-      value={getResourceScopeLabel(resource.level, "level")}
-    />
-  )}
+        {/* Academic details */}
+        <div className="mt-2.5 space-y-1.5 text-xs sm:mt-3 sm:space-y-2 sm:text-sm">
+          {resource.course_code?.trim() && (
+            <div className="flex min-w-0 items-center gap-2.5 text-muted-foreground sm:gap-3">
+              <BookOpen className="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" />
+              <span className="min-w-0 break-words">
+                {resource.course_code.trim()}
+              </span>
+            </div>
+          )}
 
-  {resource.semester?.trim() && (
-    <AuditItem
-      label="Semester"
-      value={getResourceScopeLabel(resource.semester, "semester")}
-    />
-  )}
+          {resource.college?.trim() && (
+            <div className="flex min-w-0 items-center gap-2.5 text-muted-foreground sm:gap-3">
+              <School className="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" />
+              <span className="min-w-0 break-words">
+                {collegeShort}
+              </span>
+            </div>
+          )}
 
-  {resource.year && (
-    <AuditItem
-      label="Year"
-      value={String(resource.year)}
-    />
-  )}
-                                </div>
-                              </div>
-                            </div>
+          {resource.department?.trim() && (
+            <div className="flex min-w-0 items-center gap-2.5 text-muted-foreground sm:gap-3">
+              <Building2 className="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" />
+              <span className="min-w-0 break-words">
+                {departmentLabel}
+              </span>
+            </div>
+          )}
 
-                            <div className="grid gap-3 text-[10px] sm:grid-cols-2 sm:gap-4 sm:text-xs xl:grid-cols-3">
-                              <AuditItem
-                                label="Uploader"
-                                value={
-                                  resource.uploader?.full_name ||
-                                  resource.uploader?.email ||
-                                  "Unknown"
-                                }
-                                detail={formatDateTime(
-                                  resource.created_at,
-                                )}
-                              />
+          {resource.level?.trim() && (
+            <div className="flex min-w-0 items-center gap-2.5 text-muted-foreground sm:gap-3">
+              <GraduationCap className="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" />
+              <span className="min-w-0 break-words">
+                {levelLabel}
+              </span>
+            </div>
+          )}
 
-                              <AuditItem
-                                label="Submitted"
-                                value="Pending review"
-                                detail={formatDateTime(
-                                  resource.created_at,
-                                )}
-                              />
-                            </div>
+          {resource.semester?.trim() && (
+            <div className="flex min-w-0 items-center gap-2.5 text-muted-foreground sm:gap-3">
+              <CalendarDays className="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" />
+              <span className="min-w-0 break-words">
+                {semesterLabel}
+              </span>
+            </div>
+          )}
+        </div>
 
-                            {/* Resource actions */}
-                            <div className="grid w-full grid-cols-1 gap-2 border-t border-border pt-3 sm:grid-cols-3 sm:gap-3 sm:pt-4">
-                              {canPreview && (
-                                <Button
-                                  type="button"
-                                  variant="outline"
-                                  disabled={decisionLoading}
-                                  onClick={() =>
-                                    setPreviewResource({
-                                      id: resource.id,
-                                      title: resource.title,
-                                      file_path: resource.file_path,
-                                    })
-                                  }
-                                  className="h-9 w-full min-w-0 text-xs sm:h-10 sm:text-sm bg-muted"
-                                >
-                                  <Eye className="mr-1.5 h-3.5 w-3.5 shrink-0" />
-                                  Preview
-                                </Button>
-                              )}
+        {/* Uploader and submission information */}
+        <div className="mt-auto space-y-3  border-border pt-3 sm:pt-4">
+          <div>
+            <p className="text-[10px] font-semibold text-foreground sm:text-xs">
+              Uploader
+            </p>
 
-                              <Button
-                                type="button"
-                                variant="outline"
-                                disabled={decisionLoading}
-                                onClick={() =>
-                                  requestReject(
-                                    resource.id,
-                                    resource.file_path,
-                                    resource.title,
-                                  )
-                                }
-                                className="h-9 w-full min-w-0 text-xs text-destructive transition-colors hover:border-destructive/30 hover:bg-destructive/5 hover:text-destructive sm:h-10 sm:text-sm bg-muted"
-                              >
-                                {isProcessing &&
-                                !decide.variables?.approve ? (
-                                  <Loader2 className="mr-1.5 h-3.5 w-3.5 shrink-0 animate-spin" />
-                                ) : (
-                                  <X className="mr-1.5 h-3.5 w-3.5 shrink-0" />
-                                )}
-                                Reject
-                              </Button>
+            <p className="mt-0.5 break-words text-[10px] text-muted-foreground sm:text-xs">
+              {resource.uploader?.full_name?.trim() ||
+                resource.uploader?.email?.trim() ||
+                "Unknown"}
+            </p>
 
-                              <Button
-                                type="button"
-                                variant="outline"
-                                disabled={decisionLoading}
-                                onClick={() =>
-                                  requestApprove(
-                                    resource.id,
-                                    resource.file_path,
-                                    resource.title,
-                                  )
-                                }
-                                className="h-9 w-full min-w-0 text-xs text-primary transition-colors hover:border-primary/30 hover:bg-primary/5 sm:h-10 sm:text-sm bg-muted"
-                              >
-                                {isProcessing &&
-                                decide.variables?.approve ? (
-                                  <Loader2 className="mr-1.5 h-3.5 w-3.5 shrink-0 animate-spin" />
-                                ) : (
-                                  <Check className="mr-1.5 h-3.5 w-3.5 shrink-0" />
-                                )}
-                                Approve
-                              </Button>
-                            </div>
-                          </div>
-                        </li>
-                      );
-                    })}
-                  </ul>
+            <p className="mt-0.5 text-[10px] text-muted-foreground sm:text-xs">
+              {formatDateTime(resource.created_at)}
+            </p>
+          </div>
+        </div>
+
+        {/* Resource actions */}
+        <div className="mt-3 flex flex-row gap-1.5 border-t border-border pt-3 sm:mt-4 sm:gap-2">
+          {canPreview && (
+            <Button
+              type="button"
+              variant="outline"
+              disabled={decisionLoading}
+              onClick={() =>
+                setPreviewResource({
+                  id: resource.id,
+                  title: resource.title,
+                  file_path: resource.file_path,
+                })
+              }
+              className="h-8 min-w-0 flex-1 gap-0 bg-muted px-1 text-xs sm:h-9 sm:text-sm"
+            >
+              <Eye className="mr-1 h-3.5 w-3.5" />
+              Preview
+            </Button>
+          )}
+
+          <Button
+            type="button"
+            variant="outline"
+            disabled={decisionLoading}
+            onClick={() =>
+              requestReject(
+                resource.id,
+                resource.file_path,
+                resource.title,
+              )
+            }
+            className="h-8 min-w-0 flex-1 gap-0 bg-muted px-1 text-xs text-destructive transition-colors hover:border-destructive/30 hover:bg-destructive/5 hover:text-destructive sm:h-9 sm:text-sm"
+          >
+            {isProcessing &&
+            !decide.variables?.approve ? (
+              <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <X className="mr-1 h-3.5 w-3.5" />
+            )}
+            Reject
+          </Button>
+
+          <Button
+            type="button"
+            variant="outline"
+            disabled={decisionLoading}
+            onClick={() =>
+              requestApprove(
+                resource.id,
+                resource.file_path,
+                resource.title,
+              )
+            }
+            className="h-8 min-w-0 flex-1 gap-0 bg-muted px-1 text-xs text-primary transition-colors hover:border-primary/30 hover:bg-primary/5 sm:h-9 sm:text-sm"
+          >
+            {isProcessing &&
+            decide.variables?.approve ? (
+              <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Check className="mr-1 h-3.5 w-3.5" />
+            )}
+            Approve
+          </Button>
+        </div>
+      </li>
+    );
+  })}
+</ul>
 
                   {/* Pagination */}
                   {totalPages > 1 && (
