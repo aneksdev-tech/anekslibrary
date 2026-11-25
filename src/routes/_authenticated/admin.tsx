@@ -272,7 +272,7 @@ function AdminLayout() {
 
                 <span
                   aria-hidden="true"
-                  className={`absolute inset-x-2 bottom-0 h-0.5 origin-left rounded-full bg-gold transition-all duration-200 ease-in-out ${
+                  className={`absolute inset-x-2 bottom-0 h-0.5 origin-left rounded-full bg-gold transition-all duration-2500 ease-in-out ${
                     active
                       ? "scale-x-100 opacity-100"
                       : "scale-x-0 opacity-0"

@@ -12,10 +12,8 @@ import {
   ArrowUpRight,
   Bookmark,
   Download,
-  Edit3,
   FileCheck2,
   Loader2,
-  Trash2,
   Upload,
   TrendingUp,
 } from "lucide-react";
@@ -56,8 +54,11 @@ export const Route = createFileRoute(
 type RecentUpload = {
   id: string;
   title: string;
+  file_name: string | null;
+  file_size: number | null;
   status: string;
   rejection_reason?: string | null;
+  deletion_reason?: string | null;
   created_at: string;
   download_count: number;
   category?: {
@@ -66,6 +67,32 @@ type RecentUpload = {
     deleted_at?: string | null;
   } | null;
 };
+
+function formatFileSize(
+  bytes: number | null | undefined,
+): string {
+  if (
+    bytes == null ||
+    !Number.isFinite(bytes) ||
+    bytes < 0
+  ) {
+    return "Unknown size";
+  }
+
+  if (bytes === 0) {
+    return "0 B";
+  }
+
+  const units = ["B", "KB", "MB", "GB", "TB"];
+  const unitIndex = Math.min(
+    Math.floor(Math.log(bytes) / Math.log(1024)),
+    units.length - 1,
+  );
+
+  const size = bytes / Math.pow(1024, unitIndex);
+
+  return `${Number(size.toFixed(1))} ${units[unitIndex]}`;
+}
 
 function DashboardPage() {
   const { profile, user, roles } =
@@ -181,7 +208,7 @@ function DashboardPage() {
         } = await supabase
           .from("resources")
           .select(
-            "id, title, status, rejection_reason, created_at, download_count, category:categories(name, slug, deleted_at)",
+            "id, title, file_name, file_size, status, rejection_reason, deletion_reason, created_at, download_count, category:categories(name, slug, deleted_at)",
           )
           .eq(
             "uploader_id",
@@ -426,7 +453,7 @@ function DashboardPage() {
           >
             <Link to="/library">
               Browse Library
-            <ArrowUpRight className="h-4 w-4" />
+              <ArrowUpRight className="h-4 w-4" />
             </Link>
           </Button>
         </div>
@@ -453,9 +480,9 @@ function DashboardPage() {
                 <div className="mt-1 truncate text-[10px] text-muted-foreground sm:text-xs">
                   {c.label === "Reputation" ? (
                     <span className="inline-flex items-center gap-1 text-gold">
-                    <contributor.icon className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                    {contributor.name}
-                </span>
+                      <contributor.icon className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                      {contributor.name}
+                    </span>
                   ) : (
                     c.sub
                   )}
@@ -517,58 +544,100 @@ function DashboardPage() {
                         ? r.category.name.trim()
                         : "Uncategorized";
 
+                    const resourceDetails = (
+                      <>
+                        <div className="mb-1.5">
+                          <StatusPill status={r.status} />
+                        </div>
+
+                        <p className="break-words text-xs font-medium sm:text-sm">
+                          {r.title || "Untitled resource"}
+                        </p>
+
+                        <p className="mt-1 break-all text-[10px] text-muted-foreground sm:text-xs">
+                          {r.file_name || "No file name"}
+                        </p>
+
+                        <div className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[10px] text-muted-foreground sm:text-xs">
+                          <span>{categoryName}</span>
+
+                          <span aria-hidden="true">·</span>
+
+                          <span>
+                            {formatFileSize(r.file_size)}
+                          </span>
+
+                          <span aria-hidden="true">·</span>
+
+                          <span className="inline-flex items-center gap-1">
+                            <Download className="h-3 w-3" />
+                            {(r.download_count ?? 0).toLocaleString()}
+                          </span>
+
+                          <span aria-hidden="true">·</span>
+
+                          <span>
+                            {new Date(
+                              r.created_at,
+                            ).toLocaleDateString()}
+                          </span>
+                        </div>
+
+                        {(r.status === "rejected" ||
+                          r.status === "deleted") &&
+                          (r.status === "rejected"
+                            ? r.rejection_reason
+                            : r.deletion_reason) && (
+                            <p className="mt-1.5 text-xs leading-5 text-muted-foreground sm:mt-2 sm:text-sm sm:leading-6">
+                              <span className="font-medium text-foreground">
+                                Reason:
+                              </span>{" "}
+                              {r.status === "rejected"
+                                ? r.rejection_reason
+                                : r.deletion_reason}
+                            </p>
+                          )}
+                      </>
+                    );
+
                     return (
                       <li
                         key={r.id}
-                        className={`px-4 py-4 transition-colors sm:py-5 ${
+                        className={
                           r.status === "deleted"
                             ? "bg-muted/30"
                             : ""
-                        }`}
+                        }
                       >
                         <div className="flex items-start gap-3 sm:gap-4">
-                          <div className="min-w-0 flex-1">
-                            <div className="mb-1.5">
-                              <StatusPill status={r.status} />
+                          {r.status === "approved" ? (
+                            <Link
+                              to="/preview/$resourceId"
+                              params={{
+                                resourceId: r.id,
+                              }}
+                              className="block min-w-0 flex-1 cursor-pointer px-4 py-3 transition-colors hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset sm:py-4"
+                            >
+                              {resourceDetails}
+                            </Link>
+                          ) : (
+                            <div className="min-w-0 flex-1 cursor-default px-4 py-3 sm:py-4">
+                              {resourceDetails}
+
+                              <p className="mt-1.5 text-[10px] text-muted-foreground sm:text-xs">
+                                This resource is not currently available for preview.
+                              </p>
                             </div>
-
-                            <p className="truncate text-sm font-medium sm:text-base">
-                              {r.title}
-                            </p>
-
-                            <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] text-muted-foreground sm:text-xs">
-                              <span>{categoryName}</span>
-                              <span>·</span>
-                              <span>
-                                {r.download_count} downloads
-                              </span>
-                              <span>·</span>
-                              <span>
-                                {new Date(
-                                  r.created_at,
-                                ).toLocaleDateString()}
-                              </span>
-                            </div>
-
-                            {r.status === "rejected" &&
-                              r.rejection_reason && (
-                                <p className="mt-1.5 text-xs leading-5 text-muted-foreground sm:mt-2 sm:text-sm sm:leading-6">
-                                  <span className="font-medium text-foreground">
-                                    Reason:
-                                  </span>{" "}
-                                  {r.rejection_reason}
-                                </p>
-                              )}
-                          </div>
+                          )}
 
                           {r.status === "draft" && (
-                            <div className="flex shrink-0 flex-col gap-2">
+                            <div className="flex shrink-0 flex-col gap-2 px-4 py-3 sm:py-4">
                               <Link
                                 to="/upload/$draftId"
                                 params={{
                                   draftId: r.id,
                                 }}
-                                className="inline-flex h-9 w-16 items-center justify-center rounded-sm border border-border bg-gradient-emerald text-xs text-white shadow-soft !transition-none hover:bg-none hover:bg-accent hover:text-foreground sm:h-10 sm:text-sm"
+                                className="inline-flex h-9 w-16 mt-3 items-center justify-center rounded-sm border border-border bg-gradient-emerald text-xs text-white shadow-soft !transition-none hover:bg-none hover:bg-accent hover:text-foreground sm:h-10 sm:text-sm"
                               >
                                 Edit
                               </Link>
@@ -654,7 +723,7 @@ function DashboardPage() {
                     deletingDraftId !==
                     null
                   }
-                 className="inline-flex items-center justify-center rounded-sm border border-border bg-gradient-emerald text-xs text-white shadow-soft !transition-none hover:bg-none hover:bg-accent hover:text-foreground sm:h-10 sm:text-sm"
+                  className="inline-flex items-center justify-center rounded-sm border border-border bg-gradient-emerald text-xs text-white shadow-soft !transition-none hover:bg-none hover:bg-accent hover:text-foreground sm:h-10 sm:text-sm"
                 >
                   Cancel
                 </AlertDialogCancel>
@@ -693,7 +762,7 @@ export function StatusPill({
 }) {
   const styles: Record<string, string> = {
     approved: "text-emerald-500",
-    pending: "text-amber-500",
+    pending: "text-gold",
     rejected: "text-red-500",
     draft: "text-muted-foreground",
     archived: "text-red-500",

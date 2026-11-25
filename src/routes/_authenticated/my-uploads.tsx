@@ -7,11 +7,11 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import {
+  Download,
   Edit3,
   Filter,
   Loader2,
   Search,
-  Trash2,
   X,
   CalendarDays,
 } from "lucide-react";
@@ -101,6 +101,8 @@ type UploadCategory = {
 type UploadResource = {
   id: string;
   title: string;
+  file_name: string | null;
+  file_size: number | null;
   status: string;
   rejection_reason: string | null;
   deletion_reason: string | null;
@@ -119,13 +121,29 @@ type MyUploadsResponse = {
 
 const PAGE_SIZE = 20;
 
-const STATUS_ORDER: Record<string, number> = {
-  pending: 1,
-  approved: 2,
-  rejected: 3,
-  deleted: 4,
-  draft: 5,
-};
+function formatFileSize(bytes: number | null | undefined): string {
+  if (
+    bytes == null ||
+    !Number.isFinite(bytes) ||
+    bytes < 0
+  ) {
+    return "Unknown size";
+  }
+
+  if (bytes === 0) {
+    return "0 B";
+  }
+
+  const units = ["B", "KB", "MB", "GB", "TB"];
+  const unitIndex = Math.min(
+    Math.floor(Math.log(bytes) / Math.log(1024)),
+    units.length - 1,
+  );
+
+  const size = bytes / Math.pow(1024, unitIndex);
+
+  return `${Number(size.toFixed(1))} ${units[unitIndex]}`;
+}
 
 function parseDateValue(value: string): Date | undefined {
   if (!value) return undefined;
@@ -544,157 +562,157 @@ function MyUploads() {
             </div>
           </div>
         </div>
-        
-{/* Sorting and date range */}
-<div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3">
 
-  {/* Sort */}
-  <div className="col-span-2 min-w-0 sm:col-span-1">
-    <Select
-      value={sortBy}
-      onValueChange={(value) =>
-        setSortBy(value as SortOption)
-      }
-    >
-      <SelectTrigger
-        id="upload-sort"
-        className="h-10 w-full min-w-0 px-3 text-xs sm:text-sm"
-      >
-        <SelectValue placeholder="Newest first" />
-      </SelectTrigger>
-
-      <SelectContent>
-        <SelectItem value="newest">Newest</SelectItem>
-        <SelectItem value="oldest">Oldest</SelectItem>
-        <SelectItem value="status">Status</SelectItem>
-      </SelectContent>
-    </Select>
-  </div>
-
-  {/* Date from */}
-  <div className="min-w-0">
-    <Popover>
-      <PopoverTrigger asChild>
-        <Button
-          type="button"
-          variant="outline"
-          className="h-10 w-full min-w-0 bg-card justify-between px-2 text-xs font-normal sm:text-sm"
-          aria-label="Filter uploads from this date"
-        >
-          <span
-            className={
-              dateFrom
-                ? "text-foreground"
-                : "text-muted-foreground"
-            }
-          >
-            {formatDateDisplay(dateFrom)}
-          </span>
-
-          <CalendarDays className="h-4 w-4 shrink-0 text-muted-foreground" />
-        </Button>
-      </PopoverTrigger>
-
-      <PopoverContent
-        className="w-auto p-0"
-        align="start"
-      >
-        <Calendar
-          mode="single"
-          selected={parseDateValue(dateFrom)}
-          onSelect={(date) => {
-            if (date) {
-              handleDateFromChange(formatDateValue(date));
-            }
-          }}
-          disabled={
-            dateTo
-              ? { after: parseDateValue(dateTo)! }
-              : undefined
-          }
-          initialFocus
-        />
-      </PopoverContent>
-    </Popover>
-  </div>
-
-  {/* Date to */}
-  <div className="min-w-0">
-    <Popover>
-      <PopoverTrigger asChild>
-        <Button
-          type="button"
-          variant="outline"
-          className="h-10 w-full min-w-0 bg-card justify-between px-2 text-xs font-normal sm:text-sm"
-          aria-label="Filter uploads up to this date"
-        >
-          <span
-            className={
-              dateTo
-                ? "text-foreground"
-                : "text-muted-foreground"
-            }
-          >
-            {formatDateDisplay(dateTo)}
-          </span>
-
-          <CalendarDays className="h-4 w-4 shrink-0 text-muted-foreground" />
-        </Button>
-      </PopoverTrigger>
-
-      <PopoverContent
-        className="w-auto p-0"
-        align="end"
-      >
-        <Calendar
-          mode="single"
-          selected={parseDateValue(dateTo)}
-          onSelect={(date) => {
-            if (date) {
-              handleDateToChange(formatDateValue(date));
-            }
-          }}
-          disabled={
-            dateFrom
-              ? { before: parseDateValue(dateFrom)! }
-              : undefined
-          }
-          initialFocus
-        />
-      </PopoverContent>
-    </Popover>
-  </div>
-</div>
-
-         {/* Filter footer */}
-          <div className="flex items-center justify-between gap-3 pt-1">
-            <p className="ml-2 mt-3 text-[10px] font-medium text-gold sm:text-xs">
-              {totalCount > 0
-                ? `Showing ${(page - 1) * PAGE_SIZE + 1}–${Math.min(
-                    page * PAGE_SIZE,
-                    totalCount,
-                  )} of ${totalCount} uploads`
-                : "0 uploads"}
-            </p>
-
-            {hasActiveFilters && (
-              <button
-                type="button"
-                onClick={clearFilters}
-                className="ml-3 mt-3 pr-3 inline-flex shrink-0 items-center gap-1 text-[10px] font-medium text-gold transition-opacity hover:opacity-75 sm:gap-1.5 sm:text-xs"
+        {/* Sorting and date range */}
+        <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3">
+          {/* Sort */}
+          <div className="col-span-2 min-w-0 sm:col-span-1">
+            <Select
+              value={sortBy}
+              onValueChange={(value) =>
+                setSortBy(value as SortOption)
+              }
+            >
+              <SelectTrigger
+                id="upload-sort"
+                className="h-10 w-full min-w-0 px-3 text-xs sm:text-sm"
               >
-                <X className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                Clear filters
-              </button>
-            )}
+                <SelectValue placeholder="Newest first" />
+              </SelectTrigger>
+
+              <SelectContent>
+                <SelectItem value="newest">Newest</SelectItem>
+                <SelectItem value="oldest">Oldest</SelectItem>
+                <SelectItem value="status">Status</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-          {dateRangeInvalid && (
+
+          {/* Date from */}
+          <div className="min-w-0">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-10 w-full min-w-0 bg-card justify-between px-2 text-xs font-normal sm:text-sm"
+                  aria-label="Filter uploads from this date"
+                >
+                  <span
+                    className={
+                      dateFrom
+                        ? "text-foreground"
+                        : "text-muted-foreground"
+                    }
+                  >
+                    {formatDateDisplay(dateFrom)}
+                  </span>
+
+                  <CalendarDays className="h-4 w-4 shrink-0 text-muted-foreground" />
+                </Button>
+              </PopoverTrigger>
+
+              <PopoverContent
+                className="w-auto p-0"
+                align="start"
+              >
+                <Calendar
+                  mode="single"
+                  selected={parseDateValue(dateFrom)}
+                  onSelect={(date) => {
+                    if (date) {
+                      handleDateFromChange(formatDateValue(date));
+                    }
+                  }}
+                  disabled={
+                    dateTo
+                      ? { after: parseDateValue(dateTo)! }
+                      : undefined
+                  }
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          {/* Date to */}
+          <div className="min-w-0">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-10 w-full min-w-0 bg-card justify-between px-2 text-xs font-normal sm:text-sm"
+                  aria-label="Filter uploads up to this date"
+                >
+                  <span
+                    className={
+                      dateTo
+                        ? "text-foreground"
+                        : "text-muted-foreground"
+                    }
+                  >
+                    {formatDateDisplay(dateTo)}
+                  </span>
+
+                  <CalendarDays className="h-4 w-4 shrink-0 text-muted-foreground" />
+                </Button>
+              </PopoverTrigger>
+
+              <PopoverContent
+                className="w-auto p-0"
+                align="end"
+              >
+                <Calendar
+                  mode="single"
+                  selected={parseDateValue(dateTo)}
+                  onSelect={(date) => {
+                    if (date) {
+                      handleDateToChange(formatDateValue(date));
+                    }
+                  }}
+                  disabled={
+                    dateFrom
+                      ? { before: parseDateValue(dateFrom)! }
+                      : undefined
+                  }
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+        </div>
+
+        {/* Filter footer */}
+        <div className="flex items-center justify-between gap-3 pt-1">
+          <p className="ml-2 mt-3 text-[10px] font-medium text-gold sm:text-xs">
+            {totalCount > 0
+              ? `Showing ${(page - 1) * PAGE_SIZE + 1}–${Math.min(
+                  page * PAGE_SIZE,
+                  totalCount,
+                )} of ${totalCount} uploads`
+              : "0 uploads"}
+          </p>
+
+          {hasActiveFilters && (
+            <button
+              type="button"
+              onClick={clearFilters}
+              className="ml-3 mt-3 pr-3 inline-flex shrink-0 items-center gap-1 text-[10px] font-medium text-gold transition-opacity hover:opacity-75 sm:gap-1.5 sm:text-xs"
+            >
+              <X className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+              Clear filters
+            </button>
+          )}
+        </div>
+
+        {dateRangeInvalid && (
           <p className="mt-2 text-xs text-destructive">
             The start date must not be later than the end date.
           </p>
         )}
       </div>
-      
+
       {/* Upload list */}
       <div className="rounded-sm border border-border bg-card py-1 px-4 shadow-soft">
         {isLoading ? (
@@ -745,59 +763,98 @@ function MyUploads() {
                     ? resource.category.name.trim()
                     : "Uncategorized";
 
+                const resourceDetails = (
+                  <>
+                    <div className="mb-1.5">
+                      <StatusPill
+                        status={resource.status}
+                      />
+                    </div>
+
+                    <p className="break-words text-xs font-medium sm:text-sm">
+                      {resource.title || "Untitled resource"}
+                    </p>
+
+                    <p className="mt-1 break-all text-[10px] text-muted-foreground sm:text-xs">
+                      {resource.file_name || "No file name"}
+                    </p>
+
+                    <div className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[10px] text-muted-foreground sm:text-xs">
+                      <span>{categoryName}</span>
+
+                      <span aria-hidden="true">·</span>
+
+                      <span>
+                        {formatFileSize(resource.file_size)}
+                      </span>
+
+                      <span aria-hidden="true">·</span>
+
+                      <span className="inline-flex items-center gap-1">
+                        <Download className="h-3 w-3" />
+                        {(resource.download_count ?? 0).toLocaleString()}
+                      </span>
+
+                      <span aria-hidden="true">·</span>
+
+                      <span>
+                        {new Date(
+                          resource.created_at,
+                        ).toLocaleDateString()}
+                      </span>
+                    </div>
+
+                    {(resource.status === "rejected" ||
+                      resource.status === "deleted") &&
+                      (resource.status === "rejected"
+                        ? resource.rejection_reason
+                        : resource.deletion_reason) && (
+                        <p className="mt-1.5 text-xs leading-5 text-muted-foreground sm:mt-2 sm:text-sm sm:leading-6">
+                          <span className="font-medium text-foreground">
+                            Reason:
+                          </span>{" "}
+                          {resource.status === "rejected"
+                            ? resource.rejection_reason
+                            : resource.deletion_reason}
+                        </p>
+                      )}
+                  </>
+                );
+
                 return (
                   <li
                     key={resource.id}
-                    className="group py-4 sm:py-5"
+                    className="group"
                   >
                     <div className="flex items-start justify-between gap-3 sm:gap-4">
-                      <div className="min-w-0 flex-1">
-                        <div className="mb-1.5">
-                          <StatusPill
-                            status={resource.status}
-                          />
-                        </div>
-                        <p
-                        className={
-                            resource.status === "draft"
-                              ? "truncate text-sm font-medium sm:text-base"
-                              : "break-words text-sm font-medium sm:text-base"
-                          }
+                      {resource.status === "approved" ? (
+                        <Link
+                          to="/preview/$resourceId"
+                          params={{
+                            resourceId: resource.id,
+                          }}
+                          className="block min-w-0 flex-1 cursor-pointer py-3 transition-colors hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset sm:py-4"
                         >
-                          {resource.title}
-                        </p>                        
-                          <p className="mt-1 text-[10px] text-muted-foreground sm:text-xs">
-                          {categoryName}
-                          {" · "}
-                          {resource.download_count ?? 0}
-                          {" downloads · "}
-                          {new Date(
-                            resource.created_at,
-                          ).toLocaleDateString()}
-                        </p>
-                        {(resource.status === "rejected" ||
-  resource.status === "deleted") &&
-  (resource.status === "rejected"
-    ? resource.rejection_reason
-    : resource.deletion_reason) && (
-    <p className="mt-1.5 text-xs leading-5 text-muted-foreground sm:mt-2 sm:text-sm sm:leading-6">
-      <span className="font-medium text-foreground">
-        Reason:
-      </span>{" "}
-      {resource.status === "rejected"
-        ? resource.rejection_reason
-        : resource.deletion_reason}
-    </p>
-  )}
-  </div>
-                       {resource.status === "draft" && (
-                        <div className="flex shrink-0 flex-col gap-2">
+                          {resourceDetails}
+                        </Link>
+                      ) : (
+                        <div className="min-w-0 flex-1 cursor-default py-3 sm:py-4">
+                          {resourceDetails}
+
+                          <p className="mt-1.5 text-[10px] text-muted-foreground sm:text-xs">
+                            This resource is not currently available for preview.
+                          </p>
+                        </div>
+                      )}
+
+                      {resource.status === "draft" && (
+                        <div className="flex shrink-0 flex-col gap-2 py-3 sm:py-4">
                           <Link
                             to="/upload/$draftId"
                             params={{
                               draftId: resource.id,
                             }}
-                            className="inline-flex h-9 w-16 items-center justify-center rounded-sm border border-border bg-gradient-emerald text-xs text-white shadow-soft !transition-none hover:bg-none hover:bg-accent hover:text-foreground sm:h-10 sm:text-sm"
+                            className="inline-flex h-9 w-16 mt-3 items-center justify-center rounded-sm border border-border bg-gradient-emerald text-xs text-white shadow-soft !transition-none hover:bg-none hover:bg-accent hover:text-foreground sm:h-10 sm:text-sm"
                           >
                             Edit
                           </Link>
@@ -841,7 +898,7 @@ function MyUploads() {
 
       {/* Pagination */}
       {!isLoading &&
-      !uploadsError &&
+        !uploadsError &&
         totalCount >= PAGE_SIZE && (
           <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
             <div className="justify-self-start">

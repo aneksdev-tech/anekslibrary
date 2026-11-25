@@ -52,6 +52,16 @@ const roleIcons: Record<string, typeof UserRound> = {
   guest: UserRoundSearch,
 };
 
+function formatFileSize(bytes: number | null): string {
+  if (bytes == null || bytes <= 0) return "0 Bytes";
+
+  const units = ["Bytes", "KB", "MB", "GB", "TB"];
+  const index = Math.floor(Math.log(bytes) / Math.log(1024));
+  const size = bytes / Math.pow(1024, index);
+
+  return `${size.toFixed(index === 0 ? 0 : 2)} ${units[index]}`;
+}
+
 function PublicProfilePage() {
   const { userId } = Route.useParams();
 
@@ -89,6 +99,8 @@ function PublicProfilePage() {
           title,
           download_count,
           created_at,
+          file_name,
+          file_size,
           category:categories(name, deleted_at)
         `)
         .eq("uploader_id", userId)
@@ -334,50 +346,56 @@ function PublicProfilePage() {
 
                   return (
                     <li key={resource.id}>
-                      <Link
-                        to="/preview/$resourceId"
-                        params={{
-                          resourceId: resource.id,
-                        }}
-                        className="block py-3 transition-colors outline-none hover:bg-muted/30 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset sm:py-4"
-                      >
-                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                          <div className="min-w-0">
-                            <StatusPill status="approved" />
+  <Link
+    to="/preview/$resourceId"
+    params={{
+      resourceId: resource.id,
+    }}
+    className="block py-3 transition-colors outline-none hover:bg-muted/30 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset sm:py-4"
+  >
+    <div className="flex flex-col gap-2">
+      <div className="min-w-0">
+        {/* Resource status */}
+        <StatusPill status="approved" />
 
-                            <p className="mt-1.5 truncate text-sm font-medium sm:text-base">
-                              {resource.title}
-                            </p>
+        {/* Resource title */}
+        <p className="mt-1.5 break-words text-xs font-medium sm:text-sm">
+          {resource.title ||
+            resource.file_name ||
+            "Untitled resource"}
+        </p>
 
-                            <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] text-muted-foreground sm:text-xs">
-                              <span>{categoryName}</span>
+        {/* Resource filename */}
+        <p className="mt-1 break-all text-[10px] text-muted-foreground sm:text-xs">
+          {resource.file_name || "No file name"}
+        </p>
 
-                              <span aria-hidden="true">
-                                ·
-                              </span>
+        {/* Resource metadata */}
+        <div className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[10px] text-muted-foreground sm:text-xs">
+          <span>{categoryName}</span>
 
-                              <span className="inline-flex items-center gap-1">
-                                <Download className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                                {downloadCount}{" "}
-                                {downloadCount === 1
-                                  ? "download"
-                                  : "downloads"}
-                              </span>
+          <span aria-hidden="true">·</span>
 
-                              <span aria-hidden="true">
-                                ·
-                              </span>
+          <span>{formatFileSize(resource.file_size)}</span>
 
-                              <span>
-                                {new Date(
-                                  resource.created_at,
-                                ).toLocaleDateString()}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      </Link>
-                    </li>
+          <span aria-hidden="true">·</span>
+
+          <span className="inline-flex items-center gap-1">
+            <Download className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+            {downloadCount.toLocaleString()}{" "}
+            {downloadCount === 1 ? "download" : ""}
+          </span>
+
+          <span aria-hidden="true">·</span>
+
+          <span>
+            {new Date(resource.created_at).toLocaleDateString()}
+          </span>
+        </div>
+      </div>
+    </div>
+  </Link>
+</li>
                   );
                 })}
               </ul>

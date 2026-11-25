@@ -7,19 +7,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Calendar } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger, } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ALL_OPTION, colleges, getDepartments, levels, semesters } from "@/lib/academicData";
 import { getResourceScopeLabel } from "@/lib/resource-scope-labels";
-import { Check, CheckCircle2, Clock3, ChevronLeft, ChevronRight, Eye, FileText, Loader2, Search, UserRound, X, XCircle, CalendarDays } from "lucide-react";
+import { UserRound, Search, Check, CheckCircle2, Clock3, ChevronLeft, ChevronRight, Eye, FileText, Loader2, Shield, ShieldCheck, NotebookPen, UserRoundSearch, Presentation, ClipboardList, Microscope, X, XCircle, CalendarDays } from "lucide-react";
 import { toast } from "sonner";
 import { EmptyState } from "./dashboard";
 import { DocumentPreview } from "@/components/document-preview/DocumentPreview";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import photo from "@/assets/Photo.jfif";
 
 export const Route = createFileRoute(
   "/_authenticated/admin/approvals",
@@ -214,20 +211,12 @@ function Approvals() {
     roles?.includes("admin") ||
     roles?.includes("co-admin");
 
-  const [activeSection, setActiveSection] =
-    useState<ApprovalSection>(
-      canApproveUsers
-        ? "users"
-        : "resources",
-    );
+const [activeSection, setActiveSection] =
+  useState<ApprovalSection>("resources");
 
-  useEffect(() => {
-    setActiveSection(
-      canApproveUsers
-        ? "users"
-        : "resources",
-    );
-  }, [canApproveUsers]);
+useEffect(() => {
+  setActiveSection("resources");
+}, [canApproveUsers]);
 
   useEffect(() => {
     if (
@@ -872,73 +861,65 @@ useEffect(() => {
   return (
     <>
       <section className="space-y-5 sm:space-y-6">
-        {/* Approval section navigation */}
-        <div className="border-b border-border">
-          <div
-            ref={matchingCountRef}
-            className="scroll-mt-20 flex items-center gap-4 overflow-x-auto sm:gap-6"
-            role="tablist"
-            aria-label="Approval sections"
-          >
-            {canApproveUsers && (
-              <button
-                type="button"
-                role="tab"
-                aria-selected={
-                  activeSection === "users"
-                }
-                onClick={() =>
-                  setActiveSection("users")
-                }
-                className={`relative flex shrink-0 items-center gap-1.5 border-b-2 px-1 pb-2.5 text-xs font-semibold transition-colors sm:gap-2 sm:pb-3 sm:text-sm ${
-                  activeSection === "users"
-                    ? "border-foreground text-foreground"
-                    : "border-transparent text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <UserRound className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                User Accounts
+        {/* Approval section navigation — admins and co-admins only */}
+{canApproveUsers && (
+  <div className="border-b border-border">
+    <div
+      className="flex items-center gap-4 overflow-x-auto sm:gap-6"
+      role="tablist"
+      aria-label="Approval sections"
+    >
+      {/* Resource Approval */}
+      <button
+        type="button"
+        role="tab"
+        aria-selected={activeSection === "resources"}
+        onClick={() => setActiveSection("resources")}
+        className={`relative flex shrink-0 items-center gap-1.5 border-b-2 px-1 pb-2.5 text-xs font-semibold transition-colors sm:gap-2 sm:pb-3 sm:text-sm ${
+          activeSection === "resources"
+            ? "border-foreground text-foreground"
+            : "border-transparent text-muted-foreground hover:text-foreground"
+        }`}
+      >
+        <FileText className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+        Resources
 
-                {pendingUsers &&
-                  pendingUsers.length > 0 && (
-                    <span className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-gold text-[10px] leading-none font-semibold text-gold-foreground sm:h-5 sm:w-5 sm:text-[10px]">
-                      {pendingUsers.length}
-                    </span>
-                  )}
-              </button>
-            )}
+        {pendingCount > 0 && (
+          <span className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-gold text-[10px] leading-none font-semibold text-gold-foreground sm:h-5 sm:w-5 sm:text-[10px]">
+            {pendingCount}
+          </span>
+        )}
+      </button>
 
-            <button
-              type="button"
-              role="tab"
-              aria-selected={
-                activeSection === "resources"
-              }
-              onClick={() =>
-                setActiveSection("resources")
-              }
-              className={`relative flex shrink-0 items-center gap-1.5 border-b-2 px-1 pb-2.5 text-xs font-semibold transition-colors sm:gap-2 sm:pb-3 sm:text-sm ${
-                activeSection === "resources"
-                  ? "border-foreground text-foreground"
-                  : "border-transparent text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <FileText className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              Resources
+      {/* User Approval */}
+      <button
+        type="button"
+        role="tab"
+        aria-selected={activeSection === "users"}
+        onClick={() => setActiveSection("users")}
+        className={`relative flex shrink-0 items-center gap-1.5 border-b-2 px-1 pb-2.5 text-xs font-semibold transition-colors sm:gap-2 sm:pb-3 sm:text-sm ${
+          activeSection === "users"
+            ? "border-foreground text-foreground"
+            : "border-transparent text-muted-foreground hover:text-foreground"
+        }`}
+      >
+        <UserRound className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+        Users
 
-              {pendingCount > 0 && (
-                <span className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-gold text-[10px] leading-none font-semibold text-gold-foreground sm:h-5 sm:w-5 sm:text-[10px]">
-                  {pendingCount}
-                </span>
-              )}
-            </button>
-          </div>
-        </div>
+        {pendingUsers && pendingUsers.length > 0 && (
+          <span className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-gold text-[10px] leading-none font-semibold text-gold-foreground sm:h-5 sm:w-5 sm:text-[10px]">
+            {pendingUsers.length}
+          </span>
+        )}
+      </button>
+    </div>
+  </div>
+)}
 
-        {/* User Accounts */}
+        {/* User Approval */}
         {activeSection === "users" &&
           canApproveUsers && (
-            <div className="overflow-hidden rounded-sm border border-border bg-card shadow-soft sm:rounded-sm">
+            <div>
               {pendingUsersLoading ? (
                 <div className="p-7 text-center text-xs text-muted-foreground sm:p-8 sm:text-sm">
                   <div className="flex items-center justify-center gap-1.5 sm:gap-2">
@@ -948,140 +929,147 @@ useEffect(() => {
                 </div>
               ) : pendingUsers &&
                 pendingUsers.length > 0 ? (
-                <ul className="divide-y divide-border">
-                  {pendingUsers.map((pendingUser) => {
-                    const isProcessing =
-                      userDecisionLoading &&
-                      decideUser.variables?.id ===
-                        pendingUser.id;
+                <ul className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3 sm:gap-4">
+  {pendingUsers.map((pendingUser) => {
+    const isProcessing =
+      userDecisionLoading &&
+      decideUser.variables?.id === pendingUser.id;
 
-                    const displayName =
-                      pendingUser.full_name?.trim() ||
-                      "Unnamed user";
+    const displayName =
+      pendingUser.full_name?.trim() ||
+      "Unnamed user";
 
-                    const email =
-                      pendingUser.email?.trim() ||
-                      "No email available";
+    const email =
+      pendingUser.email?.trim() ||
+      "No email available";
 
-                    return (
-                      <li
-                        key={pendingUser.id}
-                        className="border-b-2 border-border/70 p-3.5 transition-colors odd:bg-card even:bg-muted/40 hover:bg-muted/50 sm:p-5"
-                      >
-                        <div className="flex flex-col gap-3.5 sm:gap-4">
-                          <div className="flex flex-col gap-3.5 sm:gap-4 lg:flex-row lg:items-start lg:justify-between">
-                            <div className="min-w-0 flex-1">
-                              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                                <span className="inline-flex items-center gap-1 rounded-sm border border-gold/20 bg-gold/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-gold sm:px-2 sm:text-[10px]">
-                                  <Clock3 className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
-                                  Pending
-                                </span>
+    const RoleIcon = getRoleIcon(
+      pendingUser.primary_role,
+    );
 
-                                <span className="max-w-[180px] truncate rounded-sm border border-border bg-muted/30 px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wide text-muted-foreground sm:max-w-[220px] sm:px-2 sm:text-[10px]">
-                                  {formatRoleLabel(
-                                    pendingUser.primary_role,
-                                  )}
-                                </span>
-                              </div>
+    return (
+      <li
+        key={pendingUser.id}
+        className="flex min-w-0 flex-col rounded-sm border border-border bg-card p-3 shadow-soft transition-all duration-200 hover:-translate-y-0.5 hover:shadow-elegant sm:p-4"
+      >
+        {/* Passport-style identity header */}
+<div className="flex flex-col items-center">
+  <div className="flex w-full items-center justify-between gap-2">
+    <div className="flex min-w-0 items-center gap-1 text-[9px] font-medium text-gold sm:text-[10px]">
+      <RoleIcon className="h-3 w-3 shrink-0" />
+      <span className="truncate">
+        {formatRoleLabel(pendingUser.primary_role)}
+      </span>
+    </div>
 
-                              <div className="mt-1.5 sm:mt-2">
-                                <p className="break-words text-sm font-semibold leading-5 text-foreground sm:text-lg sm:leading-6">
-                                  {displayName}
-                                </p>
+    <span className="shrink-0 text-right text-[9px] font-medium text-muted-foreground sm:text-[10px]">
+      {formatDateTime(pendingUser.created_at)}
+    </span>
+  </div>
 
-                                <p className="mt-0.5 break-all text-xs text-muted-foreground sm:mt-1 sm:text-sm">
-                                  {email}
-                                </p>
-                              </div>
-                            </div>
-                          </div>
+  <div className="mt-3 flex h-25 w-25 items-center justify-center">
+  <img
+    src={photo}
+    alt="User profile"
+    className="h-20 w-20 rounded-full object-cover"
+  />
+</div>
+</div>
 
-{/* Account metadata */}
-<div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 sm:gap-3 xl:grid-cols-3">
+{/* User identity details */}
+<div className="mt-3 min-w-0 border-t border-border pt-3 text-center">
+  <p className="break-words text-xs font-semibold leading-5 text-foreground sm:text-sm">
+    {displayName}
+  </p>
+
+  <p className="mt-1 break-all text-[10px] leading-4 text-muted-foreground sm:text-xs">
+    {email}
+  </p>
+</div>
+
+{/* Academic details */}
+<div className="mt-3 flex-1 space-y-3 border-t border-border pt-3 text-center">
   {pendingUser.college?.trim() && (
-    <AuditItem
-      label="College"
-      value={pendingUser.college.trim()}
-    />
+    <div className="space-y-0.5">
+      <p className="text-xs text-muted-foreground">College</p>
+      <p className="text-sm font-medium">
+        {pendingUser.college.trim()}
+      </p>
+    </div>
   )}
 
   {pendingUser.department?.trim() && (
-    <AuditItem
-      label="Department"
-      value={pendingUser.department.trim()}
-    />
+    <div className="space-y-0.5">
+      <p className="text-xs text-muted-foreground">Department</p>
+      <p className="text-sm font-medium">
+        {pendingUser.department.trim()}
+      </p>
+    </div>
   )}
 
   {pendingUser.primary_role === "student" &&
     pendingUser.level?.trim() && (
-      <AuditItem
-        label="Level"
-        value={pendingUser.level.trim()}
-      />
+      <div className="space-y-0.5">
+        <p className="text-xs text-muted-foreground">Level</p>
+        <p className="text-sm font-medium">
+          {pendingUser.level.trim()}
+        </p>
+      </div>
     )}
-
-  <AuditItem
-    label="Registered"
-    value="Pending approval"
-    detail={formatDateTime(
-      pendingUser.created_at,
-    )}
-  />
 </div>
 
-                          {/* Account actions */}
-                          <div className="grid w-full grid-cols-2 gap-2 border-t border-border pt-3 sm:gap-3 sm:pt-4">
-                            <Button
-                              type="button"
-                              variant="outline"
-                              disabled={userDecisionLoading}
-                              onClick={() =>
-                                requestRejectUser(
-                                  pendingUser.id,
-                                  displayName,
-                                  email,
-                                )
-                              }
-                              className="h-9 w-full min-w-0 text-xs text-destructive transition-colors hover:border-destructive/30 hover:bg-destructive/5 hover:text-destructive sm:h-10 sm:text-sm bg-muted"
-                            >
-                              {isProcessing &&
-                              pendingUserDecision?.type ===
-                                "reject" ? (
-                                <Loader2 className="mr-1.5 h-3.5 w-3.5 shrink-0 animate-spin" />
-                              ) : (
-                                <X className="mr-1.5 h-3.5 w-3.5 shrink-0" />
-                              )}
-                              Reject
-                            </Button>
+        {/* Account actions */}
+        <div className="mt-4 grid grid-cols-2 gap-1.5 border-t border-border pt-3 sm:gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            disabled={userDecisionLoading}
+            onClick={() =>
+              requestRejectUser(
+                pendingUser.id,
+                displayName,
+                email,
+              )
+            }
+            className="h-8 min-w-0 bg-muted px-1.5 text-[10px] text-destructive transition-colors hover:border-destructive/30 hover:bg-destructive/5 hover:text-destructive sm:h-9 sm:px-2 sm:text-xs"
+          >
+            {isProcessing &&
+            pendingUserDecision?.type === "reject" ? (
+              <Loader2 className="mr-1 h-3 w-3 shrink-0 animate-spin" />
+            ) : (
+              <X className="mr-1 h-3 w-3 shrink-0" />
+            )}
 
-                            <Button
-                              type="button"
-                              variant="outline"
-                              disabled={userDecisionLoading}
-                              onClick={() =>
-                                requestApproveUser(
-                                  pendingUser.id,
-                                  displayName,
-                                  email,
-                                )
-                              }
-                              className="h-9 w-full min-w-0 text-xs text-primary transition-colors hover:border-primary/30 hover:bg-primary/5 sm:h-10 sm:text-sm bg-muted"
-                            >
-                              {isProcessing &&
-                              pendingUserDecision?.type ===
-                                "approve" ? (
-                                <Loader2 className="mr-1.5 h-3.5 w-3.5 shrink-0 animate-spin" />
-                              ) : (
-                                <Check className="mr-1.5 h-3.5 w-3.5 shrink-0" />
-                              )}
-                              Approve
-                            </Button>
-                          </div>
-                        </div>
-                      </li>
-                    );
-                  })}
-                </ul>
+            Reject
+          </Button>
+
+          <Button
+            type="button"
+            variant="outline"
+            disabled={userDecisionLoading}
+            onClick={() =>
+              requestApproveUser(
+                pendingUser.id,
+                displayName,
+                email,
+              )
+            }
+            className="h-8 min-w-0 bg-muted px-1.5 text-[10px] text-primary transition-colors hover:border-primary/30 hover:bg-primary/5 sm:h-9 sm:px-2 sm:text-xs"
+          >
+            {isProcessing &&
+            pendingUserDecision?.type === "approve" ? (
+              <Loader2 className="mr-1 h-3 w-3 shrink-0 animate-spin" />
+            ) : (
+              <Check className="mr-1 h-3 w-3 shrink-0" />
+            )}
+
+            Approve
+          </Button>
+        </div>
+      </li>
+    );
+  })}
+</ul>
               ) : (
                 <EmptyState
                   title="No pending accounts"
@@ -1091,7 +1079,7 @@ useEffect(() => {
             </div>
           )}
 
-        {/* Resources */}
+        {/* Resource Approval */}
         {activeSection === "resources" && (
           <div className="space-y-4">
             {/* Resource filters — always visible */}
@@ -1495,15 +1483,12 @@ useEffect(() => {
                           <div className="flex flex-col gap-3.5 sm:gap-4">
                             <div className="flex flex-col gap-3.5 sm:gap-4 lg:flex-row lg:items-start lg:justify-between">
                               <div className="min-w-0 flex-1">
-                                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                                  <StatusPill
-                                    status={resource.status}
-                                  />
+                                
 
-                                  <span className="max-w-[180px] truncate rounded-sm border border-border bg-muted/30 px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wide text-muted-foreground sm:max-w-[220px] sm:px-2 sm:text-[10px]">
+                                  <span className="max-w-[180px] truncate py-0.5 text-[9px] font-medium uppercase tracking-wide text-gold sm:max-w-[220px] sm:text-[10px]">
                                     {categoryName}
                                   </span>
-                                </div>
+                               
 
                                 <div className="mt-1.5 min-w-0 sm:mt-2">
                                   <p className="break-words text-sm font-semibold leading-5 text-foreground sm:text-lg sm:leading-6">
@@ -1732,7 +1717,7 @@ useEffect(() => {
             </div>
           </div>
         )}
-        </section>
+      </section>
 
       {/* Resource decision dialog */}
       <AlertDialog
@@ -2107,6 +2092,21 @@ function AuditItem({
       )}
     </div>
   );
+}
+
+const roleIcons: Record<string, typeof UserRound> = {
+  admin: ShieldCheck,
+  "co-admin": Shield,
+  coadmin: Shield,
+  lecturer: Presentation,
+  staff: ClipboardList,
+  student: NotebookPen,
+  researcher: Microscope,
+  guest: UserRoundSearch,
+};
+
+function getRoleIcon(role: string | null | undefined) {
+  return roleIcons[role ?? "guest"] ?? UserRound;
 }
 
 function formatRoleLabel(value: string) {

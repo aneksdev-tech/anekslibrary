@@ -158,6 +158,10 @@ type ResourceRow = {
   download_count: number | null;
   created_at: string;
   status: string | null;
+  category: {
+    name: string | null;
+    deleted_at: string | null;
+  } | null;
 };
 
 type ActivityItem = {
@@ -413,7 +417,7 @@ function getResourceStatusStyles(status: string) {
       return "text-green-600 dark:text-green-400";
 
     case "pending":
-      return "text-amber-600 dark:text-amber-400";
+      return "text-gold dark:text-gold";
 
     case "draft":
       return "text-muted-foreground";
@@ -608,17 +612,18 @@ function UserDetailsPage() {
       const { data, error } = await supabase
         .from("resources")
         .select(
-          [
-            "id",
-            "title",
-            "description",
-            "file_name",
-            "file_size",
-            "download_count",
-            "created_at",
-            "status",
-          ].join(", "),
-        )
+  [
+    "id",
+    "title",
+    "description",
+    "file_name",
+    "file_size",
+    "download_count",
+    "created_at",
+    "status",
+    "category:categories(name, deleted_at)",
+  ].join(", "),
+)
         .eq("uploader_id", userId)
         .order("created_at", {
           ascending: false,
@@ -1404,6 +1409,12 @@ function UserDetailsPage() {
   const status = resource.status?.toLowerCase();
   const isApproved = status === "approved";
 
+  const categoryName =
+    resource.category?.deleted_at == null &&
+    resource.category?.name?.trim()
+      ? resource.category.name.trim()
+      : "Uncategorized";
+
   const availabilityMessage = (() => {
     switch (status) {
       case "rejected":
@@ -1424,117 +1435,115 @@ function UserDetailsPage() {
   })();
 
   return (
-    <li key={resource.id}>
-      {isApproved ? (
-        <Link
-          to="/preview/$resourceId"
-          params={{
-            resourceId: resource.id,
-          }}
-          className="block cursor-pointer py-3 transition-colors hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset sm:py-4"
-        >
-          <div className="flex flex-col gap-2">
-            <div className="flex min-w-0 items-start gap-3">
-              <div className="min-w-0 flex-1">
-                {/* Resource status */}
-                <p
-                  className={`mb-1.5 text-[10px] font-semibold sm:text-xs ${getResourceStatusStyles(status || "unknown")}`}
-                >
-                  {formatLabel(status || "unknown")}
-                </p>
+  <li key={resource.id}>
+    {isApproved ? (
+      <Link
+        to="/preview/$resourceId"
+        params={{
+          resourceId: resource.id,
+        }}
+        className="block cursor-pointer py-3 transition-colors hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset sm:py-4"
+      >
+        <div className="flex flex-col gap-2">
+          <div className="flex min-w-0 items-start gap-3">
+            <div className="min-w-0 flex-1">
+              {/* Resource status */}
+              <p
+                className={`mb-1.5 text-[10px] font-semibold sm:text-xs ${getResourceStatusStyles(status || "unknown")}`}
+              >
+                {formatLabel(status || "unknown")}
+              </p>
 
-                {/* Resource title */}
-                <p className="break-words text-xs font-medium sm:text-sm">
-                  {resource.title ||
-                    resource.file_name ||
-                    "Untitled resource"}
-                </p>
+              {/* Resource title */}
+              <p className="break-words text-xs font-medium sm:text-sm">
+                {resource.title ||
+                  resource.file_name ||
+                  "Untitled resource"}
+              </p>
 
-                {/* Resource metadata */}
-                <div className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[10px] text-muted-foreground sm:text-xs">
-                  <span>
-                    {resource.file_name || "No file name"}
-                  </span>
+              {/* Resource filename */}
+              <p className="mt-1 break-all text-[10px] text-muted-foreground sm:text-xs">
+                {resource.file_name || "No file name"}
+              </p>
 
-                  <span aria-hidden="true">·</span>
+              {/* Resource metadata */}
+              <div className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[10px] text-muted-foreground sm:text-xs">
+                <span>{categoryName}</span>
 
-                  <span>
-                    {formatFileSize(resource.file_size)}
-                  </span>
+                <span aria-hidden="true">·</span>
 
-                  <span aria-hidden="true">·</span>
+                <span>{formatFileSize(resource.file_size)}</span>
 
-                  <span className="inline-flex items-center gap-1">
-                    <Download className="h-3 w-3" />
-                    {(resource.download_count ?? 0).toLocaleString()} downloads
-                  </span>
+                <span aria-hidden="true">·</span>
 
-                  <span aria-hidden="true">·</span>
+                <span className="inline-flex items-center gap-1">
+                  <Download className="h-3 w-3" />
+                  {(resource.download_count ?? 0).toLocaleString()} 
+                </span>
 
-                  <span>
-                    {formatDate(resource.created_at)}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </Link>
-      ) : (
-        <div className="cursor-default py-3 sm:py-4">
-          <div className="flex flex-col gap-2">
-            <div className="flex min-w-0 items-start gap-3">
-              <div className="min-w-0 flex-1">
-                {/* Resource status */}
-                <p
-                  className={`mb-1.5 text-[10px] font-semibold sm:text-xs ${getResourceStatusStyles(status || "unknown")}`}
-                >
-                  {formatLabel(status || "unknown")}
-                </p>
+                <span aria-hidden="true">·</span>
 
-                {/* Resource title */}
-                <p className="break-words text-xs font-medium sm:text-sm">
-                  {resource.title ||
-                    resource.file_name ||
-                    "Untitled resource"}
-                </p>
-
-                {/* Resource metadata */}
-                <div className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[10px] text-muted-foreground sm:text-xs">
-                  <span>
-                    {resource.file_name || "No file name"}
-                  </span>
-
-                  <span aria-hidden="true">·</span>
-
-                  <span>
-                    {formatFileSize(resource.file_size)}
-                  </span>
-
-                  <span aria-hidden="true">·</span>
-
-                  <span className="inline-flex items-center gap-1">
-                    <Download className="h-3 w-3" />
-                    {(resource.download_count ?? 0).toLocaleString()} downloads
-                  </span>
-
-                  <span aria-hidden="true">·</span>
-
-                  <span>
-                    {formatDate(resource.created_at)}
-                  </span>
-                </div>
-
-                {/* Resource availability message */}
-                <p className="mt-1.5 text-[10px] text-muted-foreground sm:text-xs">
-                  {availabilityMessage}
-                </p>
+                <span>{formatDate(resource.created_at)}</span>
               </div>
             </div>
           </div>
         </div>
-      )}
-    </li>
-  );
+      </Link>
+    ) : (
+      <div className="cursor-default py-3 sm:py-4">
+        <div className="flex flex-col gap-2">
+          <div className="flex min-w-0 items-start gap-3">
+            <div className="min-w-0 flex-1">
+              {/* Resource status */}
+              <p
+                className={`mb-1.5 text-[10px] font-semibold sm:text-xs ${getResourceStatusStyles(status || "unknown")}`}
+              >
+                {formatLabel(status || "unknown")}
+              </p>
+
+              {/* Resource title */}
+              <p className="break-words text-xs font-medium sm:text-sm">
+                {resource.title ||
+                  resource.file_name ||
+                  "Untitled resource"}
+              </p>
+
+              {/* Resource filename */}
+              <p className="mt-1 break-all text-[10px] text-muted-foreground sm:text-xs">
+                {resource.file_name || "No file name"}
+              </p>
+
+              {/* Resource metadata */}
+              <div className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[10px] text-muted-foreground sm:text-xs">
+                <span>{categoryName}</span>
+
+                <span aria-hidden="true">·</span>
+
+                <span>{formatFileSize(resource.file_size)}</span>
+
+                <span aria-hidden="true">·</span>
+
+                <span className="inline-flex items-center gap-1">
+                  <Download className="h-3 w-3" />
+                  {(resource.download_count ?? 0).toLocaleString()} 
+                </span>
+
+                <span aria-hidden="true">·</span>
+
+                <span>{formatDate(resource.created_at)}</span>
+              </div>
+
+              {/* Resource availability message */}
+              <p className="mt-1.5 text-[10px] text-muted-foreground sm:text-xs">
+                {availabilityMessage}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
+  </li>
+);
 })}
 </ul>
               ) : (
@@ -1548,7 +1557,7 @@ function UserDetailsPage() {
               )}
 
               {resources && resources.length > 10 && (
-                <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+                <div className="mt-3 border-b pb-3 flex flex-wrap items-center justify-between gap-2">
                   <p className="text-[10px] text-muted-foreground sm:text-xs">
                     {showAllResources
                       ? `Showing all ${resources.length} uploaded resources.`
@@ -1570,7 +1579,7 @@ function UserDetailsPage() {
                 </div>
               )}
 
-              <div className="mt-4 flex items-center justify-between border-t border-border pt-4">
+              <div className="flex items-center justify-between pt-4">
                 <span className="text-xs text-muted-foreground">
                   Approved resources
                 </span>
