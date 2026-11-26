@@ -89,7 +89,7 @@ export const Route = createFileRoute(
   component: Approvals,
 });
 
-const PAGE_SIZE = 1;
+const PAGE_SIZE = 24;
 
 function parseDateValue(value: string): Date | undefined {
   if (!value) return undefined;
