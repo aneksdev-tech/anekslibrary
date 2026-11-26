@@ -637,7 +637,7 @@ function DashboardPage() {
                                 params={{
                                   draftId: r.id,
                                 }}
-                                className="inline-flex h-6 w-13 mt-3 items-center justify-center rounded-sm border border-border bg-gradient-emerald text-xs text-white shadow-soft !transition-none hover:bg-none hover:bg-accent hover:text-foreground sm:h-10 sm:text-xs"
+                                className="inline-flex h-9 w-16 mt-3 items-center justify-center rounded-sm border border-border bg-gradient-emerald text-xs text-white shadow-soft !transition-none hover:bg-none hover:bg-accent hover:text-foreground sm:h-10 sm:text-xs"
                               >
                                 Edit
                               </Link>
@@ -651,7 +651,7 @@ function DashboardPage() {
                                   })
                                 }
                                 disabled={deletingDraftId === r.id}
-                                className="inline-flex h-6 w-13 items-center justify-center rounded-sm border border-border bg-destructive text-xs text-white shadow-soft !transition-none hover:bg-none hover:bg-accent hover:text-foreground sm:h-10 sm:text-xs"
+                                className="inline-flex h-9 w-16 items-center justify-center rounded-sm border border-border bg-destructive text-xs text-white shadow-soft !transition-none hover:bg-none hover:bg-accent hover:text-foreground sm:h-10 sm:text-xs"
                               >
                                 {deletingDraftId === r.id
                                   ? "Deleting…"
