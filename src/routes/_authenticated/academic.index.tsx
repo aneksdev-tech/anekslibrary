@@ -1079,7 +1079,7 @@ useEffect(() => {
                     </div>
             
                     {/* Resource title */}
-                    <h3 className="line-clamp-2 font-display text-[10px] font-semibold leading-snug sm:text-lg">
+                    <h3 className="line-clamp-2 font-display text-[12px] font-semibold leading-snug">
   {resource.title}
 </h3>
             
