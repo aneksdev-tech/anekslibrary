@@ -1064,7 +1064,7 @@ function UserDetailsPage() {
           }
         >
           <ArrowLeft className="h-4 w-4" />
-          Back to Users
+          Back
         </Button>
 
         <div className="rounded-2xl border border-border bg-card p-8 text-center shadow-soft">
@@ -1114,7 +1114,7 @@ function UserDetailsPage() {
             </p>
 
             <h1 className="mt-1 font-display text-xl font-semibold sm:text-3xl">
-              User Details
+              Member Details
             </h1>
 
             <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
