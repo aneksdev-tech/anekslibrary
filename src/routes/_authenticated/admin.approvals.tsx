@@ -11,7 +11,7 @@ import { Popover, PopoverContent, PopoverTrigger, } from "@/components/ui/popove
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ALL_OPTION, colleges, getDepartments, levels, semesters } from "@/lib/academicData";
 import { getResourceScopeLabel } from "@/lib/resource-scope-labels";
-import { UserRound, Search, Check, CheckCircle2, Clock3, ChevronLeft, ChevronRight, Eye, FileText, Loader2, Shield, ShieldCheck, NotebookPen, UserRoundSearch, Presentation, ClipboardList, Microscope, X, XCircle, CalendarDays } from "lucide-react";
+import { UserRound, Search, Check, Clock2, CheckCircle2, Clock3, ChevronLeft, ChevronRight, Eye, FileText, Loader2, Shield, ShieldCheck, NotebookPen, UserRoundSearch, Presentation, ClipboardList, Microscope, X, XCircle, CalendarDays } from "lucide-react";
 import { toast } from "sonner";
 import { EmptyState } from "./dashboard";
 import { DocumentPreview } from "@/components/document-preview/DocumentPreview";
@@ -1581,21 +1581,28 @@ useEffect(() => {
           )}
         </div>
 
-        {/* Uploader and submission information */}
-        <div className="mt-auto space-y-3  border-border pt-3 sm:pt-4">
-          <div>
+{/* Uploader and submission information */}
+<div className="pt-2 space-y-3 border-border">
+  <div className="space-y-1.5">
+    {/* Uploader */}
+    <div className="flex min-w-0 items-center gap-2.5 text-muted-foreground sm:gap-3">
+      <UserRound className="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" />
+      <span className="min-w-0 break-words text-[10px] sm:text-xs">
+        {resource.uploader?.full_name?.trim() ||
+          resource.uploader?.email?.trim() ||
+          "Unknown"}
+      </span>
+    </div>
 
-            <p className="mt-0.5 break-words text-[10px] text-muted-foreground sm:text-xs">
-              {resource.uploader?.full_name?.trim() ||
-                resource.uploader?.email?.trim() ||
-                "Unknown"}
-            </p>
-
-            <p className="mt-0.5 text-[10px] text-muted-foreground sm:text-xs">
-              {formatDateTime(resource.created_at)}
-            </p>
-          </div>
-        </div>
+    {/* Date and time */}
+    <div className="flex min-w-0 items-center gap-2.5 text-muted-foreground sm:gap-3">
+      <Clock2 className="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" />
+      <span className="min-w-0 break-words text-[10px] sm:text-xs">
+        {formatDateTime(resource.created_at)}
+      </span>
+    </div>
+  </div>
+</div>
 
         {/* Resource actions */}
         <div className="mt-3 flex flex-row gap-1.5 border-t border-border pt-3 sm:mt-4 sm:gap-2">

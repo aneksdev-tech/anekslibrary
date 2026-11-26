@@ -756,133 +756,146 @@ function MyUploads() {
             )}
 
             <ul className="divide-y divide-border">
-              {resources.map((resource) => {
-                const categoryName =
-                  resource.category?.deleted_at == null &&
-                  resource.category?.name?.trim()
-                    ? resource.category.name.trim()
-                    : "Uncategorized";
+  {resources.map((resource) => {
+    const categoryName =
+      resource.category?.deleted_at == null &&
+      resource.category?.name?.trim()
+        ? resource.category.name.trim()
+        : "Uncategorized";
 
-                const resourceDetails = (
-                  <>
-                    <div className="mb-1.5">
-                      <StatusPill
-                        status={resource.status}
-                      />
-                    </div>
+    const resourceDetails = (
+      <>
+        <div className="mb-1.5">
+          <StatusPill status={resource.status} />
+        </div>
 
-                    <p className="break-words text-xs font-medium sm:text-sm">
-                      {resource.title || "Untitled resource"}
-                    </p>
+        <p
+          className="mb-1 text-[10px] uppercase tracking-wider text-muted-foreground sm:text-xs"
+          title={categoryName}
+        >
+          {categoryName}
+        </p>
 
-                    <p className="mt-1 break-all text-[10px] text-muted-foreground sm:text-xs">
-                      {resource.file_name || "No file name"}
-                    </p>
+        <p
+          className="truncate text-xs font-medium sm:text-sm"
+          title={resource.title || "Untitled resource"}
+        >
+          {resource.title || "Untitled resource"}
+        </p>
 
-                    <div className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[10px] text-muted-foreground sm:text-xs">
-                      <span>{categoryName}</span>
+        <p
+          className="mt-1 truncate text-[10px] text-muted-foreground sm:text-xs"
+          title={resource.file_name || "No file name"}
+        >
+          {resource.file_name || "No file name"}
+        </p>
 
-                      <span aria-hidden="true">·</span>
+        <div className="mt-1 flex min-w-0 items-center gap-x-1.5 overflow-hidden whitespace-nowrap text-[10px] text-muted-foreground sm:text-xs">
+          <span>
+            {formatFileSize(resource.file_size)}
+          </span>
 
-                      <span>
-                        {formatFileSize(resource.file_size)}
-                      </span>
+          <span aria-hidden="true">·</span>
 
-                      <span aria-hidden="true">·</span>
+          <span className="inline-flex items-center gap-1">
+            <Download className="h-3 w-3" />
+            {(resource.download_count ?? 0).toLocaleString()}
+          </span>
 
-                      <span className="inline-flex items-center gap-1">
-                        <Download className="h-3 w-3" />
-                        {(resource.download_count ?? 0).toLocaleString()}
-                      </span>
+          <span aria-hidden="true">·</span>
 
-                      <span aria-hidden="true">·</span>
+          <span>
+            {new Date(
+              resource.created_at,
+            ).toLocaleDateString()}
+          </span>
+        </div>
 
-                      <span>
-                        {new Date(
-                          resource.created_at,
-                        ).toLocaleDateString()}
-                      </span>
-                    </div>
+        {(resource.status === "rejected" ||
+          resource.status === "deleted") &&
+          (resource.status === "rejected"
+            ? resource.rejection_reason
+            : resource.deletion_reason) && (
+            <p className="mt-1.5 text-xs leading-5 text-muted-foreground sm:mt-2 sm:text-sm sm:leading-6">
+              <span className="font-medium text-foreground">
+                Reason:
+              </span>{" "}
+              {resource.status === "rejected"
+                ? resource.rejection_reason
+                : resource.deletion_reason}
+            </p>
+          )}
+      </>
+    );
 
-                    {(resource.status === "rejected" ||
-                      resource.status === "deleted") &&
-                      (resource.status === "rejected"
-                        ? resource.rejection_reason
-                        : resource.deletion_reason) && (
-                        <p className="mt-1.5 text-xs leading-5 text-muted-foreground sm:mt-2 sm:text-sm sm:leading-6">
-                          <span className="font-medium text-foreground">
-                            Reason:
-                          </span>{" "}
-                          {resource.status === "rejected"
-                            ? resource.rejection_reason
-                            : resource.deletion_reason}
-                        </p>
-                      )}
-                  </>
-                );
+    return (
+      <li
+        key={resource.id}
+        className={
+          resource.status === "deleted"
+            ? "bg-muted/30"
+            : ""
+        }
+      >
+        <div className="flex items-start gap-3 sm:gap-4">
+          {resource.status === "approved" ? (
+            <Link
+              to="/preview/$resourceId"
+              params={{
+                resourceId: resource.id,
+              }}
+              className="block min-w-0 flex-1 cursor-pointer py-3 transition-colors hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset sm:py-4"
+            >
+              {resourceDetails}
+            </Link>
+          ) : (
+            <div className="min-w-0 flex-1 cursor-default py-3 sm:py-4">
+              {resourceDetails}
+            </div>
+          )}
 
-                return (
-                  <li
-                    key={resource.id}
-                    className="group"
-                  >
-                    <div className="flex items-start justify-between gap-3 sm:gap-4">
-                      {resource.status === "approved" ? (
-                        <Link
-                          to="/preview/$resourceId"
-                          params={{
-                            resourceId: resource.id,
-                          }}
-                          className="block min-w-0 flex-1 cursor-pointer py-3 transition-colors hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset sm:py-4"
-                        >
-                          {resourceDetails}
-                        </Link>
-                      ) : (
-                        <div className="min-w-0 flex-1 cursor-default py-3 sm:py-4">
-                          {resourceDetails}
+          {resource.status === "draft" && (
+            <div className="flex shrink-0 flex-col gap-2 pl-1 pr-3 py-3 sm:py-4 sm:pr-4">
+              <Link
+                to="/upload/$draftId"
+                params={{
+                  draftId: resource.id,
+                }}
+                className="mt-6 inline-flex h-9 w-16 items-center justify-center rounded-sm border border-border bg-gradient-emerald text-xs text-white shadow-soft !transition-none hover:bg-none hover:bg-accent hover:text-foreground sm:h-10 sm:text-sm"
+              >
+                Edit
+              </Link>
 
-                          <p className="mt-1.5 text-[10px] text-muted-foreground sm:text-xs">
-                            This resource is not currently available for preview.
-                          </p>
-                        </div>
-                      )}
+              <button
+                type="button"
+                onClick={() =>
+                  setPendingDelete({
+                    id: resource.id,
+                    title: resource.title,
+                  })
+                }
+                disabled={
+                  deletingDraftId === resource.id
+                }
+                className="inline-flex h-9 w-16 items-center justify-center rounded-sm border border-border bg-destructive text-xs text-white shadow-soft !transition-none hover:bg-none hover:bg-accent hover:text-foreground sm:h-10 sm:text-sm"
+              >
+                {deletingDraftId === resource.id
+                  ? "Deleting…"
+                  : "Delete"}
+              </button>
+            </div>
+          )}
+        </div>
 
-                      {resource.status === "draft" && (
-                        <div className="flex shrink-0 flex-col gap-2 py-3 sm:py-4">
-                          <Link
-                            to="/upload/$draftId"
-                            params={{
-                              draftId: resource.id,
-                            }}
-                            className="inline-flex h-9 w-16 mt-3 items-center justify-center rounded-sm border border-border bg-gradient-emerald text-xs text-white shadow-soft !transition-none hover:bg-none hover:bg-accent hover:text-foreground sm:h-10 sm:text-sm"
-                          >
-                            Edit
-                          </Link>
-
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setPendingDelete({
-                                id: resource.id,
-                                title: resource.title,
-                              })
-                            }
-                            disabled={
-                              deletingDraftId === resource.id
-                            }
-                            className="inline-flex h-9 w-16 items-center justify-center rounded-sm border border-border bg-destructive text-xs text-white shadow-soft !transition-none hover:bg-none hover:bg-accent hover:text-foreground sm:h-10 sm:text-sm"
-                          >
-                            {deletingDraftId === resource.id
-                              ? "Deleting…"
-                              : "Delete"}
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
+        {resource.status !== "approved" && (
+          <p className="pb-3 text-[10px] text-muted-foreground sm:pb-4 sm:text-xs">
+            This resource is not currently available for preview.
+          </p>
+        )}
+      </li>
+    );
+  })}
+</ul>
           </>
         ) : (
           <EmptyState

@@ -547,56 +547,61 @@ function DashboardPage() {
                     const resourceDetails = (
                       <>
                         <div className="mb-1.5">
-                          <StatusPill status={r.status} />
-                        </div>
+  <StatusPill status={r.status} />
+</div>
 
-                        <p className="break-words text-xs font-medium sm:text-sm">
-                          {r.title || "Untitled resource"}
-                        </p>
+<p
+  className="mb-1 text-[10px] uppercase tracking-wider text-muted-foreground sm:text-xs"
+  title={categoryName}
+>
+  {categoryName}
+</p>
 
-                        <p className="mt-1 break-all text-[10px] text-muted-foreground sm:text-xs">
-                          {r.file_name || "No file name"}
-                        </p>
+<p
+  className="truncate text-xs font-medium sm:text-sm"
+  title={r.title || "Untitled resource"}
+>
+  {r.title || "Untitled resource"}
+</p>
 
-                        <div className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[10px] text-muted-foreground sm:text-xs">
-                          <span>{categoryName}</span>
+<p
+  className="mt-1 truncate text-[10px] text-muted-foreground sm:text-xs"
+  title={r.file_name || "No file name"}
+>
+  {r.file_name || "No file name"}
+</p>
 
-                          <span aria-hidden="true">·</span>
+<div className="mt-1 flex min-w-0 items-center gap-x-1.5 overflow-hidden whitespace-nowrap text-[10px] text-muted-foreground sm:text-xs">
+  <span>{formatFileSize(r.file_size)}</span>
 
-                          <span>
-                            {formatFileSize(r.file_size)}
-                          </span>
+  <span aria-hidden="true">·</span>
 
-                          <span aria-hidden="true">·</span>
+  <span className="inline-flex items-center gap-1">
+    <Download className="h-3 w-3" />
+    {(r.download_count ?? 0).toLocaleString()}
+  </span>
 
-                          <span className="inline-flex items-center gap-1">
-                            <Download className="h-3 w-3" />
-                            {(r.download_count ?? 0).toLocaleString()}
-                          </span>
+  <span aria-hidden="true">·</span>
 
-                          <span aria-hidden="true">·</span>
+  <span>
+    {new Date(r.created_at).toLocaleDateString()}
+  </span>
+</div>
 
-                          <span>
-                            {new Date(
-                              r.created_at,
-                            ).toLocaleDateString()}
-                          </span>
-                        </div>
-
-                        {(r.status === "rejected" ||
-                          r.status === "deleted") &&
-                          (r.status === "rejected"
-                            ? r.rejection_reason
-                            : r.deletion_reason) && (
-                            <p className="mt-1.5 text-xs leading-5 text-muted-foreground sm:mt-2 sm:text-sm sm:leading-6">
-                              <span className="font-medium text-foreground">
-                                Reason:
-                              </span>{" "}
-                              {r.status === "rejected"
-                                ? r.rejection_reason
-                                : r.deletion_reason}
-                            </p>
-                          )}
+{(r.status === "rejected" ||
+  r.status === "deleted") &&
+  (r.status === "rejected"
+    ? r.rejection_reason
+    : r.deletion_reason) && (
+    <p className="mt-1.5 text-xs leading-5 text-muted-foreground sm:mt-2 sm:text-sm sm:leading-6">
+      <span className="font-medium text-foreground">
+        Reason:
+      </span>{" "}
+      {r.status === "rejected"
+        ? r.rejection_reason
+        : r.deletion_reason}
+    </p>
+  )}
                       </>
                     );
 
@@ -610,56 +615,58 @@ function DashboardPage() {
                         }
                       >
                         <div className="flex items-start gap-3 sm:gap-4">
-                          {r.status === "approved" ? (
-                            <Link
-                              to="/preview/$resourceId"
-                              params={{
-                                resourceId: r.id,
-                              }}
-                              className="block min-w-0 flex-1 cursor-pointer px-4 py-3 transition-colors hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset sm:py-4"
-                            >
-                              {resourceDetails}
-                            </Link>
-                          ) : (
-                            <div className="min-w-0 flex-1 cursor-default px-4 py-3 sm:py-4">
-                              {resourceDetails}
+  {r.status === "approved" ? (
+    <Link
+      to="/preview/$resourceId"
+      params={{
+        resourceId: r.id,
+      }}
+      className="block min-w-0 flex-1 cursor-pointer px-4 py-3 transition-colors hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset sm:py-4"
+    >
+      {resourceDetails}
+    </Link>
+  ) : (
+    <div className="min-w-0 flex-1 cursor-default px-4 py-3 sm:py-4">
+      {resourceDetails}
+    </div>
+  )}
 
-                              <p className="mt-1.5 text-[10px] text-muted-foreground sm:text-xs">
-                                This resource is not currently available for preview.
-                              </p>
-                            </div>
-                          )}
+  {r.status === "draft" && (
+    <div className="flex shrink-0 flex-col gap-2 pl-1 pr-3 py-3 sm:py-4 sm:pr-4">
+      <Link
+        to="/upload/$draftId"
+        params={{
+          draftId: r.id,
+        }}
+        className="mt-6 inline-flex h-9 w-16 items-center justify-center rounded-sm border border-border bg-gradient-emerald text-xs text-white shadow-soft !transition-none hover:bg-none hover:bg-accent hover:text-foreground sm:h-10 sm:text-sm"
+      >
+        Edit
+      </Link>
 
-                          {r.status === "draft" && (
-                            <div className="flex shrink-0 flex-col gap-2 px-4 py-3 sm:py-4">
-                              <Link
-                                to="/upload/$draftId"
-                                params={{
-                                  draftId: r.id,
-                                }}
-                                className="inline-flex h-9 w-16 mt-3 items-center justify-center rounded-sm border border-border bg-gradient-emerald text-xs text-white shadow-soft !transition-none hover:bg-none hover:bg-accent hover:text-foreground sm:h-10 sm:text-xs"
-                              >
-                                Edit
-                              </Link>
+      <button
+        type="button"
+        onClick={() =>
+          setPendingDelete({
+            id: r.id,
+            title: r.title,
+          })
+        }
+        disabled={deletingDraftId === r.id}
+        className="inline-flex h-9 w-16 items-center justify-center rounded-sm border border-border bg-destructive text-xs text-white shadow-soft !transition-none hover:bg-none hover:bg-accent hover:text-foreground sm:h-10 sm:text-sm"
+      >
+        {deletingDraftId === r.id
+          ? "Deleting…"
+          : "Delete"}
+      </button>
+    </div>
+  )}
+</div>
 
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  setPendingDelete({
-                                    id: r.id,
-                                    title: r.title,
-                                  })
-                                }
-                                disabled={deletingDraftId === r.id}
-                                className="inline-flex h-9 w-16 items-center justify-center rounded-sm border border-border bg-destructive text-xs text-white shadow-soft !transition-none hover:bg-none hover:bg-accent hover:text-foreground sm:h-10 sm:text-xs"
-                              >
-                                {deletingDraftId === r.id
-                                  ? "Deleting…"
-                                  : "Delete"}
-                              </button>
-                            </div>
-                          )}
-                        </div>
+{r.status !== "approved" && (
+  <p className="px-4 pb-3 text-[10px] text-muted-foreground sm:px-4 sm:pb-4 sm:text-xs">
+    This resource is not currently available for preview.
+  </p>
+)}
                       </li>
                     );
                   })}
