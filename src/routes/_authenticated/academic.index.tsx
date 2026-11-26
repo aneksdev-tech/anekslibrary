@@ -22,7 +22,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 
-const PAGE_SIZE = 1;
+const PAGE_SIZE = 24;
 
 function parseDateValue(value: string): Date | undefined {
   if (!value) return undefined;
@@ -970,7 +970,7 @@ useEffect(() => {
           <span className="font-semibold text-gold">
             {totalCount}
           </span>{" "}
-          matching pending{" "}
+          {" "}
           {totalCount === 1 ? "resource" : "resources"}
         </>
       )}
