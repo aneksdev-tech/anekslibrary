@@ -1161,7 +1161,7 @@ useEffect(() => {
                     </div>
             
                     {/* Resource actions */}
-                    <div className="mt-3 flex flex-row gap-1.5 border-t border-border pt-3 sm:mt-4 sm:gap-2 md:flex-col lg:flex-row">
+                    <div className="mt-3 flex flex-row gap-1.5 border-t border-border pt-3 sm:mt-4 sm:gap-2">
                       {canPreview && (
                         <Button
                           type="button"
