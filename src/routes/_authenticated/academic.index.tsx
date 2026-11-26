@@ -22,7 +22,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 1;
 
 function parseDateValue(value: string): Date | undefined {
   if (!value) return undefined;
