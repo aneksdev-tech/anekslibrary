@@ -1084,7 +1084,7 @@ useEffect(() => {
                     </h3>
             
                     {/* Filename */}
-                    <p className="mt-1 break-all text-xs text-muted-foreground">
+                    <p className="mt-2 break-all text-xs text-muted-foreground">
               {resource.file_name || "Unnamed file"}
               <span className="mx-1">·</span>
               <span>{formatFileSize(resource.file_size)}</span>
@@ -1158,7 +1158,7 @@ useEffect(() => {
                         </div>
                     
                         {/* Date and time */}
-                        <div className="flex min-w-0 items-center gap-2.5 text-muted-foreground sm:gap-3">
+                        <div className="flex min-w-0 pt-1 items-center gap-2.5 text-muted-foreground sm:gap-3">
                           <Clock2 className="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" />
                           <span className="min-w-0 break-words text-[10px] sm:text-xs">
                             {formatDateTime(resource.created_at)}
