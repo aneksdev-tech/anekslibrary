@@ -1500,7 +1500,7 @@ useEffect(() => {
     return (
       <li
         key={resource.id}
-        className="group flex min-w-0 flex-col rounded-sm border border-border bg-card p-3 shadow-soft transition-all hover:-translate-y-0.5 hover:shadow-elegant sm:p-5"
+        className="group flex min-w-0 flex-col mb-3 rounded-sm border border-border bg-card p-3 shadow-soft transition-all hover:-translate-y-0.5 hover:shadow-elegant sm:p-5"
       >
         {/* Category and file type */}
         <div className="mb-2.5 flex items-center justify-between gap-2 sm:mb-3">
