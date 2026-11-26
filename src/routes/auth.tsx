@@ -2784,13 +2784,13 @@ if (registrationMethod === "google") {
         </div>
 
         <div
-          className={`overflow-hidden transition-all duration-300 ${
+          className={`-mx-1 overflow-hidden px-1 transition-all duration-300 ${
             needsCollege
               ? "max-h-96 opacity-100 mt-4"
               : "max-h-0 opacity-0"
           }`}
         >
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-3 pb-2">
             <div className="w-full">
               <Label>
                 College
