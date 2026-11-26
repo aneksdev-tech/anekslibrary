@@ -1246,10 +1246,10 @@ useEffect(() => {
 {/* Pagination */}
 {!isLoading &&
   !isError &&
-  totalCount > 0 && (
+  totalCount > 0 &&
+  totalPages > 1 && (
     <div className="border-t border-border pt-4">
-      {totalPages > 1 && (
-        <div className="grid grid-cols-3 items-center gap-2">
+      <div className="grid grid-cols-3 items-center gap-2">
           {/* Previous: far left */}
           <div className="flex justify-start">
             <Button
@@ -1291,7 +1291,6 @@ useEffect(() => {
             </Button>
           </div>
         </div>
-      )}
     </div>
   )}
 </section>
