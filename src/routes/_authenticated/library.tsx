@@ -816,7 +816,7 @@ export function ResourceCard({
         </div>
       </div>
 
-      <h3 className="line-clamp-2 font-display text-[16px] font-semibold leading-snug">
+      <h3 className="line-clamp-2 font-display text-[16px] font-semibold leading-snug sm:text-[13px]">
        {r.title}
       </h3>
 
