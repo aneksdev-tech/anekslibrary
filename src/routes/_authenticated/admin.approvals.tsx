@@ -1516,9 +1516,9 @@ useEffect(() => {
         </div>
 
         {/* Resource title */}
-        <h3 className="line-clamp-2 font-display text-[16px] font-semibold leading-snug sm:text-lg">
-  {resource.title}
-</h3>
+        <h3 className="line-clamp-2 font-display text-[13px] font-semibold leading-snug sm:text-[13px]">
+         {resource.title}
+        </h3>
 
         {/* Filename */}
         <p className="mt-1 break-all text-xs text-muted-foreground">
