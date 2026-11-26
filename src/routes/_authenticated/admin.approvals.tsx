@@ -1436,7 +1436,7 @@ useEffect(() => {
             </div>
 
             {/* Resource results — separate from filters */}
-            <div className="overflow-hidden">
+            <div className="overflow-visible">
               {isLoading ? (
                 <div className="p-8 text-center text-xs text-muted-foreground sm:p-10 sm:text-sm">
                   <div className="flex items-center justify-center gap-1.5 sm:gap-2">
@@ -1500,7 +1500,7 @@ useEffect(() => {
     return (
       <li
         key={resource.id}
-        className="group flex min-w-0 flex-col mb-5 rounded-sm border border-border bg-card p-3 shadow-soft transition-all hover:-translate-y-0.5 hover:shadow-elegant sm:p-5"
+        className="group relative z-0 mb-5 flex min-w-0 flex-col rounded-sm border border-border bg-card p-3 shadow-soft transition-all duration-200 hover:z-10 hover:-translate-y-0.5 hover:shadow-elegant sm:p-5"
       >
         {/* Category and file type */}
         <div className="mb-2.5 flex items-center justify-between gap-2 sm:mb-3">
