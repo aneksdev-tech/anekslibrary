@@ -168,10 +168,14 @@ function getContextAuthorization(
 
   switch (context) {
     case "academic":
-      return {
-        allowed: role === "lecturer",
-        freeLimited: false,
-      };
+  return {
+    allowed: [
+      "admin",
+      "co-admin",
+      "lecturer",
+    ].includes(role),
+    freeLimited: false,
+  };
 
     case "approvals":
       return {
