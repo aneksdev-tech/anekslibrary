@@ -1158,7 +1158,7 @@ useEffect(() => {
                         </div>
                     
                         {/* Date and time */}
-                        <div className="flex min-w-0 pt-1 items-center gap-2.5 text-muted-foreground sm:gap-3">
+                        <div className="flex min-w-0 pt-0.5 items-center gap-2.5 text-muted-foreground sm:gap-3">
                           <Clock2 className="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" />
                           <span className="min-w-0 break-words text-[10px] sm:text-xs">
                             {formatDateTime(resource.created_at)}
