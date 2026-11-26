@@ -208,7 +208,7 @@ function PublicProfilePage() {
         </p>
 
         <h1 className="mt-1 font-display text-xl font-semibold sm:text-3xl">
-          {profile.full_name ?? "Unknown user"}
+          Member Profile
         </h1>
 
         <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
