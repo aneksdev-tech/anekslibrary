@@ -137,6 +137,7 @@ export function UploadPage({ draftId }: UploadPageProps) {
 
   const inputRef = useRef<HTMLInputElement>(null);
   const allowNavigationRef = useRef(false);
+  const saveInProgressRef = useRef(false);
 
   const { data: cats } = useQuery({
     queryKey: ["categories"],
@@ -527,12 +528,26 @@ if (!isGlobalCategory && !form.level) {
         blocker.proceed();
       }
     },
-    onError: (error: Error) => {
-      toast.error(error.message);
-      setProgress(0);
-      setExitAction("none");
-    },
-  });
+
+ onError: (error: Error) => {
+  toast.error(error.message);
+  setProgress(0);
+  setExitAction("none");
+},
+onSettled: () => {
+  saveInProgressRef.current = false;
+},
+});
+
+
+const runSave = (status: "draft" | "pending") => {
+  if (saveInProgressRef.current) {
+    return;
+  }
+
+  saveInProgressRef.current = true;
+  saveResource.mutate({ status });
+};
 
   const handleSubmit = () => {
     try {
@@ -571,17 +586,13 @@ const handleSaveDraft = () => {
   const confirmSubmit = () => {
     setShowSubmitConfirm(false);
 
-    saveResource.mutate({
-      status: "pending",
-    });
+    runSave("pending");
   };
 
   const confirmSaveDraft = () => {
     setShowDraftConfirm(false);
 
-    saveResource.mutate({
-      status: "draft",
-    });
+    runSave("draft");
   };
 
   const handleDiscard = () => {
@@ -603,9 +614,7 @@ const handleSaveDraft = () => {
       return;
     }
 
-    saveResource.mutate({
-      status: "draft",
-    });
+    runSave("draft");
   };
 
   const title = useMemo(
@@ -1162,16 +1171,20 @@ onValueChange={(value) => {
           </AlertDialogHeader>
 
           <AlertDialogFooter className="gap-2 sm:gap-2">
-            <AlertDialogCancel className="h-9 bg-muted hover hover:bg-accent text-xs sm:h-10 sm:text-sm">
+            <AlertDialogCancel
+              disabled={saveResource.isPending}
+              className="h-9 bg-muted hover hover:bg-accent text-xs sm:h-10 sm:text-sm"
+            >
               Continue editing
             </AlertDialogCancel>
 
             <AlertDialogAction
-              onClick={confirmSubmit}
-              className="inline-flex items-center justify-center rounded-sm border border-border bg-gradient-emerald text-xs text-white shadow-soft !transition-none hover:bg-none hover:bg-accent hover:text-foreground sm:h-10 sm:text-sm"
-            >
-              Submit for review
-            </AlertDialogAction>
+  onClick={confirmSubmit}
+  disabled={saveResource.isPending}
+  className="inline-flex items-center justify-center rounded-sm border border-border bg-gradient-emerald text-xs text-white shadow-soft !transition-none hover:bg-none hover:bg-accent hover:text-foreground sm:h-10 sm:text-sm"
+>
+  Submit for review
+</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -1194,16 +1207,20 @@ onValueChange={(value) => {
           </AlertDialogHeader>
 
           <AlertDialogFooter className="gap-2 sm:gap-2">
-            <AlertDialogCancel className="h-9 text-xs sm:h-10 sm:text-sm">
-              Continue editing
-            </AlertDialogCancel>
+            <AlertDialogCancel
+  disabled={saveResource.isPending}
+  className="h-9 text-xs sm:h-10 sm:text-sm"
+>
+  Continue editing
+</AlertDialogCancel>
 
             <AlertDialogAction
-              onClick={confirmSaveDraft}
-              className="h-9 text-xs sm:h-10 sm:text-sm"
-            >
-              Save as draft
-            </AlertDialogAction>
+  onClick={confirmSaveDraft}
+  disabled={saveResource.isPending}
+  className="h-9 text-xs sm:h-10 sm:text-sm"
+>
+  Save as draft
+</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
