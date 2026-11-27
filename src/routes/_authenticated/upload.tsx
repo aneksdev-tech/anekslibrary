@@ -139,6 +139,10 @@ export function UploadPage({ draftId }: UploadPageProps) {
   const allowNavigationRef = useRef(false);
   const saveInProgressRef = useRef(false);
 
+  // Keeps retries of the same new-resource upload tied to one operation.
+  const uploadOperationIdRef = useRef<string | null>(null);
+  const uploadFileIdentityRef = useRef<string | null>(null);
+
   const { data: cats } = useQuery({
     queryKey: ["categories"],
     queryFn: async () => {
@@ -220,26 +224,25 @@ export function UploadPage({ draftId }: UploadPageProps) {
     setDraftLoaded(true);
   }, [draft, draftId, draftLoading, nav, user]);
 
-  
-const isSGS = form.college === "SGS";
+  const isSGS = form.college === "SGS";
 
-const selectedCategoryName = cats
-  ?.find((category) => category.id === form.category_id)
-  ?.name;
+  const selectedCategoryName = cats
+    ?.find((category) => category.id === form.category_id)
+    ?.name;
 
-const isPublication =
-  selectedCategoryName === "Publications";
+  const isPublication =
+    selectedCategoryName === "Publications";
 
-const isLectureTimetable =
-  selectedCategoryName === "Lecture Timetables";
+  const isLectureTimetable =
+    selectedCategoryName === "Lecture Timetables";
 
-const isGlobalCategory =
-  isPublication || isLectureTimetable;
+  const isGlobalCategory =
+    isPublication || isLectureTimetable;
 
-const departments =
-  form.college === ALL_OPTION
-    ? []
-    : getDepartments(form.college);
+  const departments =
+    form.college === ALL_OPTION
+      ? []
+      : getDepartments(form.college);
 
   const isFormChanged =
     JSON.stringify(form) !== JSON.stringify(initialForm);
@@ -287,6 +290,18 @@ const departments =
       return;
     }
 
+    const fileIdentity = [
+      f.name,
+      f.size,
+      f.type,
+      f.lastModified,
+    ].join("|");
+
+    if (uploadFileIdentityRef.current !== fileIdentity) {
+      uploadOperationIdRef.current = null;
+      uploadFileIdentityRef.current = fileIdentity;
+    }
+
     setFile(f);
   };
 
@@ -316,22 +331,22 @@ const departments =
     }
 
     if (!isGlobalCategory && !form.college) {
-  throw new Error("Choose a college");
-}
+      throw new Error("Choose a college");
+    }
 
-if (
-  !isGlobalCategory &&
-  (!isSGS || departments.length > 0) &&
-  !form.department
-) {
-  throw new Error("Choose a department");
-}
+    if (
+      !isGlobalCategory &&
+      (!isSGS || departments.length > 0) &&
+      !form.department
+    ) {
+      throw new Error("Choose a department");
+    }
 
-if (!isGlobalCategory && !form.level) {
-  throw new Error("Choose a level");
-}
+    if (!isGlobalCategory && !form.level) {
+      throw new Error("Choose a level");
+    }
 
-    if (!form.semester) {
+    if (form.semester === "") {
       throw new Error("Choose a semester");
     }
 
@@ -373,7 +388,18 @@ if (!isGlobalCategory && !form.level) {
           "_",
         );
 
-        newlyUploadedPath = `${user.id}/${crypto.randomUUID()}-${safeName}`;
+        if (draftId) {
+          // Keep the existing draft replacement upload behavior.
+          newlyUploadedPath = `${user.id}/${crypto.randomUUID()}-${safeName}`;
+        } else {
+          // New resources use the same operation ID and path on retries.
+          if (!uploadOperationIdRef.current) {
+            uploadOperationIdRef.current = crypto.randomUUID();
+          }
+
+          newlyUploadedPath = `${user.id}/${uploadOperationIdRef.current}-${safeName}`;
+        }
+
         filePath = newlyUploadedPath;
         fileName = file.name;
         fileSize = file.size;
@@ -386,22 +412,21 @@ if (!isGlobalCategory && !form.level) {
             .from("resources")
             .upload(newlyUploadedPath, file, {
               contentType: file.type,
-              upsert: false,
+              upsert: !draftId,
             });
 
         if (uploadError) {
           throw uploadError;
         }
 
-        setProgress(70);
+        setProgress(65);
       } else if (draft) {
         fileSize = draft.file_size;
         mimeType = draft.mime_type;
       }
 
-      let error: Error | null = null;
-
       if (draftId) {
+        // Existing draft editing remains a direct, RLS-protected update.
         const { data: updatedDraft, error: updateError } =
           await supabase
             .from("resources")
@@ -434,74 +459,97 @@ if (!isGlobalCategory && !form.level) {
             .maybeSingle();
 
         if (updateError) {
-          error = updateError;
-        } else if (!updatedDraft) {
-          error = new Error(
+          if (newlyUploadedPath) {
+            await supabase.storage
+              .from("resources")
+              .remove([newlyUploadedPath]);
+          }
+
+          throw updateError;
+        }
+
+        if (!updatedDraft) {
+          if (newlyUploadedPath) {
+            await supabase.storage
+              .from("resources")
+              .remove([newlyUploadedPath]);
+          }
+
+          throw new Error(
             "Draft could not be updated. It may no longer exist or may have changed.",
           );
         }
-      } else {
-        const { data: createdResource, error: insertError } =
-          await supabase
-            .from("resources")
-            .insert({
-              uploader_id: user.id,
-              category_id: form.category_id || null,
-              title: form.title.trim(),
-              description:
-                form.description.trim() || null,
-              course_code:
-                form.course_code.trim() || null,
-              college: form.college || null,
-              department: form.department || null,
-              semester: form.semester || null,
-              level: form.level || null,
-              year: form.year
-                ? parseInt(form.year, 10)
-                : null,
-              file_path: filePath,
-              file_name: fileName,
-              file_size: fileSize,
-              mime_type: mimeType,
-              status,
-              deleted_at: null,
-              deleted_by: null,
-            })
-            .select("id")
-            .maybeSingle();
 
-        if (insertError) {
-          error = insertError;
-        } else if (!createdResource) {
-          error = new Error(
-            "Resource could not be created.",
-          );
-        }
-      }
-
-      if (error) {
-        if (newlyUploadedPath) {
+        // Remove the previous draft file only after its replacement is saved.
+        if (
+          file &&
+          existingFilePath &&
+          existingFilePath !== newlyUploadedPath
+        ) {
           await supabase.storage
             .from("resources")
-            .remove([newlyUploadedPath]);
+            .remove([existingFilePath]);
+        }
+      } else {
+        // New resources must be finalized server-side.
+        // Do not remove the uploaded object if finalization fails:
+        // a retry may need that same object to complete the operation.
+        setProgress(80);
+
+        const { data: finalizedResource, error: finalizeError } =
+          await supabase.functions.invoke(
+            "finalize-resource-upload",
+            {
+              body: {
+                uploadOperationId:
+                  uploadOperationIdRef.current,
+                status,
+                fileName,
+                title: form.title.trim(),
+                description:
+                  form.description.trim() || null,
+                course_code:
+                  form.course_code.trim() || null,
+                college: form.college || null,
+
+                // SGS has no department selector when its department
+                // list is empty. Send the existing "All" sentinel so
+                // the Edge Function's pending validation is satisfied.
+                department:
+                  form.department ||
+                  (isSGS && departments.length === 0
+                    ? ALL_OPTION
+                    : null),
+
+                semester: form.semester || null,
+                level: form.level || null,
+                category_id: form.category_id || null,
+                fileSize,
+                mimeType,
+                year: form.year
+                  ? parseInt(form.year, 10)
+                  : null,
+              },
+            },
+          );
+
+        if (finalizeError) {
+          throw finalizeError;
         }
 
-        throw error;
-      }
-
-      if (
-        draftId &&
-        file &&
-        existingFilePath &&
-        existingFilePath !== newlyUploadedPath
-      ) {
-        await supabase.storage
-          .from("resources")
-          .remove([existingFilePath]);
+        if (
+          !finalizedResource?.success ||
+          !finalizedResource?.resourceId
+        ) {
+          throw new Error(
+            "The resource could not be finalized. Please try again.",
+          );
+        }
       }
 
       setProgress(100);
     },
+
     onSuccess: (_, variables) => {
       const message =
         variables.status === "draft"
@@ -513,6 +561,8 @@ if (!isGlobalCategory && !form.level) {
       toast.success(message);
 
       setFile(null);
+      uploadOperationIdRef.current = null;
+      uploadFileIdentityRef.current = null;
       setProgress(0);
       allowNavigationRef.current = true;
 
@@ -529,25 +579,25 @@ if (!isGlobalCategory && !form.level) {
       }
     },
 
- onError: (error: Error) => {
-  toast.error(error.message);
-  setProgress(0);
-  setExitAction("none");
-},
-onSettled: () => {
-  saveInProgressRef.current = false;
-},
-});
+    onError: (error: Error) => {
+      toast.error(error.message);
+      setProgress(0);
+      setExitAction("none");
+    },
 
+    onSettled: () => {
+      saveInProgressRef.current = false;
+    },
+  });
 
-const runSave = (status: "draft" | "pending") => {
-  if (saveInProgressRef.current) {
-    return;
-  }
+  const runSave = (status: "draft" | "pending") => {
+    if (saveInProgressRef.current) {
+      return;
+    }
 
-  saveInProgressRef.current = true;
-  saveResource.mutate({ status });
-};
+    saveInProgressRef.current = true;
+    saveResource.mutate({ status });
+  };
 
   const handleSubmit = () => {
     try {
@@ -562,26 +612,26 @@ const runSave = (status: "draft" | "pending") => {
     }
   };
 
-const handleSaveDraft = () => {
-  if (!user) {
-    toast.error("You must be signed in.");
-    return;
-  }
+  const handleSaveDraft = () => {
+    if (!user) {
+      toast.error("You must be signed in.");
+      return;
+    }
 
-  if (profile?.primary_role === "guest") {
-    toast.error("Guests cannot save upload drafts.");
-    return;
-  }
+    if (profile?.primary_role === "guest") {
+      toast.error("Guests cannot save upload drafts.");
+      return;
+    }
 
-  if (!file && !existingFilePath) {
-    toast.error(
-      "Please select a file before saving a draft.",
-    );
-    return;
-  }
+    if (!file && !existingFilePath) {
+      toast.error(
+        "Please select a file before saving a draft.",
+      );
+      return;
+    }
 
-  setShowDraftConfirm(true);
-};
+    setShowDraftConfirm(true);
+  };
 
   const confirmSubmit = () => {
     setShowSubmitConfirm(false);
@@ -790,311 +840,309 @@ const handleSaveDraft = () => {
               />
             </div>
           </div>
-{/* Category */}
-<div className="space-y-2">
-  <Label className="text-xs sm:text-sm">
-    Category
-  </Label>
 
-  <Select
-    value={form.category_id}
-    
-onValueChange={(value) => {
-  const selectedCategory = cats?.find(
-    (category) => category.id === value,
-  );
+          {/* Category */}
+          <div className="space-y-2">
+            <Label className="text-xs sm:text-sm">
+              Category
+            </Label>
 
-  const selectedIsGlobalCategory =
-    selectedCategory?.name === "Publications" ||
-    selectedCategory?.name === "Lecture Timetables";
+            <Select
+              value={form.category_id}
+              onValueChange={(value) => {
+                const selectedCategory = cats?.find(
+                  (category) => category.id === value,
+                );
 
-  const currentIsGlobalCategory =
-    cats?.some(
-      (category) =>
-        category.id === form.category_id &&
-        (category.name === "Publications" ||
-          category.name === "Lecture Timetables"),
-    ) ?? false;
+                const selectedIsGlobalCategory =
+                  selectedCategory?.name === "Publications" ||
+                  selectedCategory?.name === "Lecture Timetables";
 
-  setForm((current) => ({
-    ...current,
-    category_id: value,
-    ...(selectedIsGlobalCategory ||
-    currentIsGlobalCategory
-      ? {
-          college: "",
-          department: "",
-          level: "",
-          course_code: "",
-        }
-      : {}),
-  }));
-}}
+                const currentIsGlobalCategory =
+                  cats?.some(
+                    (category) =>
+                      category.id === form.category_id &&
+                      (category.name === "Publications" ||
+                        category.name === "Lecture Timetables"),
+                  ) ?? false;
 
-  >
-    <SelectTrigger className="h-9 text-xs sm:h-10 sm:text-sm">
-      <SelectValue placeholder="Choose one" />
-    </SelectTrigger>
-
-    <SelectContent>
-      {cats?.map((category) => (
-        <SelectItem
-          key={category.id}
-          value={category.id}
-          className="text-xs sm:text-sm"
-        >
-          {category.name}
-        </SelectItem>
-      ))}
-    </SelectContent>
-  </Select>
-</div>
-
-{/* College and Department */}
-<div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-    {/* College */}
-    <div className="space-y-2">
-      <Label className="text-xs sm:text-sm">
-        College
-      </Label>
-
-      <Select
-        value={form.college}
-        onValueChange={(value) =>
-          setForm((current) => ({
-            ...current,
-            college: value,
-            department: "",
-          }))
-        }
-      >
-        <SelectTrigger className="h-9 text-xs sm:h-10 sm:text-sm">
-          <SelectValue placeholder="Choose College" />
-        </SelectTrigger>
-
-        <SelectContent>
-          {isGlobalCategory && (
-            <SelectItem
-              value={ALL_OPTION}
-              className="text-xs sm:text-sm"
+                setForm((current) => ({
+                  ...current,
+                  category_id: value,
+                  ...(selectedIsGlobalCategory ||
+                  currentIsGlobalCategory
+                    ? {
+                        college: "",
+                        department: "",
+                        level: "",
+                        course_code: "",
+                      }
+                    : {}),
+                }));
+              }}
             >
-              All Colleges
-            </SelectItem>
-          )}
+              <SelectTrigger className="h-9 text-xs sm:h-10 sm:text-sm">
+                <SelectValue placeholder="Choose one" />
+              </SelectTrigger>
 
-          {colleges.map((college) => (
-            <SelectItem
-              key={college.id}
-              value={college.id}
-              className="text-xs sm:text-sm"
-            >
-              <>
-                <span className="sm:hidden">
-                  {college.id}
-                </span>
+              <SelectContent>
+                {cats?.map((category) => (
+                  <SelectItem
+                    key={category.id}
+                    value={category.id}
+                    className="text-xs sm:text-sm"
+                  >
+                    {category.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-                <span className="hidden sm:inline">
-                  {college.name} ({college.id})
-                </span>
-              </>
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    </div>
+          {/* College and Department */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {/* College */}
+            <div className="space-y-2">
+              <Label className="text-xs sm:text-sm">
+                College
+              </Label>
 
-    {/* Department */}
-    {(!isSGS || isGlobalCategory || departments.length > 0) && (
-      <div className="space-y-2">
-        <Label className="text-xs sm:text-sm">
-          Department
-        </Label>
-
-        <Select
-            value={form.department}
-            onValueChange={(value) =>
-              setForm((current) => ({
-                ...current,
-                department: value,
-              }))
-            }
-            disabled={!form.college}
-          >
-            <SelectTrigger className="h-9 text-xs sm:h-10 sm:text-sm">
-              <SelectValue
-                placeholder={
-                  form.college
-                    ? "Choose Department"
-                    : "Select College first"
+              <Select
+                value={form.college}
+                onValueChange={(value) =>
+                  setForm((current) => ({
+                    ...current,
+                    college: value,
+                    department: "",
+                  }))
                 }
-              />
-            </SelectTrigger>
-
-          <SelectContent>
-            {(isGlobalCategory || isSGS) && (
-              <SelectItem
-                value={ALL_OPTION}
-                className="text-xs sm:text-sm"
               >
-                All Departments
-              </SelectItem>
+                <SelectTrigger className="h-9 text-xs sm:h-10 sm:text-sm">
+                  <SelectValue placeholder="Choose College" />
+                </SelectTrigger>
+
+                <SelectContent>
+                  {isGlobalCategory && (
+                    <SelectItem
+                      value={ALL_OPTION}
+                      className="text-xs sm:text-sm"
+                    >
+                      All Colleges
+                    </SelectItem>
+                  )}
+
+                  {colleges.map((college) => (
+                    <SelectItem
+                      key={college.id}
+                      value={college.id}
+                      className="text-xs sm:text-sm"
+                    >
+                      <>
+                        <span className="sm:hidden">
+                          {college.id}
+                        </span>
+
+                        <span className="hidden sm:inline">
+                          {college.name} ({college.id})
+                        </span>
+                      </>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Department */}
+            {(!isSGS || isGlobalCategory || departments.length > 0) && (
+              <div className="space-y-2">
+                <Label className="text-xs sm:text-sm">
+                  Department
+                </Label>
+
+                <Select
+                  value={form.department}
+                  onValueChange={(value) =>
+                    setForm((current) => ({
+                      ...current,
+                      department: value,
+                    }))
+                  }
+                  disabled={!form.college}
+                >
+                  <SelectTrigger className="h-9 text-xs sm:h-10 sm:text-sm">
+                    <SelectValue
+                      placeholder={
+                        form.college
+                          ? "Choose Department"
+                          : "Select College first"
+                      }
+                    />
+                  </SelectTrigger>
+
+                  <SelectContent>
+                    {(isGlobalCategory || isSGS) && (
+                      <SelectItem
+                        value={ALL_OPTION}
+                        className="text-xs sm:text-sm"
+                      >
+                        All Departments
+                      </SelectItem>
+                    )}
+
+                    {departments.map((department) => (
+                      <SelectItem
+                        key={department}
+                        value={department}
+                        className="text-xs sm:text-sm"
+                      >
+                        {department}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+          </div>
+
+          {/* Level, Course Code, Semester and Upload Year */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {!isPublication || isGlobalCategory ? (
+              <div className="space-y-2">
+                <Label className="text-xs sm:text-sm">
+                  Level
+                </Label>
+
+                <Select
+                  value={form.level}
+                  onValueChange={(value) =>
+                    setForm((current) => ({
+                      ...current,
+                      level: value,
+                    }))
+                  }
+                >
+                  <SelectTrigger className="h-9 text-xs sm:h-10 sm:text-sm">
+                    <SelectValue placeholder="Choose Level" />
+                  </SelectTrigger>
+
+                  <SelectContent>
+                    {isGlobalCategory && (
+                      <SelectItem
+                        value={ALL_OPTION}
+                        className="text-xs sm:text-sm"
+                      >
+                        All Levels
+                      </SelectItem>
+                    )}
+
+                    {levels.map((level) => (
+                      <SelectItem
+                        key={level}
+                        value={level}
+                        className="text-xs sm:text-sm"
+                      >
+                        {level}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            ) : null}
+
+            {!isGlobalCategory && (
+              <div className="space-y-2">
+                <Label htmlFor="course" className="text-xs sm:text-sm">
+                  Course Code
+                </Label>
+
+                <Input
+                  id="course"
+                  placeholder="e.g. CSC 301"
+                  value={form.course_code}
+                  onChange={(event) =>
+                    setForm({
+                      ...form,
+                      course_code: event.target.value,
+                    })
+                  }
+                  className="h-9 sm:h-10 text-xs sm:text-sm"
+                />
+              </div>
             )}
 
-            {departments.map((department) => (
-              <SelectItem
-                key={department}
-                value={department}
-                className="text-xs sm:text-sm"
+            <div className="space-y-2">
+              <Label className="text-xs sm:text-sm">
+                Semester
+              </Label>
+
+              <Select
+                value={form.semester}
+                onValueChange={(value) =>
+                  setForm({
+                    ...form,
+                    semester: value,
+                  })
+                }
               >
-                {department}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-    )}
-  </div>
+                <SelectTrigger className="h-9 text-xs sm:h-10 sm:text-sm">
+                  <SelectValue placeholder="Choose Semester" />
+                </SelectTrigger>
 
-{/* Level, Course Code, Semester and Upload Year */}
-<div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-  
-{!isPublication || isGlobalCategory ? (
-  <div className="space-y-2">
-    <Label className="text-xs sm:text-sm">
-      Level
-    </Label>
+                <SelectContent>
+                  {isGlobalCategory && (
+                    <SelectItem
+                      value="Both Semesters"
+                      className="text-xs sm:text-sm"
+                    >
+                      Both Semesters
+                    </SelectItem>
+                  )}
 
-    <Select
-      value={form.level}
-      onValueChange={(value) =>
-        setForm((current) => ({
-          ...current,
-          level: value,
-        }))
-      }
-    >
-      <SelectTrigger className="h-9 text-xs sm:h-10 sm:text-sm">
-        <SelectValue placeholder="Choose Level" />
-      </SelectTrigger>
+                  {semesters.map((semester) => (
+                    <SelectItem
+                      key={semester}
+                      value={semester}
+                      className="text-xs sm:text-sm"
+                    >
+                      {semester}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-      <SelectContent>
-        {isGlobalCategory && (
-          <SelectItem
-            value={ALL_OPTION}
-            className="text-xs sm:text-sm"
-          >
-            All Levels
-          </SelectItem>
-        )}
+            <div className="space-y-2">
+              <Label className="text-xs sm:text-sm">
+                Upload Year
+              </Label>
 
-        {levels.map((level) => (
-          <SelectItem
-            key={level}
-            value={level}
-            className="text-xs sm:text-sm"
-          >
-            {level}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
-    </div>
-) : null}
+              <Select
+                value={form.year}
+                onValueChange={(value) =>
+                  setForm({
+                    ...form,
+                    year: value,
+                  })
+                }
+              >
+                <SelectTrigger className="h-9 text-xs sm:h-10 sm:text-sm">
+                  <SelectValue placeholder="Choose Year" />
+                </SelectTrigger>
 
-  {!isGlobalCategory && (
-    <div className="space-y-2">
-      <Label htmlFor="course" className="text-xs sm:text-sm">
-        Course Code
-      </Label>
-
-      <Input
-        id="course"
-        placeholder="e.g. CSC 301"
-        value={form.course_code}
-        onChange={(event) =>
-          setForm({
-            ...form,
-            course_code: event.target.value,
-          })
-        }
-        className="h-9 text-xs sm:h-10 sm:text-sm"
-      />
-    </div>
-  )}
-
-  <div className="space-y-2">
-  <Label className="text-xs sm:text-sm">
-    Semester
-  </Label>
-
-  <Select
-    value={form.semester}
-    onValueChange={(value) =>
-      setForm({
-        ...form,
-        semester: value,
-      })
-    }
-  >
-    <SelectTrigger className="h-9 text-xs sm:h-10 sm:text-sm">
-      <SelectValue placeholder="Choose Semester" />
-    </SelectTrigger>
-
-    <SelectContent>
-      {isGlobalCategory && (
-        <SelectItem
-          value="Both Semesters"
-          className="text-xs sm:text-sm"
-        >
-          Both Semesters
-        </SelectItem>
-      )}
-
-      {semesters.map((semester) => (
-        <SelectItem
-          key={semester}
-          value={semester}
-          className="text-xs sm:text-sm"
-        >
-          {semester}
-        </SelectItem>
-      ))}
-    </SelectContent>
-  </Select>
-</div>
-
-  <div className="space-y-2">
-    <Label className="text-xs sm:text-sm">
-      Upload Year
-    </Label>
-
-    <Select
-      value={form.year}
-      onValueChange={(value) =>
-        setForm({
-          ...form,
-          year: value,
-        })
-      }
-    >
-      <SelectTrigger className="h-9 text-xs sm:h-10 sm:text-sm">
-        <SelectValue placeholder="Choose Year" />
-      </SelectTrigger>
-
-      <SelectContent>
-        {years.map((year) => (
-          <SelectItem
-            key={year}
-            value={year.toString()}
-            className="text-xs sm:text-sm"
-          >
-            {year}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
-  </div>
-</div>
+                <SelectContent>
+                  {years.map((year) => (
+                    <SelectItem
+                      key={year}
+                      value={year.toString()}
+                      className="text-xs sm:text-sm"
+                    >
+                      {year}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
 
           {progress > 0 && (
             <Progress value={progress} />
@@ -1114,41 +1162,41 @@ onValueChange={(value) => {
             </Button>
 
             <Button
-  type="button"
-  variant="outline"
-  onClick={handleSaveDraft}
-  disabled={
-    saveResource.isPending ||
-    (!file && !existingFilePath)
-  }
-  className="h-9 bg-muted text-xs sm:h-10 sm:text-sm"
->
-  {saveResource.isPending &&
-  exitAction === "save" ? (
-    <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin sm:mr-2 sm:h-4 sm:w-4" />
-  ) : (
-    <Save className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-  )}
+              type="button"
+              variant="outline"
+              onClick={handleSaveDraft}
+              disabled={
+                saveResource.isPending ||
+                (!file && !existingFilePath)
+              }
+              className="h-9 bg-muted text-xs sm:h-10 sm:text-sm"
+            >
+              {saveResource.isPending &&
+saveResource.variables?.status === "draft" ? (
+  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin sm:mr-2 sm:h-4 sm:w-4" />
+) : (
+  <Save className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+)}
 
-  Save as draft
-</Button>
+              Save as draft
+            </Button>
 
-<Button
-  type="submit"
-  variant="ghost"
-  disabled={
-    saveResource.isPending ||
-    (!file && !existingFilePath)
-  }
-  className="h-9 bg-gradient-emerald text-xs text-white shadow-soft !transition-none hover:bg-none hover:bg-accent hover:text-foreground sm:h-10 sm:text-sm"
->
-  {saveResource.isPending &&
-  exitAction !== "save" ? (
-    <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin sm:mr-2 sm:h-4 sm:w-4" />
-  ) : null}
+            <Button
+              type="submit"
+              variant="ghost"
+              disabled={
+                saveResource.isPending ||
+                (!file && !existingFilePath)
+              }
+              className="h-9 bg-gradient-emerald text-xs text-white shadow-soft !transition-none hover:bg-none hover:bg-accent hover:text-foreground sm:h-10 sm:text-sm"
+            >
+              {saveResource.isPending &&
+saveResource.variables?.status === "pending" ? (
+  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin sm:mr-2 sm:h-4 sm:w-4" />
+) : null}
 
-  Submit for review
-</Button>
+              Submit for review
+            </Button>
           </div>
         </form>
       </div>
@@ -1179,12 +1227,12 @@ onValueChange={(value) => {
             </AlertDialogCancel>
 
             <AlertDialogAction
-  onClick={confirmSubmit}
-  disabled={saveResource.isPending}
-  className="inline-flex items-center justify-center rounded-sm border border-border bg-gradient-emerald text-xs text-white shadow-soft !transition-none hover:bg-none hover:bg-accent hover:text-foreground sm:h-10 sm:text-sm"
->
-  Submit for review
-</AlertDialogAction>
+              onClick={confirmSubmit}
+              disabled={saveResource.isPending}
+              className="inline-flex items-center justify-center rounded-sm border border-border bg-gradient-emerald text-xs text-white shadow-soft !transition-none hover:bg-none hover:bg-accent hover:text-foreground sm:h-10 sm:text-sm"
+            >
+              Submit for review
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -1208,19 +1256,19 @@ onValueChange={(value) => {
 
           <AlertDialogFooter className="gap-2 sm:gap-2">
             <AlertDialogCancel
-  disabled={saveResource.isPending}
-  className="h-9 text-xs sm:h-10 sm:text-sm"
->
-  Continue editing
-</AlertDialogCancel>
+              disabled={saveResource.isPending}
+              className="h-9 text-xs sm:h-10 sm:text-sm"
+            >
+              Continue editing
+            </AlertDialogCancel>
 
             <AlertDialogAction
-  onClick={confirmSaveDraft}
-  disabled={saveResource.isPending}
-  className="h-9 text-xs sm:h-10 sm:text-sm"
->
-  Save as draft
-</AlertDialogAction>
+              onClick={confirmSaveDraft}
+              disabled={saveResource.isPending}
+              className="h-9 text-xs sm:h-10 sm:text-sm"
+            >
+              Save as draft
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -1259,22 +1307,22 @@ onValueChange={(value) => {
                 Discard
               </Button>
 
-<Button
-  type="button"
-  variant="ghost"
-  onClick={handleExitSave}
-  disabled={saveResource.isPending}
-  className="h-9 bg-gradient-emerald text-xs text-white shadow-soft !transition-none hover:bg-none hover:bg-accent hover:text-foreground sm:h-10 sm:text-sm"
->
-  {saveResource.isPending &&
-  exitAction === "save" ? (
-    <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin sm:mr-2 sm:h-4 sm:w-4" />
-  ) : (
-    <Save className="mr-1.5 h-3.5 w-3.5 sm:mr-2 sm:h-4 sm:w-4" />
-  )}
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={handleExitSave}
+                disabled={saveResource.isPending}
+                className="h-9 bg-gradient-emerald text-xs text-white shadow-soft !transition-none hover:bg-none hover:bg-accent hover:text-foreground sm:h-10 sm:text-sm"
+              >
+                {saveResource.isPending &&
+saveResource.variables?.status === "draft" ? (
+  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin sm:mr-2 sm:h-4 sm:w-4" />
+) : (
+  <Save className="mr-1.5 h-3.5 w-3.5 sm:mr-2 sm:h-4 sm:w-4" />
+)}
 
-  Save as draft
-</Button>
+                Save as draft
+              </Button>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
