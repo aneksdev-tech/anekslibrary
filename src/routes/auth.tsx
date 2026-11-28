@@ -103,6 +103,21 @@ function getGoogleRegistrationErrorMessage(
   return message || fallback;
 }
 
+function isExistingGoogleAccountError(
+  message: string,
+): boolean {
+  const normalizedMessage = message.toLowerCase();
+
+  return (
+    normalizedMessage.includes(
+      "this google account already exists",
+    ) ||
+    normalizedMessage.includes(
+      "this account is not awaiting google registration completion",
+    )
+  );
+}
+
 function clearLocalSupabaseSession() {
   localStorage.removeItem(
     SUPABASE_AUTH_STORAGE_KEY,
@@ -196,6 +211,16 @@ function AuthPage() {
 
   const googleOAuthErrorHandled =
     useRef(false);
+
+  const googleRegistrationRejectedExistingAccount =
+  useRef(false);
+
+  useEffect(() => {
+  if (mode === "register") {
+    googleRegistrationRejectedExistingAccount.current =
+      false;
+  }
+}, [mode]);
 
   const resetGoogleLoginGuard =
     () => {
@@ -325,9 +350,18 @@ function AuthPage() {
         GOOGLE_REGISTRATION_SUCCESS_NONCE_KEY,
       );
 
-      toast.error(
-        "Google sign-in could not be completed. Please try again.",
-      );
+      if (
+  googleRegistrationRejectedExistingAccount.current
+) {
+  return;
+}
+
+toast.error(
+  "Google sign-in could not be completed. Please try again.",
+  {
+    id: "google-registration-error",
+  },
+);
     };
 
     window.addEventListener(
@@ -528,33 +562,107 @@ if (successfulPopupNonce !== nonce) {
         }
 
         if (completionError) {
-          console.error(
-            "Google registration completion error:",
-            completionError,
-          );
+  console.error(
+    "Google registration completion error:",
+    completionError,
+  );
 
-          /*
-           * Keep the authenticated session and nonce.
-           * Refreshing retries the same completion request
-           * without creating another Auth user.
-           */
-          toast.error(
-            getGoogleRegistrationErrorMessage(
-              completionError,
-              "Google registration could not be completed. Your Google session has been kept. Refresh this page to retry.",
-            ),
-          );
+  /*
+   * An existing Google account cannot be registered
+   * again. Sign it out and return the user to Login.
+   */
+  if (isExistingGoogleAccountError(completionError)) {
+    googleRegistrationRejectedExistingAccount.current =
+      true;
 
-          googleRegistrationProcessingNonce.current =
-            null;
+    /*
+     * Remove all markers belonging to this
+     * registration attempt.
+     */
+    sessionStorage.removeItem(
+      GOOGLE_REGISTRATION_NONCE_KEY,
+    );
 
-          googleRegistrationHandled.current =
-            false;
+    localStorage.removeItem(
+      GOOGLE_REGISTRATION_POPUP_NONCE_KEY,
+    );
 
-          setGoogleRegistrationBusy(false);
+    localStorage.removeItem(
+      GOOGLE_REGISTRATION_SUCCESS_NONCE_KEY,
+    );
 
-          return;
-        }
+    /*
+     * Sign out locally. Do not use global sign-out:
+     * we only need to remove this browser's session.
+     */
+    const { error: signOutError } =
+      await supabase.auth.signOut({
+        scope: "local",
+      });
+
+    if (signOutError) {
+      console.error(
+        "Google registration rejection sign-out error:",
+        signOutError,
+      );
+
+      clearLocalSupabaseSession();
+    }
+
+    /*
+     * Synchronize AuthProvider with the signed-out
+     * Supabase session before navigating.
+     */
+    await refresh();
+
+    googleRegistrationProcessingNonce.current =
+      null;
+
+    setGoogleRegistrationBusy(false);
+
+    toast.error(
+      "This Google account already exists. Please log in instead.",
+      {
+        id: "google-registration-error",
+      },
+    );
+
+    void navigate({
+      to: "/auth",
+      search: {
+        mode: "login",
+      },
+      replace: true,
+    });
+
+    return;
+  }
+
+  /*
+   * Other errors retain the existing retry behaviour.
+   * Do not sign the user out for temporary network
+   * failures or unrelated completion errors.
+   */
+  toast.error(
+    getGoogleRegistrationErrorMessage(
+      completionError,
+      "Google registration could not be completed. Please try again.",
+    ),
+    {
+      id: "google-registration-error",
+    },
+  );
+
+  googleRegistrationProcessingNonce.current =
+    null;
+
+  googleRegistrationHandled.current =
+    false;
+
+  setGoogleRegistrationBusy(false);
+
+  return;
+}
 
         /*
          * The registration intent has now been
@@ -949,18 +1057,80 @@ useEffect(() => {
               ? error.message
               : "Unexpected registration error";
         }
-
-        if (completionError) {
+         
+          if (completionError) {
           console.error(
             "Google registration completion error:",
             completionError,
           );
 
+          const normalizedError =
+            completionError.toLowerCase();
+
           /*
-           * Preserve the URL nonce, stored nonce and
-           * authenticated session. Refreshing this page
-           * retries completion with the same registration
-           * intent instead of creating another Auth user.
+           * An existing Google account cannot be
+           * registered again. Sign it out and return
+           * the user to Login.
+           */
+          if (isExistingGoogleAccountError(completionError)) {
+            googleRegistrationRejectedExistingAccount.current =
+              true;
+
+            sessionStorage.removeItem(
+              GOOGLE_REGISTRATION_NONCE_KEY,
+            );
+
+            localStorage.removeItem(
+              GOOGLE_REGISTRATION_POPUP_NONCE_KEY,
+            );
+
+            localStorage.removeItem(
+              GOOGLE_REGISTRATION_SUCCESS_NONCE_KEY,
+            );
+
+            const { error: signOutError } =
+              await supabase.auth.signOut({
+                scope: "local",
+              });
+
+            if (signOutError) {
+              console.error(
+                "Google registration rejection sign-out error:",
+                signOutError,
+              );
+
+              clearLocalSupabaseSession();
+            }
+
+            await refresh();
+
+            googleRegistrationProcessingNonce.current =
+              null;
+
+            setGoogleRegistrationBusy(false);
+
+            toast.error(
+              "This Google account already exists. Please log in instead.",
+              {
+                id: "google-registration-error",
+              },
+            );
+
+            await navigate({
+              to: "/auth",
+              search: {
+                mode: "login",
+              },
+              replace: true,
+            });
+
+            return;
+          }
+
+          /*
+           * Other errors retain the existing retry behaviour.
+           * Keep the authenticated session and registration
+           * intent so the user can retry.
            */
           toast.error(
             "Google registration could not be completed. Your Google session has been kept. Refresh this page to retry.",
@@ -1047,11 +1217,14 @@ void navigate({
      * Ordinary Google login needs an
      * additional registration check.
      */
-    const provider =
-      session.user.app_metadata
-        ?.provider;
+   const appMetadata =
+  session.user.app_metadata;
 
-    if (provider === "google") {
+const isGoogleAccount =
+  appMetadata?.provider === "google" ||
+  appMetadata?.providers?.includes("google") === true;
+
+if (isGoogleAccount) {
 
       /*
        * If this Google login has already been
@@ -1353,10 +1526,13 @@ localStorage.removeItem(
         <div className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center">
           {mode === "login" && (
             <LoginForm
-              resetGoogleLoginGuard={
-                resetGoogleLoginGuard
-              }
-            />
+            resetGoogleLoginGuard={
+              resetGoogleLoginGuard
+            }
+            getPostAuthDestination={
+              getPostAuthDestination
+            }
+          />
           )}
 
           {mode === "register" && (
@@ -1403,8 +1579,10 @@ localStorage.removeItem(
 
 function LoginForm({
   resetGoogleLoginGuard,
+  getPostAuthDestination,
 }: {
   resetGoogleLoginGuard: () => void;
+  getPostAuthDestination: () => Promise<string>;
 }) {
   const [showPass, setShowPass] =
     useState(false);
@@ -1581,12 +1759,16 @@ sessionStorage.removeItem(
       }
 
       toast.success(
-        "Welcome back.",
-      );
+  "Welcome back.",
+);
 
-      navigate({
-        to: "/dashboard",
-      });
+const destination =
+  await getPostAuthDestination();
+
+void navigate({
+  to: destination,
+  replace: true,
+});
     };
 
   return (

@@ -398,11 +398,13 @@ const intervalId = window.setInterval(
    */
   useEffect(() => {
     if (
-      loading ||
-      !profile
-    ) {
-      return;
-    }
+  loading ||
+  !session?.user ||
+  !profile ||
+  profile.id !== session.user.id
+) {
+  return;
+}
 
     const currentPath =
       window.location.pathname;
