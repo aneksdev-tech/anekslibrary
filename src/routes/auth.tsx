@@ -51,6 +51,9 @@ const GOOGLE_REGISTRATION_NONCE_KEY =
 const GOOGLE_REGISTRATION_POPUP_NONCE_KEY =
   "aneks-google-registration-popup-nonce";
 
+const GOOGLE_REGISTRATION_SUCCESS_NONCE_KEY =
+  "aneks-google-registration-success-nonce";
+
 const GOOGLE_LOGIN_BLOCKED_MESSAGE_KEY =
   "aneks-google-login-blocked-message";
 
@@ -62,6 +65,43 @@ const GOOGLE_POPUP_ERROR_KEY =
 
 const SUPABASE_AUTH_STORAGE_KEY =
   "sb-riiwtxfigbwsjixwdlcq-auth-token";
+
+function getGoogleRegistrationErrorMessage(
+  error: unknown,
+  fallback: string,
+): string {
+  const message =
+    error instanceof Error
+      ? error.message
+      : typeof error === "string"
+        ? error
+        : typeof error === "object" &&
+            error !== null &&
+            "message" in error &&
+            typeof error.message === "string"
+          ? error.message
+          : "";
+
+  const normalizedMessage = message.toLowerCase();
+
+  if (
+    /failed to fetch|networkerror|network request failed|err_internet_disconnected|load failed|fetch failed/.test(
+      normalizedMessage,
+    )
+  ) {
+    return "No internet connection. Please check your internet connection and try again.";
+  }
+
+  if (
+    normalizedMessage.includes(
+      "this account is not awaiting google registration completion",
+    )
+  ) {
+    return "This Google account is already registered. Please log in instead.";
+  }
+
+  return message || fallback;
+}
 
 function clearLocalSupabaseSession() {
   localStorage.removeItem(
@@ -259,6 +299,51 @@ function AuthPage() {
   }, [refresh]);
 
   /*
+   * Receive OAuth failures from a popup so the main
+   * authentication page can release the active flow.
+   */
+  useEffect(() => {
+    const handleGoogleOAuthError = (
+      event: MessageEvent,
+    ) => {
+      if (
+        event.origin !== window.location.origin ||
+        event.data?.type !== "aneks-google-oauth-error"
+      ) {
+        return;
+      }
+
+      sessionStorage.removeItem(
+        GOOGLE_REGISTRATION_NONCE_KEY,
+      );
+
+      localStorage.removeItem(
+        GOOGLE_REGISTRATION_POPUP_NONCE_KEY,
+      );
+
+      localStorage.removeItem(
+        GOOGLE_REGISTRATION_SUCCESS_NONCE_KEY,
+      );
+
+      toast.error(
+        "Google sign-in could not be completed. Please try again.",
+      );
+    };
+
+    window.addEventListener(
+      "message",
+      handleGoogleOAuthError,
+    );
+
+    return () => {
+      window.removeEventListener(
+        "message",
+        handleGoogleOAuthError,
+      );
+    };
+  }, []);
+
+  /*
    * Handle successful Google registration
    * authentication completed inside the popup.
    *
@@ -336,33 +421,34 @@ function AuthPage() {
         !storedNonce ||
         storedNonce !== nonce
       ) {
-        googleRegistrationHandled.current =
-          true;
-
-        sessionStorage.removeItem(
-          GOOGLE_REGISTRATION_NONCE_KEY,
+        /*
+         * Ignore stale popup messages. A delayed message
+         * from an earlier attempt must never clear the
+         * current nonce or sign out the active session.
+         */
+        console.warn(
+          "Ignoring a stale Google registration completion message.",
         );
-
-        localStorage.removeItem(
-          GOOGLE_REGISTRATION_POPUP_NONCE_KEY,
-        );
-
-        toast.error(
-          "Google registration could not be verified. Please start registration again.",
-        );
-
-        void supabase.auth.signOut();
-
-        void navigate({
-          to: "/auth",
-          search: {
-            mode: "register",
-          },
-          replace: true,
-        });
 
         return;
       }
+
+      /*
+ * Require confirmation that the popup actually
+ * completed the Google OAuth callback for this nonce.
+ */
+const successfulPopupNonce =
+  localStorage.getItem(
+    GOOGLE_REGISTRATION_SUCCESS_NONCE_KEY,
+  );
+
+if (successfulPopupNonce !== nonce) {
+  console.warn(
+    "Ignoring a Google registration completion message without a matching OAuth success marker.",
+  );
+
+  return;
+}
 
       /*
        * Lock this exact registration flow before
@@ -403,19 +489,12 @@ function AuthPage() {
             sessionError,
           );
 
-          sessionStorage.removeItem(
-            GOOGLE_REGISTRATION_NONCE_KEY,
-          );
-
-          localStorage.removeItem(
-            GOOGLE_REGISTRATION_POPUP_NONCE_KEY,
-          );
-
           toast.error(
-            "Google registration could not be completed. Please try again.",
+            getGoogleRegistrationErrorMessage(
+              sessionError,
+              "Google sign-in is not ready yet. Refresh this page to retry registration.",
+            ),
           );
-
-          await supabase.auth.signOut();
 
           googleRegistrationProcessingNonce.current =
             null;
@@ -425,82 +504,57 @@ function AuthPage() {
 
           setGoogleRegistrationBusy(false);
 
-          void navigate({
-            to: "/auth",
-            search: {
-              mode: "register",
-            },
-            replace: true,
-          });
-
           return;
         }
 
-        const {
-          data: completionData,
-          error,
-        } = await supabase.rpc(
-          "complete_google_registration",
-          {
-            _nonce: nonce,
-          },
-        );
+        let completionError: string | null = null;
 
-        if (error) {
-  const isAlreadyRegistered =
-    error.code === "P0001" &&
-    (
-      error.message ===
-        "This Google account is not eligible for this registration request" ||
-      error.message ===
-        "This registration flow is only available for Google accounts"
-    );
+        try {
+          const { error } = await supabase.rpc(
+            "complete_google_registration",
+            {
+              _nonce: nonce,
+            },
+          );
 
-  if (!isAlreadyRegistered) {
-    console.error(
-      "Google registration completion error:",
-      error,
-    );
-  }
+          if (error) {
+            completionError = error.message;
+          }
+        } catch (error) {
+          completionError =
+            error instanceof Error
+              ? error.message
+              : "Unexpected registration error";
+        }
 
-  sessionStorage.removeItem(
-    GOOGLE_REGISTRATION_NONCE_KEY,
-  );
+        if (completionError) {
+          console.error(
+            "Google registration completion error:",
+            completionError,
+          );
 
-  localStorage.removeItem(
-    GOOGLE_REGISTRATION_POPUP_NONCE_KEY,
-  );
+          /*
+           * Keep the authenticated session and nonce.
+           * Refreshing retries the same completion request
+           * without creating another Auth user.
+           */
+          toast.error(
+            getGoogleRegistrationErrorMessage(
+              completionError,
+              "Google registration could not be completed. Your Google session has been kept. Refresh this page to retry.",
+            ),
+          );
 
-  if (isAlreadyRegistered) {
-    toast.error(
-      "This account is already registered. Please proceed to the Login page and sign in using Google or your Email and password.",
-    );
-  } else {
-    toast.error(
-      "Google registration could not be completed. Please try again.",
-    );
-  }
+          googleRegistrationProcessingNonce.current =
+            null;
 
-  await supabase.auth.signOut();
+          googleRegistrationHandled.current =
+            false;
 
-  googleRegistrationProcessingNonce.current =
-    null;
+          setGoogleRegistrationBusy(false);
 
-  googleRegistrationHandled.current =
-    false;
-
-  setGoogleRegistrationBusy(false);
-
-  void navigate({
-    to: "/auth",
-    search: {
-      mode: "register",
-    },
-    replace: true,
-  });
-
-  return;
-}
+          return;
+        }
 
         /*
          * The registration intent has now been
@@ -513,6 +567,10 @@ function AuthPage() {
 
         localStorage.removeItem(
           GOOGLE_REGISTRATION_POPUP_NONCE_KEY,
+        );
+
+        localStorage.removeItem(
+          GOOGLE_REGISTRATION_SUCCESS_NONCE_KEY,
         );
 
         /*
@@ -558,28 +616,24 @@ void navigate({
     refresh,
   ]);
 
-    /*
-   * iOS/Safari fallback for Google registration.
-   *
-   * Some browsers may successfully establish the
-   * Supabase session inside the OAuth popup but fail
-   * to deliver window.opener.postMessage() back to
-   * the main registration window.
-   *
-   * The main window already owns the registration nonce
-   * in sessionStorage. Once an authenticated Google
-   * session becomes available, dispatch the same
-   * completion event locally so the existing registration
-   * completion handler above performs the RPC.
-   *
-   * This does not create a second completion path.
-   * It reuses the exact same handler and safeguards.
-   */
-  useEffect(() => {
+/*
+ * iOS/Safari fallback for Google registration.
+ *
+ * The fallback only runs after the popup has written
+ * an explicit success marker for the active nonce.
+ *
+ * It verifies the session directly through Supabase,
+ * rather than depending on AuthProvider's React state.
+ */
+useEffect(() => {
+  let checkingSession = false;
+
+  const tryCompleteGoogleRegistration = async () => {
     if (
       loading ||
-      !session ||
-      googleRegistrationProcessingNonce.current
+      checkingSession ||
+      googleRegistrationProcessingNonce.current ||
+      googleRegistrationHandled.current
     ) {
       return;
     }
@@ -593,55 +647,69 @@ void navigate({
       return;
     }
 
-    /*
-     * Only Google sessions can complete a Google
-     * registration flow.
-     */
-    const provider =
-      session.user.app_metadata
-        ?.provider;
+    const successfulPopupNonce =
+      localStorage.getItem(
+        GOOGLE_REGISTRATION_SUCCESS_NONCE_KEY,
+      );
 
-    if (provider !== "google") {
-      return;
-    }
-
-    /*
-     * The existing message handler already prevents
-     * duplicate completion attempts.
-     *
-     * If it has already consumed this registration,
-     * there is nothing for the fallback to do.
-     */
     if (
-      googleRegistrationHandled.current
+      !successfulPopupNonce ||
+      successfulPopupNonce !== activeRegistrationNonce
     ) {
       return;
     }
 
-    /*
-     * Reuse the exact same event consumed by the
-     * existing popup completion handler.
-     *
-     * This is the important iOS fallback: if the popup
-     * could not deliver postMessage(), the main window
-     * completes the same flow itself.
-     */
-    window.dispatchEvent(
-      new MessageEvent("message", {
-        origin:
-          window.location.origin,
-        data: {
-          type:
-            "aneks-google-registration-complete",
-          nonce:
-            activeRegistrationNonce,
-        },
-      }),
-    );
-  }, [
-    loading,
-    session,
-  ]);
+    checkingSession = true;
+
+    try {
+      const {
+        data: sessionData,
+        error: sessionError,
+      } = await supabase.auth.getSession();
+
+      if (
+        sessionError ||
+        !sessionData.session ||
+        sessionData.session.user.app_metadata?.provider !== "google"
+      ) {
+        return;
+      }
+
+      /*
+       * Reuse the existing completion message handler.
+       * It remains responsible for the completion RPC
+       * and redirect handling.
+       */
+      window.dispatchEvent(
+        new MessageEvent("message", {
+          origin: window.location.origin,
+          data: {
+            type: "aneks-google-registration-complete",
+            nonce: activeRegistrationNonce,
+          },
+        }),
+      );
+    } finally {
+      checkingSession = false;
+    }
+  };
+
+  void tryCompleteGoogleRegistration();
+
+  const handleStorage = (event: StorageEvent) => {
+    if (
+      event.key === GOOGLE_REGISTRATION_SUCCESS_NONCE_KEY
+    ) {
+      void tryCompleteGoogleRegistration();
+    }
+  };
+
+  window.addEventListener("storage", handleStorage);
+
+  return () => {
+    window.removeEventListener("storage", handleStorage);
+  };
+}, [loading]);
 
   /*
    * A Google OAuth popup should never render the
@@ -661,36 +729,29 @@ void navigate({
     }
 
     /*
-     * Ordinary Google login popup.
-     *
-     * Registration popups have a registration nonce
-     * and use their own dedicated postMessage flow below.
-     *
-     * Notify the opener before closing so the main tab
-     * can synchronize its AuthProvider session state.
+     * Registration popups use their own dedicated
+     * postMessage handler below. Do not close them here:
+     * doing so would cancel that handler before it can
+     * notify the opener.
      */
-    if (
-      !google_registration_nonce &&
-      window.opener
-    ) {
+    if (google_registration_nonce) {
+      return;
+    }
+
+    /*
+     * Ordinary Google login popup. Notify the opener
+     * before closing so the main tab can synchronize
+     * its AuthProvider session state.
+     */
+    if (window.opener) {
       window.opener.postMessage(
         {
-          type:
-            "aneks-google-login-complete",
+          type: "aneks-google-login-complete",
         },
         window.location.origin,
       );
     }
 
-        /*
-     * The completion message has been dispatched to
-     * the opener. Close the OAuth popup immediately.
-     *
-     * Do not delay this with setTimeout because the
-     * popup may navigate to an account-status page
-     * before the timer fires. That navigation would
-     * unmount this effect and cancel the close timer.
-     */
     window.close();
 
   }, [
@@ -708,27 +769,53 @@ void navigate({
    * from before the popup flow was introduced.
    */
   useEffect(() => {
-    if (isGoogleOAuthPopup) {
-      return;
-    }
-
-    const params =
-      new URLSearchParams(
-        window.location.search,
-      );
+    const params = new URLSearchParams(
+      window.location.search,
+    );
 
     const errorCode =
-      params.get("error_code");
+      params.get("error_code") ||
+      params.get("error");
+
+    const isGoogleOAuthFailure = isGoogleOAuthPopup
+      ? Boolean(errorCode)
+      : errorCode === "bad_oauth_state";
 
     if (
-      errorCode !== "bad_oauth_state" ||
+      !isGoogleOAuthFailure ||
       googleOAuthErrorHandled.current
     ) {
       return;
     }
 
-    googleOAuthErrorHandled.current =
-      true;
+    googleOAuthErrorHandled.current = true;
+
+    if (isGoogleOAuthPopup) {
+      /*
+       * OAuth errors return to the popup URL. Notify the
+       * opener and close this window instead of leaving
+       * the popup on the "Completing Google sign-in" screen.
+       */
+      localStorage.removeItem(
+        GOOGLE_REGISTRATION_POPUP_NONCE_KEY,
+      );
+
+      localStorage.removeItem(
+        GOOGLE_REGISTRATION_SUCCESS_NONCE_KEY,
+      );
+
+      if (window.opener) {
+        window.opener.postMessage(
+          {
+            type: "aneks-google-oauth-error",
+          },
+          window.location.origin,
+        );
+      }
+
+      window.close();
+      return;
+    }
 
     sessionStorage.removeItem(
       GOOGLE_REGISTRATION_NONCE_KEY,
@@ -809,25 +896,16 @@ void navigate({
 
       if (
         !storedNonce ||
-        storedNonce !==
-          google_registration_nonce
+        storedNonce !== google_registration_nonce
       ) {
-        googleRegistrationHandled.current =
-          true;
-
-        sessionStorage.removeItem(
-          GOOGLE_REGISTRATION_NONCE_KEY,
-        );
-
-        localStorage.removeItem(
-          GOOGLE_REGISTRATION_POPUP_NONCE_KEY,
-        );
-
+        /*
+         * Reject this callback without destroying the
+         * current session or overwriting another active
+         * registration attempt.
+         */
         toast.error(
           "Google registration could not be verified. Please start registration again.",
         );
-
-        void supabase.auth.signOut();
 
         void navigate({
           to: "/auth",
@@ -852,53 +930,41 @@ void navigate({
       setGoogleRegistrationBusy(true);
 
       void (async () => {
-        const {
-          data: completionData,
-          error,
-        } = await supabase.rpc(
-          "complete_google_registration",
-          {
-            _nonce:
-              google_registration_nonce,
-          },
-        );
+        let completionError: string | null = null;
 
-        if (error) {
-  const isAlreadyRegistered =
-    error.code === "P0001" &&
-    (
-      error.message ===
-        "This Google account is not eligible for this registration request" ||
-      error.message ===
-        "This registration flow is only available for Google accounts"
-    );
+        try {
+          const { error } = await supabase.rpc(
+            "complete_google_registration",
+            {
+              _nonce: google_registration_nonce,
+            },
+          );
 
-  if (!isAlreadyRegistered) {
-    console.error(
-      "Google registration completion error:",
-      error,
-    );
-  }
+          if (error) {
+            completionError = error.message;
+          }
+        } catch (error) {
+          completionError =
+            error instanceof Error
+              ? error.message
+              : "Unexpected registration error";
+        }
 
-  sessionStorage.removeItem(
-    GOOGLE_REGISTRATION_NONCE_KEY,
-  );
+        if (completionError) {
+          console.error(
+            "Google registration completion error:",
+            completionError,
+          );
 
-  localStorage.removeItem(
-    GOOGLE_REGISTRATION_POPUP_NONCE_KEY,
-  );
-
-  if (isAlreadyRegistered) {
-    toast.error(
-      "This account is already registered. Please proceed to the Login page and sign in using Google or your Email and password.",
-    );
-  } else {
-    toast.error(
-      "Google registration could not be completed. Please try again.",
-    );
-  }
-
-          await supabase.auth.signOut();
+          /*
+           * Preserve the URL nonce, stored nonce and
+           * authenticated session. Refreshing this page
+           * retries completion with the same registration
+           * intent instead of creating another Auth user.
+           */
+          toast.error(
+            "Google registration could not be completed. Your Google session has been kept. Refresh this page to retry.",
+          );
 
           googleRegistrationProcessingNonce.current =
             null;
@@ -907,14 +973,6 @@ void navigate({
             false;
 
           setGoogleRegistrationBusy(false);
-
-          void navigate({
-            to: "/auth",
-            search: {
-              mode: "register",
-            },
-            replace: true,
-          });
 
           return;
         }
@@ -925,6 +983,10 @@ void navigate({
 
         localStorage.removeItem(
           GOOGLE_REGISTRATION_POPUP_NONCE_KEY,
+        );
+
+        localStorage.removeItem(
+          GOOGLE_REGISTRATION_SUCCESS_NONCE_KEY,
         );
 
         await refresh();
@@ -958,10 +1020,8 @@ void navigate({
      * belongs to the registration flow and must not
      * be treated as an ordinary Google login.
      *
-     * Otherwise the normal Google-login guard could
-     * call cancel_unregistered_google_login() and
-     * delete auth.users before complete_google_registration()
-     * finishes.
+     * The normal Google-login guard must not treat
+     * this active registration as an ordinary login.
      */
     const activeRegistrationNonce =
       sessionStorage.getItem(
@@ -1021,35 +1081,42 @@ void navigate({
         true;
 
       void (async () => {
-        const {
-          data,
-          error,
-        } = await supabase.rpc(
-          "is_google_registration_completed",
-        );
+        let registrationCompleted = false;
+        let verificationError: string | null = null;
 
-        if (error) {
+        try {
+          const { data, error } = await supabase.rpc(
+            "is_google_registration_completed",
+          );
+
+          if (error) {
+            verificationError = error.message;
+          } else {
+            registrationCompleted = data === true;
+          }
+        } catch (error) {
+          verificationError =
+            error instanceof Error
+              ? error.message
+              : "Unexpected verification error";
+        }
+
+        if (verificationError) {
           console.error(
             "Google registration verification error:",
-            error,
+            verificationError,
           );
 
-          googleLoginGuardHandled.current =
-            false;
-
-          await supabase.auth.signOut();
-
+          /*
+           * Keep the Auth session intact. This check is
+           * required before granting access, so leave the
+           * user on the authentication page and let them
+           * retry by refreshing if the RPC was temporarily
+           * unavailable.
+           */
           toast.error(
-            "We could not verify your Google account. Please try again.",
+            "We could not verify your Google account. Refresh this page and try again.",
           );
-
-          void navigate({
-            to: "/auth",
-            search: {
-              mode: "login",
-            },
-            replace: true,
-          });
 
           return;
         }
@@ -1057,7 +1124,7 @@ void navigate({
         /*
          * Existing/completed Google account.
          */
-        if (data === true) {
+        if (registrationCompleted) {
           /*
            * Clear any stale blocked-login state
            * before continuing with a valid login.
@@ -1098,51 +1165,19 @@ void navigate({
         );
 
         /*
-         * Always use the same user-facing message.
-         * The cleanup RPC result should not change
-         * what the user sees.
+         * An incomplete Google account must not be
+         * deleted automatically. Keep its Auth user
+         * and session so registration can finish it.
          */
         sessionStorage.setItem(
           GOOGLE_LOGIN_BLOCKED_MESSAGE_KEY,
-          "This account does not exist. Please create your account.",
+          "This Google account is not registered with Aneks Library. Please continue creating your account.",
         );
 
         /*
-         * Remove the incomplete Google account.
-         */
-        const {
-          error: cancelError,
-        } = await supabase.rpc(
-          "cancel_unregistered_google_login",
-        );
-
-        if (cancelError) {
-          console.error(
-            "Unregistered Google account cleanup error:",
-            cancelError,
-          );
-        }
-
-        /*
-         * The cleanup RPC is responsible for
-         * removing the incomplete Auth account.
-         *
-         * Do not call signOut() here because the
-         * Auth user may already have been deleted.
-         */
-        clearLocalSupabaseSession();
-
-        /*
-         * Push Register onto the existing Login
-         * history entry rather than replacing it.
-         *
-         * Therefore:
-         *
-         * Login
-         *   ↓
-         * Register + blocked message
-         *   ↓ browser Back
-         * Login
+         * Keep the authenticated Google session and
+         * send the user to the registration choices.
+         * The incomplete Auth user is not deleted.
          */
         void navigate({
           to: "/auth",
@@ -1215,18 +1250,35 @@ if (!existingSessionRedirectHandled.current) {
         GOOGLE_REGISTRATION_POPUP_NONCE_KEY,
       );
 
-      void supabase.auth.signOut();
+      if (window.opener) {
+        window.opener.postMessage(
+          {
+            type: "aneks-google-oauth-error",
+          },
+          window.location.origin,
+        );
+      }
 
       window.close();
 
       return;
     }
 
-    localStorage.removeItem(
-      GOOGLE_REGISTRATION_POPUP_NONCE_KEY,
-    );
-
     /*
+ * Record explicit OAuth callback success before
+ * notifying the opener. The main window can use
+ * this marker if postMessage delivery fails.
+ */
+localStorage.setItem(
+  GOOGLE_REGISTRATION_SUCCESS_NONCE_KEY,
+  google_registration_nonce,
+);
+
+localStorage.removeItem(
+  GOOGLE_REGISTRATION_POPUP_NONCE_KEY,
+);
+
+     /*
      * Notify the opener that the Google
      * registration authentication succeeded.
      *
@@ -1307,7 +1359,9 @@ if (!existingSessionRedirectHandled.current) {
             />
           )}
 
-          {mode === "register" && <RegisterForm />}
+          {mode === "register" && (
+              <RegisterForm googleRegistrationBusy={googleRegistrationBusy} />
+            )}
 
           {mode === "forgot" && <ForgotForm />}
 
@@ -1378,12 +1432,32 @@ function LoginForm({
        */
       resetGoogleLoginGuard();
 
+sessionStorage.removeItem(
+  GOOGLE_LOGIN_BLOCKED_STATE_KEY,
+);
+
+sessionStorage.removeItem(
+  GOOGLE_LOGIN_BLOCKED_MESSAGE_KEY,
+);
+
+/*
+ * A new explicit Google-login attempt abandons
+ * any incomplete registration attempt from an
+ * earlier popup.
+ *
+ * This prevents a stale registration nonce from
+ * suppressing the ordinary Google-login guard.
+ */
       sessionStorage.removeItem(
-        GOOGLE_LOGIN_BLOCKED_STATE_KEY,
+        GOOGLE_REGISTRATION_NONCE_KEY,
       );
 
-      sessionStorage.removeItem(
-        GOOGLE_LOGIN_BLOCKED_MESSAGE_KEY,
+      localStorage.removeItem(
+        GOOGLE_REGISTRATION_POPUP_NONCE_KEY,
+      );
+
+      localStorage.removeItem(
+        GOOGLE_REGISTRATION_SUCCESS_NONCE_KEY,
       );
 
       setBusy(true);
@@ -1677,12 +1751,19 @@ function LoginForm({
   );
 }
 
-function RegisterForm() {
+function RegisterForm({
+  googleRegistrationBusy,
+}: {
+  googleRegistrationBusy: boolean;
+}) {
   const [showPass, setShowPass] =
     useState(false);
 
   const [busy, setBusy] =
     useState(false);
+
+  const googleRegistrationStarting =
+    useRef(false);
 
   const [showValidationErrors, setShowValidationErrors] =
     useState(false);
@@ -1838,40 +1919,53 @@ function RegisterForm() {
 
   const handleGoogle =
     async () => {
+      if (
+        googleRegistrationStarting.current ||
+        busy ||
+        googleRegistrationBusy
+      ) {
+        return;
+      }
+
       if (!role) {
-  toast.error("Please select your role first.");
-  return;
-}
+        toast.error("Please select your role first.");
+        return;
+      }
 
-if (!googleCanSubmit) {
-  toast.error(
-    needsLevel && !form.level
-      ? "Please select your level."
-      : !form.college
-        ? "Please select your college."
-        : "Please select your department.",
-  );
-
-  return;
-}
-
-      setBusy(true);
-
-      const nonce =
-        crypto.randomUUID();
-
-      /*
-       * Open the registration popup
-       * synchronously from the button click.
-       */
-      const popup =
-        window.open(
-          "",
-          "aneks-google-registration",
-          "width=500,height=650,menubar=no,toolbar=no,location=yes,resizable=yes,scrollbars=yes",
+      if (!googleCanSubmit) {
+        toast.error(
+          needsLevel && !form.level
+            ? "Please select your level."
+            : !form.college
+              ? "Please select your college."
+              : "Please select your department.",
         );
 
+        return;
+      }
+
+      /*
+       * Acquire the lock only after validation succeeds.
+       * Keep it while the OAuth popup is open so a second
+       * click cannot overwrite the active registration nonce.
+       */
+      googleRegistrationStarting.current = true;
+      setBusy(true);
+
+      const nonce = crypto.randomUUID();
+
+      /*
+       * Open the registration popup synchronously from
+       * the click handler, before any asynchronous work.
+       */
+      const popup = window.open(
+        "",
+        "aneks-google-registration",
+        "width=500,height=650,menubar=no,toolbar=no,location=yes,resizable=yes,scrollbars=yes",
+      );
+
       if (!popup) {
+        googleRegistrationStarting.current = false;
         setBusy(false);
 
         toast.error(
@@ -1881,7 +1975,12 @@ if (!googleCanSubmit) {
         return;
       }
 
+      let oauthStarted = false;
+
       try {
+        localStorage.removeItem(
+          GOOGLE_REGISTRATION_SUCCESS_NONCE_KEY,
+      );
         sessionStorage.setItem(
           GOOGLE_REGISTRATION_NONCE_KEY,
           nonce,
@@ -1892,112 +1991,68 @@ if (!googleCanSubmit) {
           nonce,
         );
 
-        const {
-          error: intentError,
-        } =
-          await supabase.rpc(
-            "create_google_registration_intent",
-            {
-              _nonce: nonce,
-              _role: role,
-              _college:
-                needsCollege
-                  ? form.college ||
-                    undefined
-                  : undefined,
-              _department:
-                needsCollege
-                  ? form.department ||
-                    undefined
-                  : undefined,
-              _level:
-                needsLevel
-                  ? form.level ||
-                    undefined
-                  : undefined,
-            },
-          );
+        const { error: intentError } = await supabase.rpc(
+          "create_google_registration_intent",
+          {
+            _nonce: nonce,
+            _role: role,
+            _college: needsCollege
+              ? form.college || undefined
+              : undefined,
+            _department: needsCollege
+              ? form.department || undefined
+              : undefined,
+            _level: needsLevel
+              ? form.level || undefined
+              : undefined,
+          },
+        );
 
         if (intentError) {
-          popup.close();
-
-          sessionStorage.removeItem(
-            GOOGLE_REGISTRATION_NONCE_KEY,
-          );
-
-          localStorage.removeItem(
-            GOOGLE_REGISTRATION_POPUP_NONCE_KEY,
-          );
-
-          toast.error(
-            intentError.message,
-          );
-
-          return;
+          throw new Error(intentError.message);
         }
 
         const redirectUrl =
           `${window.location.origin}/auth` +
-          `?google_registration_nonce=${encodeURIComponent(
-            nonce,
-          )}` +
+          `?google_registration_nonce=${encodeURIComponent(nonce)}` +
           `&google_oauth_popup=1`;
 
-        const {
-          data,
-          error,
-        } =
-          await supabase.auth.signInWithOAuth(
-            {
-              provider: "google",
-              options: {
-                redirectTo:
-                  redirectUrl,
-                skipBrowserRedirect: true,
-              },
+        const { data, error } =
+          await supabase.auth.signInWithOAuth({
+            provider: "google",
+            options: {
+              redirectTo: redirectUrl,
+              skipBrowserRedirect: true,
             },
-          );
+          });
 
         if (error) {
-          popup.close();
-
-          sessionStorage.removeItem(
-            GOOGLE_REGISTRATION_NONCE_KEY,
-          );
-
-          localStorage.removeItem(
-            GOOGLE_REGISTRATION_POPUP_NONCE_KEY,
-          );
-
-          toast.error(
-            error.message,
-          );
-
-          return;
+          throw new Error(error.message);
         }
 
         if (!data.url) {
-          popup.close();
-
-          sessionStorage.removeItem(
-            GOOGLE_REGISTRATION_NONCE_KEY,
-          );
-
-          localStorage.removeItem(
-            GOOGLE_REGISTRATION_POPUP_NONCE_KEY,
-          );
-
-          toast.error(
+          throw new Error(
             "Unable to start Google registration.",
           );
-
-          return;
         }
 
-        popup.location.href =
-          data.url;
-
+        popup.location.href = data.url;
         popup.focus();
+
+        oauthStarted = true;
+
+        /*
+         * Release the form lock when the popup closes.
+         * Keep the nonce: the popup sends it to the opener
+         * immediately before closing after successful OAuth.
+         */
+        const popupMonitor = window.setInterval(() => {
+          if (popup.closed) {
+            window.clearInterval(popupMonitor);
+            googleRegistrationStarting.current = false;
+            setBusy(false);
+          }
+        }, 500);
       } catch (error) {
         popup.close();
 
@@ -2009,13 +2064,21 @@ if (!googleCanSubmit) {
           GOOGLE_REGISTRATION_POPUP_NONCE_KEY,
         );
 
+        localStorage.removeItem(
+          GOOGLE_REGISTRATION_SUCCESS_NONCE_KEY,
+        );
+
         toast.error(
-          error instanceof Error
-            ? error.message
-            : "Unable to start Google registration.",
+            getGoogleRegistrationErrorMessage(
+              error,
+            "Unable to start Google registration.",
+          ),
         );
       } finally {
-        setBusy(false);
+        if (!oauthStarted) {
+          googleRegistrationStarting.current = false;
+          setBusy(false);
+        }
       }
     };
 
@@ -2420,10 +2483,10 @@ if (registrationMethod === "google") {
 <Button
   type="button"
   className="group w-full bg-gradient-emerald text-primary-foreground shadow-soft transition-all hover:bg-none hover:bg-accent hover:shadow-md"
-  disabled={busy}
+  disabled={busy || googleRegistrationBusy}
   onClick={handleGoogle}
 >
-  {busy ? (
+  {busy || googleRegistrationBusy ? (
     <Loader2 className="h-4 w-4 animate-spin transition-colors group-hover:text-primary"/>
   ) : (
     <span className="transition-colors group-hover:text-primary">

@@ -151,7 +151,6 @@ export const levels = [
   "200 Level",
   "300 Level",
   "400 Level",
-  "500 Level",
 ] as const;
 
 export const semesters = [
